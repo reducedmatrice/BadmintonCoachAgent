@@ -19,8 +19,8 @@
 #### 阶段 B：文本主闭环
 - [x] B1 跑通 `prematch` 文本路径
 - [x] B2 跑通 `postmatch` 文本路径
-- [ ] B3 引入 `coach_profile.json` 与日期日志
-- [ ] B4 [doc] 产出阶段总结（1000-2000 字）
+- [x] B3 引入 `coach_profile.json` 与日期日志
+- [x] B4 [doc] 产出阶段总结（1000-2000 字）
 #### 阶段 C：上下文增强
 - [ ] C1 接入 Weather MCP
 - [ ] C2 优化飞书 card 输出模板与稳定性
@@ -36,7 +36,7 @@
 - [ ] E2 增加主动提醒调度能力
 - [ ] E3 [doc] 产出阶段总结（1000-2000 字）
 ### 📈 总体进度
-- 当前状态：`[~]` 阶段 B 进行中（B1/B2 已完成）
+- 当前状态：`[~]` 阶段 B 已完成，阶段 C 待开始
 - MVP 定义：完成 A + B + C
 - 推荐演示版本：完成 A + B + C + D1
 ## 阶段 A：Agent 装配
@@ -127,13 +127,27 @@
 ### B3：引入 Coach Structured Profile 与日期日志
 - **目标**：建立可持续演进的结构化档案和事件沉淀
 - **输入**：postmatch / health 的结构化抽取结果
-- **输出**：`coach_profile.json` 与 `memory/reviews/YYYY-MM-DD.md`
+- **输出**：
+  - `backend/packages/harness/deerflow/domain/coach/profile_store.py`
+  - `backend/tests/test_coach_profile.py`
+  - `backend/tests/test_coach_integration_flow.py`
+  - `coach_profile.json` 与 `memory/reviews/YYYY-MM-DD.md`
 - **依赖**：B2
 - **完成定义（DoD）**：
   - 赛后复盘能回写技术档案
   - 会按日期追加训练日志
   - 下一次赛前能读取这些内容
 - **测试方法**：`pytest -q tests/test_coach_profile.py tests/test_coach_integration_flow.py`
+### B4：[doc] 阶段总结
+- **目标**：沉淀文本主闭环的实现方式、数据流和残留风险
+- **输入**：B1-B3 的规则层、持久化层和测试结果
+- **输出**：`docs/stage-b-summary.md`
+- **依赖**：B1、B2、B3
+- **完成定义（DoD）**：
+  - 说明赛前/赛后/档案闭环分别交付了什么
+  - 说明当前还未进入模型编排和 MCP 的边界
+  - 说明阶段 C 的进入条件
+- **测试方法**：人工 review
 ## 阶段 C：上下文增强
 ### C1：接入 Weather MCP
 - **目标**：让天气真实影响建议内容
