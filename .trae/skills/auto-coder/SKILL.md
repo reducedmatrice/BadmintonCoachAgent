@@ -132,7 +132,15 @@ Round 3 still failing → STOP, show failure report to user
 
 1. **Update active dev spec**: change task marker `[ ]` → `[x]` in the resolved spec file
 2. **Re-sync**: `python3 .trae/skills/auto-coder/scripts/sync_spec.py --force`
-3. **Show summary & ask**:
+3. **Commit every completed task-sized increment**
+
+For this repository, a task like `A1`, `A2`, `B1`, `B2` is the default commit boundary.
+
+- If one task is completed and tested, create a commit immediately.
+- Do not batch multiple completed tasks into one commit unless the user explicitly asks for a squash.
+- `[doc]` tasks should also get their own commit after the paired documentation output is finished.
+
+4. **Show summary & ask**:
 
 ```
 ✅ [A3] 配置加载与校验 — done
