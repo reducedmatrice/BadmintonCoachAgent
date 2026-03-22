@@ -61,7 +61,7 @@ def detect_chapters(content: str) -> List[Chapter]:
 def sync(force: bool = False):
     skill_dir = Path(__file__).parent.parent          # auto-coder/
     repo_root = skill_dir.parent.parent.parent        # project root
-    dev_spec = repo_root / "dev-spec-gpt5.4.md"
+    dev_spec = repo_root / "dev-spec.md"
     specs_dir = skill_dir / "references"
     hash_file = skill_dir / ".spec_hash"
 

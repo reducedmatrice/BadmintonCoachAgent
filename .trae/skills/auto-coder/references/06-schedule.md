@@ -13,11 +13,11 @@
 > 状态说明：`[ ]` 未开始 | `[~]` 进行中 | `[x]` 已完成
 #### 阶段 A：Agent 装配
 - [x] A1 创建 `badminton-coach` custom agent 运行时装配方案
-- [ ] A2 定义 `SOUL.md` 的角色边界、回复风格、安全约束
-- [ ] A3 新建 Coach skills 目录与首版工作流文档
-- [ ] A4 [doc] 产出阶段总结（1000-2000 字）
+- [x] A2 定义 `SOUL.md` 的角色边界、回复风格、安全约束
+- [x] A3 建立最小可演示链路
+- [x] A4 [doc] 产出阶段总结（1000-2000 字）
 #### 阶段 B：文本主闭环
-- [ ] B1 跑通 `prematch` 文本路径
+- [x] B1 跑通 `prematch` 文本路径
 - [ ] B2 跑通 `postmatch` 文本路径
 - [ ] B3 引入 `coach_profile.json` 与日期日志
 - [ ] B4 [doc] 产出阶段总结（1000-2000 字）
@@ -36,7 +36,7 @@
 - [ ] E2 增加主动提醒调度能力
 - [ ] E3 [doc] 产出阶段总结（1000-2000 字）
 ### 📈 总体进度
-- 当前状态：`[~]` 阶段 A 进行中（A1 已完成）
+- 当前状态：`[~]` 阶段 B 进行中（B1 已完成）
 - MVP 定义：完成 A + B + C
 - 推荐演示版本：完成 A + B + C + D1
 ## 阶段 A：Agent 装配
@@ -63,26 +63,49 @@
 ### A2：定义 SOUL 与技能边界
 - **目标**：让 Coach 具备稳定的人设、约束与提问方式
 - **输入**：项目目标、业务边界、用户偏好
-- **输出**：Coach SOUL 与 Router / Pre-match / Post-match / Health skills 初稿
+- **输出**：
+  - `backend/.deer-flow/agents/badminton-coach/SOUL.md`
+  - `skills/custom/badminton-coach/router/SKILL.md`
+  - `skills/custom/badminton-coach/prematch/SKILL.md`
+  - `skills/custom/badminton-coach/postmatch/SKILL.md`
+  - `skills/custom/badminton-coach/health/SKILL.md`
 - **依赖**：现有 skills loader 机制
 - **完成定义（DoD）**：
   - Agent 能稳定使用教练语气与约束
   - 缺少关键信息时优先追问
-- **测试方法**：使用固定样本人工 review + prompt 回归用例
+  - Coach 自定义 skills 能被 loader 正常发现
+- **测试方法**：
+  - 固定样本人工 review
+  - `backend/tests/test_skills_loader.py`
 ### A3：建立最小可演示链路
 - **目标**：先跑通“飞书文本 -> Coach 回复”
 - **输入**：Feishu channel、session config
-- **输出**：可在飞书中看到 Coach 风格回复
+- **输出**：
+  - `config.example.yaml` 中的 Feishu Coach session 示例
+  - `backend/tests/test_channels.py` 中的 Feishu Coach session 回归测试
 - **依赖**：A1、A2
 - **完成定义（DoD）**：
   - 回复能显示在 Feishu card 中
   - 会话不落回默认 agent
 - **测试方法**：扩展 `backend/tests/test_channels.py`
+### A4：[doc] 阶段总结
+- **目标**：沉淀阶段 A 的架构决策、实现边界和后续风险
+- **输入**：A1-A3 的实现结果、测试结果、配置约定
+- **输出**：`docs/stage-a-summary.md`
+- **依赖**：A1、A2、A3
+- **完成定义（DoD）**：
+  - 说明本阶段实际交付了什么
+  - 说明为什么采用 `lead_agent + context.agent_name` 路线
+  - 说明当前残留风险与阶段 B 的进入条件
+- **测试方法**：人工 review
 ## 阶段 B：文本主闭环
 ### B1：实现 Pre-match 文本路径
 - **目标**：让 Agent 对赛前咨询给出个性化训练建议
 - **输入**：赛前文本、历史记忆、天气信息
-- **输出**：训练重点、热身建议、风险提示
+- **输出**：
+  - `backend/packages/harness/deerflow/domain/coach/prematch.py`
+  - `backend/tests/test_coach_prematch_rules.py`
+  - 训练重点、热身建议、风险提示
 - **依赖**：A 阶段已完成
 - **完成定义（DoD）**：
   - 有历史弱项时会引用

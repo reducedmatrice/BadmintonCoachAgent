@@ -459,6 +459,14 @@ checkpointer:
 #     enabled: false
 #     app_id: $FEISHU_APP_ID
 #     app_secret: $FEISHU_APP_SECRET
+#     # Optional: make Feishu default to the badminton coach custom agent
+#     session:
+#       assistant_id: lead_agent
+#       context:
+#         agent_name: badminton-coach
+#         thinking_enabled: true
+#         is_plan_mode: false
+#         subagent_enabled: false
 #
 #   slack:
 #     enabled: false

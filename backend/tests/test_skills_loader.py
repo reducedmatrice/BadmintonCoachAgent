@@ -64,3 +64,16 @@ def test_load_skills_skips_hidden_directories(tmp_path: Path):
 
     assert "ok-skill" in names
     assert "secret-skill" not in names
+
+
+def test_load_skills_includes_badminton_coach_custom_skills():
+    """Repository should expose the badminton coach custom skill set."""
+    skills = load_skills(use_config=False, enabled_only=False)
+    names = {skill.name for skill in skills}
+
+    assert {
+        "coach-router",
+        "coach-prematch",
+        "coach-postmatch",
+        "coach-health",
+    } <= names

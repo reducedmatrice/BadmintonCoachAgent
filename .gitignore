@@ -37,6 +37,9 @@ coverage/
 .deer-flow/
 .claude/
 skills/custom/*
+!skills/custom/
+!skills/custom/badminton-coach/
+!skills/custom/badminton-coach/**
 logs/
 log/
 .trae/skills/resume-writer/outputs/

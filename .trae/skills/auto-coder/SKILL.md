@@ -27,8 +27,8 @@ Pause only at the end for commit confirmation. Run everything else autonomously.
 
 ## Active Spec Resolution
 
-The active spec file is fixed to `dev-spec-gpt5.4.md`.
-Do not read or infer task state from `DEV_SPEC.md`, `dev_spec.md`, or `dev-spec-gpt.md`.
+The active spec file is fixed to `dev-spec.md`.
+Do not read or infer task state from any other spec file.
 
 ## Reference Map
 
@@ -150,7 +150,7 @@ On "next", loop back to step 1 and start the next task.
 ## Repository-Specific Notes
 
 For this repository:
-- Prefer the schedule in `dev-spec-gpt5.4.md` as the source of truth
+- Prefer the schedule in `dev-spec.md` as the source of truth
 - Treat stage-summary tasks (`A4/B4/C4/D4/E3`) and any task marked `[doc]` as documentation tasks to run only after the paired implementation tasks are complete
 - Prefer the smallest meaningful commit, not arbitrary time-based slicing
 - When a task modifies runtime assets under `backend/.deer-flow/`, make sure the corresponding versioned source or initialization logic is also updated if required by the spec

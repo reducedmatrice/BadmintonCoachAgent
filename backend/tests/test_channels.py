@@ -668,6 +668,75 @@ class TestChannelManager:
 
         _run(go())
 
+    def test_handle_feishu_chat_uses_channel_agent_name(self, monkeypatch):
+        from app.channels.manager import ChannelManager
+
+        monkeypatch.setattr("app.channels.manager.STREAM_UPDATE_MIN_INTERVAL_SECONDS", 0.0)
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(
+                bus=bus,
+                store=store,
+                channel_sessions={
+                    "feishu": {
+                        "assistant_id": "lead_agent",
+                        "context": {
+                            "agent_name": "badminton-coach",
+                            "thinking_enabled": False,
+                        },
+                    }
+                },
+            )
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            stream_events = [
+                _make_stream_part(
+                    "values",
+                    {
+                        "messages": [
+                            {"type": "human", "content": "今晚打球注意什么"},
+                            {"type": "ai", "content": "今天先把后场启动和热身做扎实。"},
+                        ],
+                        "artifacts": [],
+                    },
+                ),
+            ]
+
+            mock_client = _make_mock_langgraph_client()
+            mock_client.runs.stream = MagicMock(return_value=_make_async_iterator(stream_events))
+            manager._client = mock_client
+
+            await manager.start()
+
+            inbound = InboundMessage(
+                channel_name="feishu",
+                chat_id="chat1",
+                user_id="user1",
+                text="今晚打球注意什么",
+                thread_ts="om-source-2",
+            )
+            await bus.publish_inbound(inbound)
+            await _wait_for(lambda: any(msg.is_final for msg in outbound_received))
+            await manager.stop()
+
+            mock_client.runs.stream.assert_called_once()
+            call_args = mock_client.runs.stream.call_args
+            assert call_args[0][1] == "lead_agent"
+            assert call_args[1]["context"]["agent_name"] == "badminton-coach"
+            assert outbound_received[-1].text == "今天先把后场启动和热身做扎实。"
+            assert outbound_received[-1].thread_ts == "om-source-2"
+            assert outbound_received[-1].is_final is True
+
+        _run(go())
+
     def test_handle_feishu_stream_error_still_sends_final(self, monkeypatch):
         """When the stream raises mid-way, a final outbound with is_final=True must still be published."""
         from app.channels.manager import ChannelManager
@@ -1475,6 +1544,17 @@ class TestChannelService:
         service = ChannelService(
             channels_config={
                 "session": {"context": {"thinking_enabled": False}},
+                "feishu": {
+                    "enabled": False,
+                    "app_id": "x",
+                    "app_secret": "y",
+                    "session": {
+                        "assistant_id": "lead_agent",
+                        "context": {
+                            "agent_name": "badminton-coach",
+                        },
+                    },
+                },
                 "telegram": {
                     "enabled": False,
                     "session": {
@@ -1490,6 +1570,8 @@ class TestChannelService:
         )
 
         assert service.manager._default_session["context"]["thinking_enabled"] is False
+        assert service.manager._channel_sessions["feishu"]["assistant_id"] == "lead_agent"
+        assert service.manager._channel_sessions["feishu"]["context"]["agent_name"] == "badminton-coach"
         assert service.manager._channel_sessions["telegram"]["assistant_id"] == "mobile_agent"
         assert service.manager._channel_sessions["telegram"]["users"]["vip"]["assistant_id"] == "vip_agent"
 
