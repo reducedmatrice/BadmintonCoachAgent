@@ -794,7 +794,7 @@ backend/.deer-flow/
 #### 阶段 B：文本主闭环
 - [x] B1 跑通 `prematch` 文本路径
 - [x] B2 跑通 `postmatch` 文本路径
-- [ ] B3 引入 `coach_profile.json` 与日期日志
+- [x] B3 引入 `coach_profile.json` 与日期日志
 - [ ] B4 [doc] 产出阶段总结（1000-2000 字）
 #### 阶段 C：上下文增强
 - [ ] C1 接入 Weather MCP
@@ -811,7 +811,7 @@ backend/.deer-flow/
 - [ ] E2 增加主动提醒调度能力
 - [ ] E3 [doc] 产出阶段总结（1000-2000 字）
 ### 📈 总体进度
-- 当前状态：`[~]` 阶段 B 进行中（B1/B2 已完成）
+- 当前状态：`[~]` 阶段 B 进行中（B1/B2/B3 已完成）
 - MVP 定义：完成 A + B + C
 - 推荐演示版本：完成 A + B + C + D1
 ## 阶段 A：Agent 装配
@@ -902,7 +902,11 @@ backend/.deer-flow/
 ### B3：引入 Coach Structured Profile 与日期日志
 - **目标**：建立可持续演进的结构化档案和事件沉淀
 - **输入**：postmatch / health 的结构化抽取结果
-- **输出**：`coach_profile.json` 与 `memory/reviews/YYYY-MM-DD.md`
+- **输出**：
+  - `backend/packages/harness/deerflow/domain/coach/profile_store.py`
+  - `backend/tests/test_coach_profile.py`
+  - `backend/tests/test_coach_integration_flow.py`
+  - `coach_profile.json` 与 `memory/reviews/YYYY-MM-DD.md`
 - **依赖**：B2
 - **完成定义（DoD）**：
   - 赛后复盘能回写技术档案
