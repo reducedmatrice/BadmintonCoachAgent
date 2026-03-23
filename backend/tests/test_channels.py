@@ -1332,6 +1332,28 @@ class TestHandleChatWithArtifacts:
 
 
 class TestFeishuChannel:
+    def test_build_card_content_creates_structured_sections(self):
+        from app.channels.feishu import FeishuChannel
+
+        card = json.loads(
+            FeishuChannel._build_card_content(
+                "\n".join(
+                    [
+                        "# 今晚训练建议",
+                        "重点项：先盯后场回位和反手准备。",
+                        "风险提示：前半段把强度控制在七成。",
+                        "下次建议：打完后补一句今天最大的失误点。",
+                    ]
+                )
+            )
+        )
+
+        assert card["header"]["title"]["content"] == "今晚训练建议"
+        markdown_blocks = [element["content"] for element in card["elements"]]
+        assert any("重点项" in block and "后场回位" in block for block in markdown_blocks)
+        assert any("风险提示" in block and "七成" in block for block in markdown_blocks)
+        assert any("下次建议" in block and "失误点" in block for block in markdown_blocks)
+
     def test_prepare_inbound_publishes_without_waiting_for_running_card(self):
         from app.channels.feishu import FeishuChannel
 
@@ -1498,8 +1520,11 @@ class TestFeishuChannel:
             final_patch_request = channel._api_client.im.v1.message.patch.call_args_list[1].args[0]
             assert first_patch_request.message_id == "om-running-card"
             assert final_patch_request.message_id == "om-running-card"
-            assert json.loads(first_patch_request.body.content)["elements"][0]["content"] == "Hello"
-            assert json.loads(final_patch_request.body.content)["elements"][0]["content"] == "Hello world"
+            first_card = json.loads(first_patch_request.body.content)
+            final_card = json.loads(final_patch_request.body.content)
+            assert first_card["header"]["title"]["content"] == "Badminton Coach"
+            assert "Hello" in first_card["elements"][0]["content"]
+            assert "Hello world" in final_card["elements"][0]["content"]
             assert json.loads(final_patch_request.body.content)["config"]["update_multi"] is True
 
         _run(go())
