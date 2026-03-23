@@ -1,0 +1,40 @@
+[
+  {
+    "id": "prematch-weather",
+    "expected_route": "prematch",
+    "message": "今晚打双打注意什么，我最近后场回位还是慢，天气也挺热。",
+    "coach_profile": {
+      "tech_profile": {
+        "weaknesses": [
+          {
+            "name": "后场步法回位慢",
+            "severity": 0.9
+          }
+        ]
+      }
+    },
+    "weather": {
+      "temperature_c": 30,
+      "humidity": 78,
+      "condition": "晴",
+      "source": "weather.current"
+    }
+  },
+  {
+    "id": "postmatch-recap",
+    "expected_route": "postmatch",
+    "message": "今天打完感觉反手稳定了一点，但后场回位还是慢，最后两局明显跟不上。下次重点继续盯后场启动和反手准备。"
+  },
+  {
+    "id": "health-heart-rate-image",
+    "expected_route": "health",
+    "message": "帮我看看这张运动截图。",
+    "image_summary": "羽毛球 1小时26分钟 最高心率 184 bpm 平均心率 162 bpm 消耗 786 千卡"
+  },
+  {
+    "id": "health-sleep-image",
+    "expected_route": "health",
+    "message": "这是今天的恢复截图，明天还能上强度吗？",
+    "image_summary": "昨晚睡眠 5小时18分钟 深睡 41 分钟 HRV 28 静息心率 61"
+  }
+]
