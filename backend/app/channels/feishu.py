@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import threading
+from pathlib import Path
 from typing import Any
 
 from app.channels.base import Channel
@@ -512,6 +513,88 @@ class FeishuChannel(Channel):
         self._ensure_running_card_started(msg_id)
         await self.bus.publish_inbound(inbound)
 
+    @staticmethod
+    def _parse_inbound_message(
+        message_type: str,
+        content: dict[str, Any],
+        *,
+        msg_id: str,
+    ) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
+        normalized_type = (message_type or "text").lower()
+        metadata: dict[str, Any] = {
+            "message_type": normalized_type,
+        }
+
+        if normalized_type == "text":
+            text = str(content.get("text", "")).strip()
+            return text, [], metadata
+
+        files: list[dict[str, Any]] = []
+        if normalized_type == "image":
+            image_key = str(content.get("image_key", "")).strip()
+            metadata["image_key"] = image_key
+            files.append(
+                {
+                    "filename": f"feishu-image-{msg_id}.png",
+                    "size": 0,
+                    "path": f"feishu://image/{image_key or msg_id}",
+                    "status": "remote",
+                    "source": "feishu",
+                    "message_type": "image",
+                    "image_key": image_key,
+                }
+            )
+            text = "用户发送了一张飞书图片消息。当前系统已记录图片元数据；如需精确分析，请让用户补文字描述或把原图上传到 Web Workspace。"
+            return text, files, metadata
+
+        if normalized_type == "file":
+            file_key = str(content.get("file_key", "")).strip()
+            file_name = str(content.get("file_name", "")).strip() or f"feishu-file-{msg_id}"
+            file_size = content.get("file_size", 0)
+            try:
+                size = int(file_size)
+            except (TypeError, ValueError):
+                size = 0
+            metadata.update({"file_key": file_key, "file_name": file_name})
+            files.append(
+                {
+                    "filename": Path(file_name).name,
+                    "size": size,
+                    "path": f"feishu://file/{file_key or msg_id}",
+                    "status": "remote",
+                    "source": "feishu",
+                    "message_type": "file",
+                    "file_key": file_key,
+                }
+            )
+            text = f"用户发送了一个飞书文件：{Path(file_name).name}。当前系统已记录文件元数据；如需进一步分析，请让用户在 Web Workspace 上传原文件或补充说明。"
+            return text, files, metadata
+
+        if normalized_type in {"audio", "media"}:
+            file_key = str(content.get("file_key", "")).strip()
+            duration = content.get("duration", 0)
+            try:
+                size = int(duration)
+            except (TypeError, ValueError):
+                size = 0
+            metadata.update({"file_key": file_key, "duration": duration})
+            files.append(
+                {
+                    "filename": f"feishu-audio-{msg_id}.opus",
+                    "size": size,
+                    "path": f"feishu://audio/{file_key or msg_id}",
+                    "status": "remote",
+                    "source": "feishu",
+                    "message_type": "audio",
+                    "file_key": file_key,
+                }
+            )
+            text = "用户发送了一条飞书语音消息。当前系统已记录语音元数据，但尚未接入自动转写；请先让用户补文字摘要，再给详细建议。"
+            return text, files, metadata
+
+        text = str(content.get("text", "")).strip()
+        return text, files, metadata
+
     def _on_message(self, event) -> None:
         """Called by lark-oapi when a message is received (runs in lark thread)."""
         try:
@@ -519,6 +602,7 @@ class FeishuChannel(Channel):
             message = event.event.message
             chat_id = message.chat_id
             msg_id = message.message_id
+            message_type = getattr(message, "message_type", "text")
             sender_id = event.event.sender.sender_id.open_id
 
             # root_id is set when the message is a reply within a Feishu thread.
@@ -527,18 +611,23 @@ class FeishuChannel(Channel):
 
             # Parse message content
             content = json.loads(message.content)
-            text = content.get("text", "").strip()
+            text, files, parsed_metadata = self._parse_inbound_message(
+                message_type,
+                content,
+                msg_id=msg_id,
+            )
             logger.info(
-                "[Feishu] parsed message: chat_id=%s, msg_id=%s, root_id=%s, sender=%s, text=%r",
+                "[Feishu] parsed message: chat_id=%s, msg_id=%s, root_id=%s, sender=%s, type=%s, text=%r",
                 chat_id,
                 msg_id,
                 root_id,
                 sender_id,
+                message_type,
                 text[:100] if text else "",
             )
 
             if not text:
-                logger.info("[Feishu] empty text, ignoring message")
+                logger.info("[Feishu] empty/unsupported payload, ignoring message")
                 return
 
             # Check if it's a command
@@ -556,7 +645,8 @@ class FeishuChannel(Channel):
                 text=text,
                 msg_type=msg_type,
                 thread_ts=msg_id,
-                metadata={"message_id": msg_id, "root_id": root_id},
+                files=files,
+                metadata={"message_id": msg_id, "root_id": root_id, **parsed_metadata},
             )
             inbound.topic_id = topic_id
 

@@ -40,6 +40,19 @@ def _merge_dicts(*layers: Any) -> dict[str, Any]:
     return merged
 
 
+def _build_input_message(msg: InboundMessage) -> dict[str, Any]:
+    """Build a LangGraph-compatible human message payload from inbound data."""
+    message: dict[str, Any] = {"role": "human", "content": msg.text}
+    additional_kwargs: dict[str, Any] = {}
+    if msg.files:
+        additional_kwargs["files"] = msg.files
+    if msg.metadata:
+        additional_kwargs["channel_metadata"] = msg.metadata
+    if additional_kwargs:
+        message["additional_kwargs"] = additional_kwargs
+    return message
+
+
 def _extract_response_text(result: dict | list) -> str:
     """Extract the last AI message text from a LangGraph runs.wait result.
 
@@ -498,7 +511,7 @@ class ChannelManager:
         result = await client.runs.wait(
             thread_id,
             assistant_id,
-            input={"messages": [{"role": "human", "content": msg.text}]},
+            input={"messages": [_build_input_message(msg)]},
             config=run_config,
             context=run_context,
         )
@@ -575,7 +588,7 @@ class ChannelManager:
             async for chunk in client.runs.stream(
                 thread_id,
                 assistant_id,
-                input={"messages": [{"role": "human", "content": msg.text}]},
+                input={"messages": [_build_input_message(msg)]},
                 config=run_config,
                 context=run_context,
                 stream_mode=["messages-tuple", "values"],

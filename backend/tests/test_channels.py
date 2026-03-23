@@ -1332,6 +1332,58 @@ class TestHandleChatWithArtifacts:
 
 
 class TestFeishuChannel:
+    def test_parse_image_message_to_placeholder_and_file_metadata(self):
+        from app.channels.feishu import FeishuChannel
+
+        text, files, metadata = FeishuChannel._parse_inbound_message(
+            "image",
+            {"image_key": "img_123"},
+            msg_id="om-image-1",
+        )
+
+        assert "图片消息" in text
+        assert files[0]["filename"] == "feishu-image-om-image-1.png"
+        assert files[0]["image_key"] == "img_123"
+        assert files[0]["path"] == "feishu://image/img_123"
+        assert metadata["message_type"] == "image"
+
+    def test_on_message_publishes_audio_message_as_chat(self):
+        from app.channels.feishu import FeishuChannel
+
+        async def go():
+            bus = MessageBus()
+            bus.publish_inbound = AsyncMock()
+            channel = FeishuChannel(bus, config={})
+            channel._main_loop = asyncio.get_running_loop()
+            channel._add_reaction = AsyncMock()
+            channel._ensure_running_card_started = MagicMock()
+
+            event = SimpleNamespace(
+                event=SimpleNamespace(
+                    message=SimpleNamespace(
+                        chat_id="chat-1",
+                        message_id="om-audio-1",
+                        root_id=None,
+                        message_type="audio",
+                        content=json.dumps({"file_key": "audio_123", "duration": 18}),
+                    ),
+                    sender=SimpleNamespace(
+                        sender_id=SimpleNamespace(open_id="user-1"),
+                    ),
+                )
+            )
+
+            channel._on_message(event)
+            await _wait_for(lambda: bus.publish_inbound.await_count == 1)
+
+            inbound = bus.publish_inbound.await_args.args[0]
+            assert inbound.msg_type == InboundMessageType.CHAT
+            assert "语音消息" in inbound.text
+            assert inbound.files[0]["message_type"] == "audio"
+            assert inbound.metadata["message_type"] == "audio"
+
+        _run(go())
+
     def test_build_card_content_creates_structured_sections(self):
         from app.channels.feishu import FeishuChannel
 
@@ -1599,6 +1651,54 @@ class TestChannelService:
         assert service.manager._channel_sessions["feishu"]["context"]["agent_name"] == "badminton-coach"
         assert service.manager._channel_sessions["telegram"]["assistant_id"] == "mobile_agent"
         assert service.manager._channel_sessions["telegram"]["users"]["vip"]["assistant_id"] == "vip_agent"
+
+
+class TestChannelManagerAttachments:
+    def test_handle_chat_forwards_files_and_channel_metadata(self):
+        from app.channels.manager import ChannelManager
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            mock_client = _make_mock_langgraph_client()
+            manager._client = mock_client
+
+            await manager.start()
+
+            inbound = InboundMessage(
+                channel_name="test",
+                chat_id="chat-1",
+                user_id="user-1",
+                text="用户发送了一张图片消息，请先提示补描述。",
+                files=[
+                    {
+                        "filename": "feishu-image.png",
+                        "size": 0,
+                        "path": "feishu://image/img_123",
+                        "status": "remote",
+                    }
+                ],
+                metadata={"message_type": "image", "message_id": "om-image-1"},
+            )
+            await bus.publish_inbound(inbound)
+            await _wait_for(lambda: len(outbound_received) >= 1)
+            await manager.stop()
+
+            call_args = mock_client.runs.wait.call_args
+            message = call_args[1]["input"]["messages"][0]
+            assert message["additional_kwargs"]["files"][0]["path"] == "feishu://image/img_123"
+            assert message["additional_kwargs"]["channel_metadata"]["message_type"] == "image"
+
+        _run(go())
 
 
 # ---------------------------------------------------------------------------
