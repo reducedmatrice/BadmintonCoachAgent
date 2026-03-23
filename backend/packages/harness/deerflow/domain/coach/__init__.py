@@ -1,5 +1,11 @@
 """Badminton coach domain helpers."""
 
+from .health_image import (
+    HealthImageObservation,
+    HealthRecoveryAdvice,
+    analyze_health_image_text,
+    build_health_recovery_advice,
+)
 from .postmatch import Improvement, PostmatchReview, TechnicalObservation, extract_postmatch_review
 from .prematch import PrematchAdvice, build_prematch_advice, load_recent_review_logs
 from .profile_store import (
@@ -15,13 +21,17 @@ from .profile_store import (
 from .weather import WeatherContext, degrade_weather_context, fetch_weather_context, normalize_weather_payload
 
 __all__ = [
+    "HealthImageObservation",
+    "HealthRecoveryAdvice",
     "Improvement",
     "PrematchAdvice",
     "PostmatchPersistenceResult",
     "PostmatchReview",
     "TechnicalObservation",
     "WeatherContext",
+    "analyze_health_image_text",
     "append_review_log",
+    "build_health_recovery_advice",
     "build_prematch_advice",
     "create_default_coach_profile",
     "degrade_weather_context",

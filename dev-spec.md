@@ -802,7 +802,7 @@ backend/.deer-flow/
 - [x] C3 建立 structured logs
 - [x] C4 [doc] 产出阶段总结（1000-2000 字）
 #### 阶段 D：评估与增强
-- [ ] D1 跑通 Web 图片分析链路
+- [x] D1 跑通 Web 图片分析链路
 - [ ] D2 建立离线评测样本集
 - [ ] D3 建立延迟 / token / Judge 指标输出
 - [ ] D4 [doc] 产出阶段总结（1000-2000 字）
