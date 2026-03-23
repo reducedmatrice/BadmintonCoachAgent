@@ -534,6 +534,7 @@ class ChannelManager:
                     response_text=response_text,
                     artifacts=artifacts,
                     streaming=False,
+                    error=False,
                 )
             ),
         )
@@ -648,6 +649,8 @@ class ChannelManager:
                         response_text=response_text,
                         artifacts=artifacts,
                         streaming=True,
+                        error=stream_error is not None,
+                        error_type=type(stream_error).__name__ if stream_error else "",
                     )
                 ),
             )

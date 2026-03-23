@@ -41,6 +41,7 @@ def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     assert record["route"]["agent_name"] == "badminton-coach"
     assert record["route"]["streaming"] is True
     assert record["latency_ms"] == 842.7
+    assert record["error"] is False
     assert record["token_usage"] == {"input_tokens": 120, "output_tokens": 48, "total_tokens": 168}
     assert record["memory_hits"]["coach_profile"] is True
     assert record["memory_hits"]["review_log"] is True
@@ -59,6 +60,7 @@ def test_format_run_log_outputs_json_string(caplog):
         response_text="ok",
         artifacts=["/mnt/user-data/outputs/report.md"],
         streaming=False,
+        error=False,
     )
 
     with caplog.at_level(logging.INFO):

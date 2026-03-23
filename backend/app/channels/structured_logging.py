@@ -17,6 +17,8 @@ def build_run_log_record(
     response_text: str,
     artifacts: list[str],
     streaming: bool,
+    error: bool = False,
+    error_type: str = "",
 ) -> dict[str, Any]:
     """Build a stable structured log payload for one request."""
     return {
@@ -33,6 +35,8 @@ def build_run_log_record(
         "latency_ms": round(latency_ms, 2),
         "response_length": len(response_text),
         "artifact_count": len(artifacts),
+        "error": error,
+        "error_type": error_type,
         "token_usage": extract_token_usage(result),
         "memory_hits": extract_memory_hits(result),
     }
