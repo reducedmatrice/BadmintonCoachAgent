@@ -1,0 +1,70 @@
+"""Tests for structured run logging."""
+
+from __future__ import annotations
+
+import json
+import logging
+
+from app.channels.structured_logging import build_run_log_record, format_run_log
+
+
+def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
+    result = {
+        "messages": [
+            {"type": "human", "content": "今晚打球注意什么"},
+            {
+                "type": "ai",
+                "content": "先盯后场回位。",
+                "usage_metadata": {"input_tokens": 120, "output_tokens": 48, "total_tokens": 168},
+                "cited_context": [
+                    "coach_profile:后场步法回位慢",
+                    "review_log:2026-03-22.md",
+                    "weather:30C/阵雨",
+                ],
+            },
+        ]
+    }
+
+    record = build_run_log_record(
+        channel_name="feishu",
+        thread_id="thread-1",
+        assistant_id="lead_agent",
+        run_context={"agent_name": "badminton-coach", "thinking_enabled": False, "is_plan_mode": False},
+        result=result,
+        latency_ms=842.7,
+        response_text="先盯后场回位。",
+        artifacts=[],
+        streaming=True,
+    )
+
+    assert record["route"]["assistant_id"] == "lead_agent"
+    assert record["route"]["agent_name"] == "badminton-coach"
+    assert record["route"]["streaming"] is True
+    assert record["latency_ms"] == 842.7
+    assert record["token_usage"] == {"input_tokens": 120, "output_tokens": 48, "total_tokens": 168}
+    assert record["memory_hits"]["coach_profile"] is True
+    assert record["memory_hits"]["review_log"] is True
+    assert record["memory_hits"]["weather"] is True
+    assert record["memory_hits"]["status"] == "hit"
+
+
+def test_format_run_log_outputs_json_string(caplog):
+    record = build_run_log_record(
+        channel_name="feishu",
+        thread_id="thread-2",
+        assistant_id="lead_agent",
+        run_context={"agent_name": "badminton-coach"},
+        result={"memory_hits": {"coach_profile": False, "review_log": False, "memory_json": False, "weather": False, "status": "unknown"}},
+        latency_ms=120.4,
+        response_text="ok",
+        artifacts=["/mnt/user-data/outputs/report.md"],
+        streaming=False,
+    )
+
+    with caplog.at_level(logging.INFO):
+        logging.getLogger("app.channels.manager").info("[ManagerStructured] %s", format_run_log(record))
+
+    payload = caplog.records[-1].message.split("[ManagerStructured] ", 1)[1]
+    decoded = json.loads(payload)
+    assert decoded["artifact_count"] == 1
+    assert decoded["route"]["streaming"] is False

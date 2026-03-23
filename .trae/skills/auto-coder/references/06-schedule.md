@@ -23,8 +23,8 @@
 - [x] B4 [doc] 产出阶段总结（1000-2000 字）
 #### 阶段 C：上下文增强
 - [x] C1 接入 Weather MCP
-- [ ] C2 优化飞书 card 输出模板与稳定性
-- [ ] C3 建立 structured logs
+- [x] C2 优化飞书 card 输出模板与稳定性
+- [x] C3 建立 structured logs
 - [ ] C4 [doc] 产出阶段总结（1000-2000 字）
 #### 阶段 D：评估与增强
 - [ ] D1 跑通 Web 图片分析链路

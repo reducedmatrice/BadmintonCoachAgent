@@ -11,6 +11,7 @@ from typing import Any
 
 from app.channels.message_bus import InboundMessage, InboundMessageType, MessageBus, OutboundMessage, ResolvedAttachment
 from app.channels.store import ChannelStore
+from app.channels.structured_logging import build_run_log_record, format_run_log
 
 logger = logging.getLogger(__name__)
 
@@ -468,6 +469,7 @@ class ChannelManager:
 
     async def _handle_chat(self, msg: InboundMessage) -> None:
         client = self._get_client()
+        started_at = time.monotonic()
 
         # Look up existing DeerFlow thread.
         # topic_id may be None (e.g. Telegram private chats) — the store
@@ -519,6 +521,23 @@ class ChannelManager:
             else:
                 response_text = "(No response from agent)"
 
+        logger.info(
+            "[ManagerStructured] %s",
+            format_run_log(
+                build_run_log_record(
+                    channel_name=msg.channel_name,
+                    thread_id=thread_id,
+                    assistant_id=assistant_id,
+                    run_context=run_context,
+                    result=result,
+                    latency_ms=(time.monotonic() - started_at) * 1000,
+                    response_text=response_text,
+                    artifacts=artifacts,
+                    streaming=False,
+                )
+            ),
+        )
+
         outbound = OutboundMessage(
             channel_name=msg.channel_name,
             chat_id=msg.chat_id,
@@ -541,6 +560,7 @@ class ChannelManager:
         run_context: dict[str, Any],
     ) -> None:
         logger.info("[Manager] invoking runs.stream(thread_id=%s, text=%r)", thread_id, msg.text[:100])
+        started_at = time.monotonic()
 
         last_values: dict[str, Any] | list | None = None
         streamed_buffers: dict[str, str] = {}
@@ -614,6 +634,22 @@ class ChannelManager:
                 len(response_text),
                 len(artifacts),
                 stream_error,
+            )
+            logger.info(
+                "[ManagerStructured] %s",
+                format_run_log(
+                    build_run_log_record(
+                        channel_name=msg.channel_name,
+                        thread_id=thread_id,
+                        assistant_id=assistant_id,
+                        run_context=run_context,
+                        result=result,
+                        latency_ms=(time.monotonic() - started_at) * 1000,
+                        response_text=response_text,
+                        artifacts=artifacts,
+                        streaming=True,
+                    )
+                ),
             )
             await self.bus.publish_outbound(
                 OutboundMessage(
