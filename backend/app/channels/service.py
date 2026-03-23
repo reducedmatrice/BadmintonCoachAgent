@@ -7,6 +7,7 @@ from typing import Any
 
 from app.channels.manager import ChannelManager
 from app.channels.message_bus import MessageBus
+from app.channels.reminders import ReminderScheduler
 from app.channels.store import ChannelStore
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class ChannelService:
         )
         self._channels: dict[str, Any] = {}  # name -> Channel instance
         self._config = config
+        self._reminder_scheduler = ReminderScheduler(self.bus, channels_config=self._config)
         self._running = False
 
     @classmethod
@@ -75,6 +77,8 @@ class ChannelService:
 
             await self._start_channel(name, channel_config)
 
+        await self._reminder_scheduler.start()
+
         self._running = True
         logger.info("ChannelService started with channels: %s", list(self._channels.keys()))
 
@@ -88,6 +92,7 @@ class ChannelService:
                 logger.exception("Error stopping channel %s", name)
         self._channels.clear()
 
+        await self._reminder_scheduler.stop()
         await self.manager.stop()
         self._running = False
         logger.info("ChannelService stopped")
@@ -146,6 +151,10 @@ class ChannelService:
             }
         return {
             "service_running": self._running,
+            "reminders": {
+                "running": self._reminder_scheduler.is_running,
+                "job_count": len(self._reminder_scheduler.jobs),
+            },
             "channels": channels_status,
         }
 

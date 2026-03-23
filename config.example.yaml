@@ -159,6 +159,31 @@ tool_groups:
   - name: bash
 
 # ============================================================================
+# Channel Reminder Example
+# ============================================================================
+# Example proactive reminder config under channels.feishu:
+#
+# channels:
+#   feishu:
+#     enabled: true
+#     app_id: $FEISHU_APP_ID
+#     app_secret: $FEISHU_APP_SECRET
+#     session:
+#       assistant_id: lead_agent
+#       context:
+#         agent_name: badminton-coach
+#     reminders:
+#       enabled: true
+#       jobs:
+#         - name: weekday-training-reminder
+#           chat_id: oc_xxx
+#           user_id: coach-reminder
+#           weekdays: [MON, WED, FRI]
+#           time: "18:00"
+#           topic_id: reminder:weekday-training
+#           prompt: 请基于我的历史档案、最近训练记录和今天天气，生成一条今晚训练前主动提醒，包含重点、风险和一句明确行动建议。
+
+# ============================================================================
 # Tools Configuration
 # ============================================================================
 # Configure available tools for the agent to use
