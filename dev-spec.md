@@ -811,9 +811,9 @@ backend/.deer-flow/
 - [x] E2 增加主动提醒调度能力
 - [x] E3 [doc] 产出阶段总结（1000-2000 字）
 ### 📈 总体进度
-- 当前状态：`[~]` 阶段 B 已完成，阶段 C 待开始
+- 当前状态：`[x]` 阶段 A-E 已完成
 - MVP 定义：完成 A + B + C
-- 推荐演示版本：完成 A + B + C + D1
+- 推荐演示版本：完成 A + B + C + D + E（其中 E 为 Phase 2 样板实现）
 ## 阶段 A：Agent 装配
 ### A1：定义 Coach Agent 装配方式
 - **目标**：在不修改 `langgraph.json` 图注册、不新增 graph 的前提下，让会话通过 `context.agent_name` 稳定运行于 Coach 身份
