@@ -77,3 +77,11 @@ def test_load_skills_includes_badminton_coach_custom_skills():
         "coach-postmatch",
         "coach-health",
     } <= names
+
+
+def test_load_skills_includes_best_interviewer_skill():
+    """Repository should expose the best-interviewer custom skill."""
+    skills = load_skills(use_config=False, enabled_only=False)
+    names = {skill.name for skill in skills}
+
+    assert "best-interviewer" in names

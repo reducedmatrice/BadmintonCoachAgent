@@ -40,8 +40,11 @@ skills/custom/*
 !skills/custom/
 !skills/custom/badminton-coach/
 !skills/custom/badminton-coach/**
+!skills/custom/best-interviewer/
+!skills/custom/best-interviewer/**
 logs/
 log/
+.trae/skills/
 .trae/skills/resume-writer/outputs/
 .trae/skills/resume-writer/get_weather-V5 (1).json
 
