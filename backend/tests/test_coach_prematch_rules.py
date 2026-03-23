@@ -77,6 +77,18 @@ def test_prematch_weather_and_constraints_influence_risk_reminders(tmp_path: Pat
             weather={"temperature_c": 30, "humidity": 82, "condition": "阵雨"},
         )
 
-    assert any("补水" in item for item in advice.risk_reminders)
+    assert any("补水" in item and "60-75 分钟" in item for item in advice.risk_reminders)
     assert any("久坐" in item for item in advice.risk_reminders)
     assert any("七成" in item for item in advice.risk_reminders)
+    assert any(context.startswith("weather:") for context in advice.cited_context)
+
+
+def test_prematch_degrades_gracefully_when_weather_context_missing(tmp_path: Path):
+    with patch("deerflow.domain.coach.prematch.get_paths", return_value=_make_paths(tmp_path)):
+        advice = build_prematch_advice(
+            "今晚打双打注意什么",
+            memory_data={"facts": []},
+            weather={"degraded": True, "degrade_reason": "weather_lookup_failed", "source": "weather.current"},
+        )
+
+    assert any("未获取到天气上下文" in item for item in advice.risk_reminders)

@@ -22,7 +22,7 @@
 - [x] B3 引入 `coach_profile.json` 与日期日志
 - [x] B4 [doc] 产出阶段总结（1000-2000 字）
 #### 阶段 C：上下文增强
-- [ ] C1 接入 Weather MCP
+- [x] C1 接入 Weather MCP
 - [ ] C2 优化飞书 card 输出模板与稳定性
 - [ ] C3 建立 structured logs
 - [ ] C4 [doc] 产出阶段总结（1000-2000 字）

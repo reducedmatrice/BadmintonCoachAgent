@@ -104,6 +104,9 @@ def build_prematch_advice(
         warmup.append("做 1 组空挥拍和小步启动，让击球准备和落点意识先回来。")
 
     _extend_risk_reminders(risk_reminders, profile, weather)
+    weather_citation = _build_weather_citation(weather)
+    if weather_citation:
+        cited_context.append(weather_citation)
 
     if not risk_reminders:
         risk_reminders.append("前 15 分钟先把强度压住，优先找节奏和落点，不要直接顶满。")
@@ -194,6 +197,10 @@ def _extend_risk_reminders(
     profile: dict[str, Any] | None,
     weather: dict[str, Any] | None,
 ) -> None:
+    weather_reminder = _build_weather_reminder(weather)
+    if weather_reminder:
+        reminders.append(weather_reminder)
+
     if not isinstance(profile, dict):
         profile = {}
 
@@ -209,16 +216,47 @@ def _extend_risk_reminders(
         if fatigue_level in {"medium", "high"}:
             reminders.append("最近疲劳不低，今天前半段先把强度控制在七成左右。")
 
-    if isinstance(weather, dict):
-        temperature = weather.get("temperature_c")
-        humidity = weather.get("humidity")
-        condition = str(weather.get("condition", ""))
-        if isinstance(temperature, (int, float)) and temperature >= 28:
-            reminders.append("天气偏热，训练前中后都要补水，第一局别把强度一下顶满。")
-        if isinstance(humidity, (int, float)) and humidity >= 80:
-            reminders.append("湿度偏高，脚下会更沉，前半段先把节奏放稳。")
-        if "雨" in condition:
-            reminders.append("天气条件一般时更要重视启动和止滑，别急着上强对抗。")
+
+def _build_weather_reminder(weather: dict[str, Any] | None) -> str | None:
+    if not isinstance(weather, dict):
+        return None
+
+    if weather.get("degraded"):
+        return "未获取到天气上下文，以下建议未做天气修正。"
+
+    temperature = weather.get("temperature_c")
+    humidity = weather.get("humidity")
+    condition = str(weather.get("condition", "")).strip()
+    rainy_hint = "；如果场地偏潮，启动和制动再保守一点" if "雨" in condition else ""
+
+    if isinstance(temperature, (int, float)) and temperature >= 28:
+        return f"天气偏热，单次高强度对抗先控制在 60-75 分钟，每 15-20 分钟主动补水，第一局先从七成强度起{rainy_hint}。"
+
+    if isinstance(humidity, (int, float)) and humidity >= 80:
+        return f"湿度偏高，整场训练尽量控制在 75-90 分钟，前半段先把多拍节奏放稳{rainy_hint}。"
+
+    if any(isinstance(value, (int, float)) for value in (temperature, humidity)) or condition:
+        return f"天气条件相对正常，可按常规 75-90 分钟推进，前 15 分钟先找节奏再抬强度{rainy_hint}。"
+
+    return None
+
+
+def _build_weather_citation(weather: dict[str, Any] | None) -> str | None:
+    if not isinstance(weather, dict) or weather.get("degraded"):
+        return None
+
+    fragments: list[str] = []
+    if isinstance(weather.get("temperature_c"), (int, float)):
+        fragments.append(f"{float(weather['temperature_c']):.0f}C")
+    if isinstance(weather.get("humidity"), (int, float)):
+        fragments.append(f"{float(weather['humidity']):.0f}%")
+    condition = str(weather.get("condition", "")).strip()
+    if condition:
+        fragments.append(condition)
+    if not fragments:
+        return None
+    source = str(weather.get("source", "weather")).strip() or "weather"
+    return f"{source}:{'/'.join(fragments)}"
 
 
 def _build_follow_up_questions(message: str) -> list[str]:
