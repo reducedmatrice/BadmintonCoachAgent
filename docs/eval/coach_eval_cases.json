@@ -36,5 +36,52 @@
     "expected_route": "health",
     "message": "这是今天的恢复截图，明天还能上强度吗？",
     "image_summary": "昨晚睡眠 5小时18分钟 深睡 41 分钟 HRV 28 静息心率 61"
+  },
+  {
+    "id": "mixed-intent-prematch-health",
+    "expected_route": "prematch",
+    "expected_primary_intent": "prematch",
+    "expected_secondary_intents": [
+      "health"
+    ],
+    "expected_execution_order": [
+      "health",
+      "prematch"
+    ],
+    "message": "今晚打球前怎么热身？昨天肩膀有点酸。"
+  },
+  {
+    "id": "persona-supportive-reminder",
+    "expected_route": "prematch",
+    "message": "今天打球前提醒我一下。",
+    "candidate_response": "先别着急，今天先把节奏打顺，我们一步一步来。",
+    "persona_expectations": {
+      "required_markers": [
+        "先别着急",
+        "一步一步"
+      ],
+      "forbidden_markers": [
+        "必须",
+        "立刻"
+      ]
+    }
+  },
+  {
+    "id": "writeback-postmatch-persistence",
+    "expected_route": "postmatch",
+    "message": "今天打完感觉后场回位还是慢，不过反手更敢发力了。下次重点继续盯后场启动和反手稳定性。",
+    "writeback_expectations": {
+      "expected_weakness_contains": [
+        "后场"
+      ],
+      "expected_strength_contains": [
+        "反手"
+      ],
+      "expected_focus_contains": [
+        "后场",
+        "反手"
+      ],
+      "expect_review_log": true
+    }
   }
 ]

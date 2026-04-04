@@ -18,6 +18,19 @@ class ViewedImageData(TypedDict):
     mime_type: str
 
 
+class CoachIntakeData(TypedDict):
+    """Structured coach intake payload for downstream intent/persona layers."""
+
+    thread_id: NotRequired[str | None]
+    latest_user_input: NotRequired[str | None]
+    message_count: int
+    thread_data: NotRequired[ThreadDataState | None]
+    missing_context: list[str]
+    memory_context: NotRequired[dict | None]
+    coach_profile: NotRequired[dict | None]
+    review_context: list[str]
+
+
 def merge_artifacts(existing: list[str] | None, new: list[str] | None) -> list[str]:
     """Reducer for artifacts list - merges and deduplicates artifacts."""
     if existing is None:
@@ -53,3 +66,4 @@ class ThreadState(AgentState):
     todos: NotRequired[list | None]
     uploaded_files: NotRequired[list[dict] | None]
     viewed_images: Annotated[dict[str, ViewedImageData], merge_viewed_images]  # image_path -> {base64, mime_type}
+    coach_intake: NotRequired[CoachIntakeData | None]

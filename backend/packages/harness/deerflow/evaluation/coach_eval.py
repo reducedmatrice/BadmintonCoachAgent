@@ -3,16 +3,21 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 from statistics import mean
+from tempfile import TemporaryDirectory
 from typing import Any
+from unittest.mock import patch
 
+from deerflow.config.paths import Paths
 from deerflow.domain.coach import (
     analyze_health_image_text,
     build_health_recovery_advice,
     build_prematch_advice,
     extract_postmatch_review,
 )
+from deerflow.domain.coach.profile_store import process_postmatch_message
 
 
 def load_eval_cases(path: str | Path) -> list[dict[str, Any]]:
@@ -33,10 +38,11 @@ def evaluate_cases(cases: list[dict[str, Any]]) -> dict[str, Any]:
             "results": [],
         }
 
-    dimension_names = ("route", "structure", "actionability", "grounding", "safety")
-    dimension_scores = {
-        name: round(mean(result["scores"][name] for result in results), 2) for name in dimension_names
-    }
+    dimension_names = _collect_dimension_names(results)
+    dimension_scores = {}
+    for name in dimension_names:
+        values = [result["scores"][name] for result in results if name in result["scores"]]
+        dimension_scores[name] = round(mean(values), 2) if values else 0.0
     average_score = round(mean(result["overall_score"] for result in results), 2)
     failed_samples = [
         {
@@ -91,7 +97,10 @@ def format_markdown_report(report: dict[str, Any]) -> str:
 def _evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
     case_id = str(case.get("id", "unknown"))
     expected_route = str(case.get("expected_route", "fallback"))
-    predicted_route = _detect_route(case)
+    predicted_intents = _detect_intents(case)
+    predicted_route = predicted_intents[0]
+    predicted_secondary_intents = predicted_intents[1:]
+    predicted_execution_order = _resolve_execution_order(predicted_intents)
     output = _run_case(case, predicted_route)
 
     scores = {
@@ -101,6 +110,23 @@ def _evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
         "grounding": _score_grounding(predicted_route, output),
         "safety": _score_safety(predicted_route, output),
     }
+    mixed_intent_score = _score_mixed_intent_ordering(
+        case,
+        predicted_route=predicted_route,
+        predicted_secondary_intents=predicted_secondary_intents,
+        predicted_execution_order=predicted_execution_order,
+    )
+    if mixed_intent_score is not None:
+        scores["mixed_intent_ordering"] = mixed_intent_score
+
+    persona_score = _score_persona_consistency(case, output)
+    if persona_score is not None:
+        scores["persona_consistency"] = persona_score
+
+    writeback_score = _score_writeback_correctness(case)
+    if writeback_score is not None:
+        scores["writeback_correctness"] = writeback_score
+
     overall_score = round(mean(scores.values()), 2)
 
     failures: list[str] = []
@@ -114,25 +140,44 @@ def _evaluate_case(case: dict[str, Any]) -> dict[str, Any]:
         "case_id": case_id,
         "expected_route": expected_route,
         "predicted_route": predicted_route,
+        "predicted_secondary_intents": predicted_secondary_intents,
+        "predicted_execution_order": predicted_execution_order,
         "scores": scores,
         "overall_score": overall_score,
         "failures": failures,
     }
 
 
-def _detect_route(case: dict[str, Any]) -> str:
+def _detect_intents(case: dict[str, Any]) -> list[str]:
     message = str(case.get("message", ""))
     image_summary = str(case.get("image_summary", ""))
     combined = f"{message}\n{image_summary}"
     if image_summary.strip():
-        return "health"
-    if any(keyword in combined for keyword in ("心率", "HRV", "睡眠", "训练负荷", "恢复", "酸痛", "疼")):
-        return "health"
-    if any(keyword in combined for keyword in ("复盘", "今天打完", "赛后", "刚打完", "问题出在")):
-        return "postmatch"
-    if any(keyword in combined for keyword in ("今晚", "等会", "赛前", "上场前", "注意什么")):
-        return "prematch"
-    return "fallback"
+        return ["health"]
+
+    positions: list[tuple[int, str]] = []
+    for intent, keywords in (
+        ("prematch", ("今晚", "等会", "赛前", "上场前", "注意什么", "热身", "打球前")),
+        ("postmatch", ("复盘", "今天打完", "赛后", "刚打完", "问题出在", "下次重点")),
+        ("health", ("心率", "HRV", "睡眠", "训练负荷", "恢复", "酸痛", "肩膀", "膝盖", "疼", "痛")),
+    ):
+        hits = [combined.find(keyword) for keyword in keywords if keyword in combined]
+        if hits:
+            positions.append((min(hits), intent))
+
+    positions.sort(key=lambda item: item[0])
+    intents = [intent for _, intent in positions]
+    return intents or ["fallback"]
+
+
+def _resolve_execution_order(intents: list[str]) -> list[str]:
+    if "health" in intents and "prematch" in intents:
+        return ["health", "prematch"]
+    if "postmatch" in intents and "health" in intents:
+        return ["postmatch", "health"]
+    if "postmatch" in intents and "prematch" in intents:
+        return intents
+    return intents
 
 
 def _run_case(case: dict[str, Any], route: str) -> Any:
@@ -196,3 +241,141 @@ def _score_safety(route: str, output: Any) -> float:
         text = f"{output.next_session_intensity} {' '.join(output.recovery_actions)}"
         return 5.0 if any(keyword in text for keyword in ("恢复", "低强度", "中低强度")) else 2.0
     return 1.0
+
+
+def _score_mixed_intent_ordering(
+    case: dict[str, Any],
+    *,
+    predicted_route: str,
+    predicted_secondary_intents: list[str],
+    predicted_execution_order: list[str],
+) -> float | None:
+    expected_primary = case.get("expected_primary_intent")
+    expected_secondary = case.get("expected_secondary_intents")
+    expected_order = case.get("expected_execution_order")
+
+    checks = 0
+    matched = 0
+
+    if isinstance(expected_primary, str) and expected_primary:
+        checks += 1
+        if predicted_route == expected_primary:
+            matched += 1
+
+    if isinstance(expected_secondary, list):
+        normalized_secondary = [item for item in expected_secondary if isinstance(item, str)]
+        if normalized_secondary:
+            checks += 1
+            if predicted_secondary_intents == normalized_secondary:
+                matched += 1
+
+    if isinstance(expected_order, list):
+        normalized_order = [item for item in expected_order if isinstance(item, str)]
+        if normalized_order:
+            checks += 1
+            if predicted_execution_order == normalized_order:
+                matched += 1
+
+    if checks == 0:
+        return None
+
+    return round(5.0 * matched / checks, 2)
+
+
+def _score_persona_consistency(case: dict[str, Any], output: Any) -> float | None:
+    expectations = case.get("persona_expectations")
+    if not isinstance(expectations, dict):
+        return None
+
+    response_text = str(case.get("candidate_response") or _stringify_output(output))
+    required_markers = [item for item in expectations.get("required_markers", []) if isinstance(item, str) and item]
+    forbidden_markers = [item for item in expectations.get("forbidden_markers", []) if isinstance(item, str) and item]
+
+    checks = len(required_markers) + len(forbidden_markers)
+    if checks == 0:
+        return None
+
+    matched = sum(1 for marker in required_markers if marker in response_text)
+    matched += sum(1 for marker in forbidden_markers if marker not in response_text)
+    return round(5.0 * matched / checks, 2)
+
+
+def _score_writeback_correctness(case: dict[str, Any]) -> float | None:
+    expectations = case.get("writeback_expectations")
+    if not isinstance(expectations, dict):
+        return None
+
+    message = str(case.get("message", "")).strip()
+    if not message:
+        return 0.0
+
+    with TemporaryDirectory() as tmp_dir:
+        paths = Paths(base_dir=tmp_dir)
+        with patch("deerflow.domain.coach.profile_store.get_paths", return_value=paths):
+            persisted = process_postmatch_message(
+                message,
+                occurred_at=datetime(2026, 4, 5, 12, 0, tzinfo=UTC),
+            )
+
+    profile = persisted.profile
+    tech_profile = profile.get("tech_profile", {}) if isinstance(profile, dict) else {}
+    weaknesses = tech_profile.get("weaknesses", []) if isinstance(tech_profile, dict) else []
+    strengths = tech_profile.get("strengths", []) if isinstance(tech_profile, dict) else []
+    focus_topics = tech_profile.get("focus_topics", []) if isinstance(tech_profile, dict) else []
+
+    checks = 0
+    matched = 0
+
+    for keyword in expectations.get("expected_weakness_contains", []):
+        if not isinstance(keyword, str) or not keyword:
+            continue
+        checks += 1
+        if any(isinstance(item, dict) and keyword in str(item.get("name", "")) for item in weaknesses):
+            matched += 1
+
+    for keyword in expectations.get("expected_strength_contains", []):
+        if not isinstance(keyword, str) or not keyword:
+            continue
+        checks += 1
+        if any(isinstance(item, dict) and keyword in str(item.get("name", "")) for item in strengths):
+            matched += 1
+
+    for keyword in expectations.get("expected_focus_contains", []):
+        if not isinstance(keyword, str) or not keyword:
+            continue
+        checks += 1
+        if any(isinstance(item, str) and keyword in item for item in focus_topics):
+            matched += 1
+
+    expect_review_log = expectations.get("expect_review_log")
+    if isinstance(expect_review_log, bool):
+        checks += 1
+        if persisted.review_log_path.exists() is expect_review_log:
+            matched += 1
+
+    if checks == 0:
+        return None
+
+    return round(5.0 * matched / checks, 2)
+
+
+def _stringify_output(output: Any) -> str:
+    if isinstance(output, dict):
+        return json.dumps(output, ensure_ascii=False, sort_keys=True)
+    if hasattr(output, "__dict__"):
+        return json.dumps(output.__dict__, ensure_ascii=False, sort_keys=True, default=str)
+    return str(output)
+
+
+def _collect_dimension_names(results: list[dict[str, Any]]) -> tuple[str, ...]:
+    ordered = (
+        "route",
+        "structure",
+        "actionability",
+        "grounding",
+        "safety",
+        "mixed_intent_ordering",
+        "persona_consistency",
+        "writeback_correctness",
+    )
+    return tuple(name for name in ordered if any(name in result["scores"] for result in results))

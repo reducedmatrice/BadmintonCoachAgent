@@ -1,20 +1,12 @@
-import fs from "fs";
-import path from "path";
-
-import { redirect } from "next/navigation";
-
-import { env } from "@/env";
+import { MinimalChatDemo } from "@/components/workspace/minimal-chat-demo";
 
 export default function WorkspacePage() {
-  if (env.NEXT_PUBLIC_STATIC_WEBSITE_ONLY === "true") {
-    const firstThread = fs
-      .readdirSync(path.resolve(process.cwd(), "public/demo/threads"), {
-        withFileTypes: true,
-      })
-      .find((thread) => thread.isDirectory() && !thread.name.startsWith("."));
-    if (firstThread) {
-      return redirect(`/workspace/chats/${firstThread.name}`);
-    }
-  }
-  return redirect("/workspace/chats/new");
+  return (
+    <MinimalChatDemo
+      title="Workspace Demo"
+      subtitle="这里保留 workspace 路由，但界面已经收敛成同一套最小聊天壳，不再展示旧的 sidebar、thread 列表和复杂状态。"
+      badge="Workspace"
+      threadId="new"
+    />
+  );
 }

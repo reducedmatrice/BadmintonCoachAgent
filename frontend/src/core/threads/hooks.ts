@@ -29,6 +29,7 @@ export type ThreadStreamOptions = {
   onStart?: (threadId: string) => void;
   onFinish?: (state: AgentThreadState) => void;
   onToolEnd?: (event: ToolEndEvent) => void;
+  onError?: (error: Error) => void;
 };
 
 export function useThreadStream({
@@ -38,6 +39,7 @@ export function useThreadStream({
   onStart,
   onFinish,
   onToolEnd,
+  onError,
 }: ThreadStreamOptions) {
   const { t } = useI18n();
   // Track the thread ID that is currently streaming to handle thread changes during streaming
@@ -51,12 +53,13 @@ export function useThreadStream({
     onStart,
     onFinish,
     onToolEnd,
+    onError,
   });
 
   // Keep listeners ref updated with latest callbacks
   useEffect(() => {
-    listeners.current = { onStart, onFinish, onToolEnd };
-  }, [onStart, onFinish, onToolEnd]);
+    listeners.current = { onStart, onFinish, onToolEnd, onError };
+  }, [onStart, onFinish, onToolEnd, onError]);
 
   useEffect(() => {
     const normalizedThreadId = threadId ?? null;
@@ -151,6 +154,11 @@ export function useThreadStream({
     onFinish(state) {
       listeners.current.onFinish?.(state.values);
       void queryClient.invalidateQueries({ queryKey: ["threads", "search"] });
+    },
+    onError(error) {
+      listeners.current.onError?.(
+        error instanceof Error ? error : new Error(String(error)),
+      );
     },
   });
 

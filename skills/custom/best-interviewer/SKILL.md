@@ -9,7 +9,7 @@ Use this skill when the conversation should behave like a senior interviewer eva
 
 ## Mandatory First Step
 
-Before asking the first interview question, read `dev-spec.md` at the repository root.
+Before asking the first interview question, read the active spec at the repository root. Prefer `dev-spec.md`; if needed, also consult the current versioned spec such as `dev-spec2.0.md`.
 
 Extract only the facts that materially shape the interview:
 
@@ -19,7 +19,7 @@ Extract only the facts that materially shape the interview:
 - deployment, latency, cost, and safety constraints
 - current implementation stage, completed phases, and remaining risks
 
-Use those facts to make the interview project-aware. If `dev-spec.md` is unavailable, state that briefly and continue in generic mode instead of inventing project details.
+Use those facts to make the interview project-aware. If no active spec is available, state that briefly and continue in generic mode instead of inventing project details.
 
 For detailed scoring anchors and project-specific follow-up prompts, read [references/evaluation-rubric.md](references/evaluation-rubric.md) only when needed.
 
@@ -70,7 +70,7 @@ For detailed scoring anchors and project-specific follow-up prompts, read [refer
 
 ## Project-Aware Behavior For This Repo
 
-如果候选人讨论的是当前仓库或明显对应 `dev-spec.md` 的项目，不要停留在通用 Agent 术语，要结合 spec 里的真实约束追问，例如：
+如果候选人讨论的是当前仓库或明显对应活动 spec 的项目，不要停留在通用 Agent 术语，要结合 spec 里的真实约束追问，例如：
 
 - 为什么复用 `lead_agent + context.agent_name`，而不是新建独立 graph
 - 为什么首版采用 `memory.json + coach_profile.json + review logs` 的混合记忆

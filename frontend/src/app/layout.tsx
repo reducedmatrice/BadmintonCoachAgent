@@ -3,14 +3,15 @@ import "katex/dist/katex.min.css";
 
 import { type Metadata } from "next";
 import { Geist } from "next/font/google";
+import { Toaster } from "sonner";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/core/i18n/context";
 import { detectLocaleServer } from "@/core/i18n/server";
 
 export const metadata: Metadata = {
-  title: "DeerFlow",
-  description: "A LangChain-based framework for building super agents.",
+  title: "Badminton-Coach-Agent demo",
+  description: "Minimal frontend demo for Badminton-Coach-Agent.",
 };
 
 const geist = Geist({
@@ -31,7 +32,10 @@ export default async function RootLayout({
     >
       <body>
         <ThemeProvider attribute="class" enableSystem disableTransitionOnChange>
-          <I18nProvider initialLocale={locale}>{children}</I18nProvider>
+          <I18nProvider initialLocale={locale}>
+            {children}
+            <Toaster position="top-center" />
+          </I18nProvider>
         </ThemeProvider>
       </body>
     </html>
