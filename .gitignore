@@ -20,6 +20,7 @@ venv/
 
 # Environment variables
 .env
+.env.feishu.local
 
 # Configuration files
 config.yaml
@@ -45,8 +46,18 @@ skills/custom/*
 logs/
 log/
 .trae/skills/
+!.trae/
+!.trae/skills/
+.trae/skills/*
+!.trae/skills/auto-coder/
+.trae/skills/auto-coder/*
+!.trae/skills/auto-coder/SKILL.md
+!.trae/skills/auto-coder/scripts/
+.trae/skills/auto-coder/scripts/*
+!.trae/skills/auto-coder/scripts/sync_spec.py
 .trae/skills/resume-writer/outputs/
 .trae/skills/resume-writer/get_weather-V5 (1).json
+nohup.out
 
 # Local git hooks (keep only on this machine, do not push)
 .githooks/
@@ -61,3 +72,4 @@ web/
 # Deployment artifacts
 backend/Dockerfile.langgraph
 config.yaml.bak
+docs/
