@@ -8,6 +8,7 @@ from app.analytics.repository import AnalyticsFilters
 from app.analytics.service import get_alerts, get_by_route, get_errors, get_import_jobs, get_summary, get_timeseries
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 class AnalyticsFiltersResponse(BaseModel):
@@ -211,8 +212,8 @@ async def analytics_alerts(limit: int = Query(default=20, ge=1, le=200)) -> Aler
 
 @router.post("/import", response_model=ImportResponse)
 async def analytics_import(payload: ImportRequest) -> ImportResponse:
-    log_path = Path(payload.log_file)
-    if not log_path.exists() or not log_path.is_file():
+    log_path = _resolve_log_file_path(payload.log_file)
+    if log_path is None:
         raise HTTPException(status_code=404, detail="Log file not found")
 
     try:
@@ -223,3 +224,20 @@ async def analytics_import(payload: ImportRequest) -> ImportResponse:
         raise HTTPException(status_code=500, detail="Failed to import structured logs") from exc
 
     return ImportResponse.model_validate(result.model_dump())
+
+
+def _resolve_log_file_path(raw_path: str) -> Path | None:
+    candidate = Path(raw_path.strip()).expanduser()
+    if candidate.is_absolute():
+        return candidate if candidate.exists() and candidate.is_file() else None
+
+    search_roots = [
+        Path.cwd(),
+        Path.cwd().parent,
+        _REPO_ROOT,
+    ]
+    for root in search_roots:
+        resolved = (root / candidate).resolve()
+        if resolved.exists() and resolved.is_file():
+            return resolved
+    return None

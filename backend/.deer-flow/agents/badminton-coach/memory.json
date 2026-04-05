@@ -1,33 +1,146 @@
 {
   "version": "1.0",
-  "lastUpdated": "",
+  "lastUpdated": "2026-04-05T11:42:17.920897Z",
   "user": {
     "workContext": {
       "summary": "",
       "updatedAt": ""
     },
     "personalContext": {
-      "summary": "User is building a badminton coaching agent demo and wants practical training guidance.",
-      "updatedAt": ""
+      "summary": "User plays badminton doubles, preferring a tactical approach with 'clever touch' (巧劲) for net play over constant fast flat exchanges. They experience pre-match nervousness but actively use mental reframing techniques to convert anxiety into focus.",
+      "updatedAt": "2026-04-05T11:34:19.764456Z"
     },
     "topOfMind": {
-      "summary": "",
-      "updatedAt": ""
+      "summary": "The user has fully recovered from recent shoulder soreness caused by technical adjustments and is now competing in a match tonight. Their immediate focus has shifted entirely to competition strategy, specifically managing pre-match nervousness by reframing it as excitement/energy. They are executing a 'smoothness over power' game plan, aiming for 70-80% power output to maintain consistency while stabilizing their new larger backswing technique under pressure. Key tactical priorities include the 'third shot' connection after serving and utilizing soft blocks to disrupt opponent rhythm, avoiding high-intensity flat exchanges that previously led to fatigue.",
+      "updatedAt": "2026-04-05T11:42:17.915055Z"
     }
   },
   "history": {
     "recentMonths": {
-      "summary": "",
-      "updatedAt": ""
+      "summary": "In recent sessions, the user experimented with enlarging their backswing (引拍) to generate more serve power, which initially led to shoulder soreness. They engaged in detailed discussions about recovery strategies, including cold/hot therapy distinctions and load management. Most recently, the user confirmed full recovery from this shoulder issue on April 5, 2026, and transitioned focus to mental preparation for competitive play. The latest interaction involved finalizing a competition strategy for a match tonight, addressing pre-match anxiety and confirming the successful integration of the new technical adjustments without pain.",
+      "updatedAt": "2026-04-05T11:42:17.915055Z"
     },
     "earlierContext": {
       "summary": "",
       "updatedAt": ""
     },
     "longTermBackground": {
-      "summary": "",
-      "updatedAt": ""
+      "summary": "The user is a regular badminton player who participates in doubles matches and values technical precision and tactical awareness. They have a longstanding interest in understanding the mechanics of their strokes, particularly the balance between power and control.",
+      "updatedAt": "2026-04-05T11:19:08.608736Z"
     }
   },
-  "facts": []
+  "facts": [
+    {
+      "id": "fact_6264626b",
+      "content": "User plays badminton doubles.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-05T11:19:08.608736Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_e411f653",
+      "content": "User is currently focusing on increasing serve power by intentionally extending their backswing (加大引拍).",
+      "category": "goal",
+      "confidence": 1.0,
+      "createdAt": "2026-04-05T11:19:08.608736Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_64e6f05a",
+      "content": "User prefers using 'clever touch' (巧劲) for net play and straight drives rather than relying solely on power.",
+      "category": "preference",
+      "confidence": 0.9,
+      "createdAt": "2026-04-05T11:19:08.608736Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_bf4d4a6c",
+      "content": "User recently experienced shoulder soreness after a match due to increased swing amplitude.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-05T11:19:08.608736Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_bcff79c6",
+      "content": "User focuses on 'third shot' tactics (connecting immediately after serving) in doubles play.",
+      "category": "knowledge",
+      "confidence": 0.9,
+      "createdAt": "2026-04-05T11:19:08.608736Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_93a95c24",
+      "content": "User avoids constant fast flat exchanges (快速平抽) in favor of varied pacing.",
+      "category": "preference",
+      "confidence": 0.8,
+      "createdAt": "2026-04-05T11:19:08.608736Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_d5b14155",
+      "content": "User experiences pre-match nervousness before competitions and seeks strategies to manage anxiety.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-05T11:36:24.363995Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_0ce2a962",
+      "content": "User prefers to aim for 70-80% power output during matches to prioritize consistency over maximum force.",
+      "category": "preference",
+      "confidence": 0.9,
+      "createdAt": "2026-04-05T11:36:24.363995Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_e22ee968",
+      "content": "User utilizes mental reframing techniques to convert pre-match nervousness into focus and excitement.",
+      "category": "behavior",
+      "confidence": 0.9,
+      "createdAt": "2026-04-05T11:36:24.363995Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_c23a19d7",
+      "content": "User has fully recovered from recent shoulder soreness caused by increasing backswing amplitude.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-05T11:36:24.363995Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_0b8d3b21",
+      "content": "User has fully recovered from shoulder soreness as of April 5, 2026, and is cleared to compete in a match tonight.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-05T11:42:17.915055Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_7b8dfe61",
+      "content": "User experiences pre-match nervousness before competitions and uses mental reframing (viewing nervousness as excitement/energy) to manage it.",
+      "category": "behavior",
+      "confidence": 1.0,
+      "createdAt": "2026-04-05T11:42:17.915055Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_2b7560cc",
+      "content": "User employs a 'breathing anchor' technique (4s inhale, 6s exhale) before serving to shift focus from outcome to process during matches.",
+      "category": "behavior",
+      "confidence": 0.9,
+      "createdAt": "2026-04-05T11:42:17.915055Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    },
+    {
+      "id": "fact_a6ab1732",
+      "content": "User prioritizes communication with their doubles partner (calling shots, encouragement) as a strategy to release pressure and maintain rhythm.",
+      "category": "behavior",
+      "confidence": 0.9,
+      "createdAt": "2026-04-05T11:42:17.915055Z",
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+    }
+  ]
 }

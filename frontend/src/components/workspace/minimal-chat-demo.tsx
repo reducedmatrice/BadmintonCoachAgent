@@ -50,17 +50,13 @@ function MinimalChatDemoInner({
   const [settings] = useLocalSettings();
   const [input, setInput] = useState("");
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
-  const [sessionThreadId, setSessionThreadId] = useState(() =>
-    threadId && threadId !== "new" ? threadId : uuid(),
-  );
+  const [sessionThreadId, setSessionThreadId] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (threadId && threadId !== "new") {
-      setSessionThreadId(threadId);
-      return;
-    }
-    setSessionThreadId(uuid());
+    const initialThreadId =
+      threadId && threadId !== "new" ? threadId : uuid();
+    setSessionThreadId(initialThreadId);
   }, [threadId]);
 
   const context = {
@@ -140,7 +136,7 @@ function MinimalChatDemoInner({
 
   async function handleSend() {
     const value = input.trim();
-    if (!value || thread.isLoading) {
+    if (!value || thread.isLoading || !sessionThreadId) {
       return;
     }
 

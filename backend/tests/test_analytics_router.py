@@ -71,3 +71,25 @@ def test_analytics_import_endpoint_returns_404_for_missing_file():
         response = client.post("/api/analytics/import", json={"log_file": "/tmp/not-found.log"})
 
     assert response.status_code == 404
+
+
+def test_analytics_import_endpoint_resolves_repo_root_relative_log_path(tmp_path, monkeypatch):
+    monkeypatch.setattr(path_config, "_paths", path_config.Paths(tmp_path / ".deer-flow"))
+    backend_dir = tmp_path / "backend"
+    logs_dir = tmp_path / "logs"
+    backend_dir.mkdir()
+    logs_dir.mkdir()
+    log_path = logs_dir / "gateway.log"
+    log_path.write_text(
+        'INFO [ManagerStructured] {"event":"channel_run_completed","route":{"assistant_id":"lead_agent"},"latency_ms":100.0}\n',
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(backend_dir)
+    app = FastAPI()
+    app.include_router(router)
+
+    with TestClient(app) as client:
+        response = client.post("/api/analytics/import", json={"log_file": "logs/gateway.log"})
+
+    assert response.status_code == 200
+    assert response.json()["records_inserted"] == 1
