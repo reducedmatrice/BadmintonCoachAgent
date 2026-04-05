@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.gateway.config import get_gateway_config
 from app.gateway.routers import (
+    analytics,
     agents,
     artifacts,
     channels,
@@ -104,6 +105,10 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
         openapi_url="/openapi.json",
         openapi_tags=[
             {
+                "name": "analytics",
+                "description": "Structured log analytics, import jobs, and alert monitoring",
+            },
+            {
                 "name": "models",
                 "description": "Operations for querying available AI models and their configurations",
             },
@@ -149,6 +154,9 @@ This gateway provides custom endpoints for models, MCP configuration, skills, an
     # CORS is handled by nginx - no need for FastAPI middleware
 
     # Include routers
+    # Analytics API is mounted at /api/analytics
+    app.include_router(analytics.router)
+
     # Models API is mounted at /api/models
     app.include_router(models.router)
 

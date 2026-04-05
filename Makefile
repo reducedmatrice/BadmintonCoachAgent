@@ -1,6 +1,6 @@
 # DeerFlow - Unified Development Environment
 
-.PHONY: help config config-upgrade check install dev dev-daemon start stop up down clean docker-init docker-start docker-stop docker-logs docker-logs-frontend docker-logs-gateway
+.PHONY: help config config-upgrade check install dev dev-daemon start stop up down clean docker-init docker-start docker-stop docker-logs docker-logs-frontend docker-logs-gateway analytics-import
 
 PYTHON ?= python
 
@@ -16,6 +16,7 @@ help:
 	@echo "  make start           - Start all services in production mode (optimized, no hot-reloading)"
 	@echo "  make stop            - Stop all running services"
 	@echo "  make clean           - Clean up processes and temporary files"
+	@echo "  make analytics-import LOG_FILE=logs/gateway.log - Run one analytics import job"
 	@echo ""
 	@echo "Docker Production Commands:"
 	@echo "  make up              - Build and start production Docker services (localhost:2026)"
@@ -119,6 +120,9 @@ clean: stop
 	@-rm -rf backend/.langgraph_api 2>/dev/null || true
 	@-rm -rf logs/*.log 2>/dev/null || true
 	@echo "✓ Cleanup complete"
+
+analytics-import:
+	@LOG_FILE="$(or $(LOG_FILE),$(PWD)/logs/gateway.log)" DB_PATH="$(DB_PATH)" bash ./scripts/run-analytics-import.sh
 
 # ==========================================
 # Docker Development Commands

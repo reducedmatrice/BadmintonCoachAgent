@@ -1,0 +1,1 @@
+*/10 * * * * LOG_FILE=/Users/you/path/to/note-agent/logs/gateway.log bash /Users/you/path/to/note-agent/scripts/run-analytics-import.sh >> /Users/you/path/to/note-agent/logs/analytics-import.log 2>&1

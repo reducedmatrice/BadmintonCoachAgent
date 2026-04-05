@@ -208,6 +208,92 @@ GET /api/models/{model_name}
 }
 ```
 
+### Analytics
+
+The analytics gateway endpoints expose the structured log warehouse and dashboard data source.
+
+#### Summary
+
+```http
+GET /api/analytics/summary
+```
+
+Supported query parameters:
+
+- `start_time`
+- `end_time`
+- `route`
+- `channel`
+- `assistant_id`
+
+#### Timeseries
+
+```http
+GET /api/analytics/timeseries
+```
+
+Supported query parameters:
+
+- same filters as summary
+- `bucket=minute|hour|day`
+
+#### Route Breakdown
+
+```http
+GET /api/analytics/by-route
+```
+
+#### Errors
+
+```http
+GET /api/analytics/errors
+```
+
+#### Import Jobs
+
+```http
+GET /api/analytics/import-jobs
+```
+
+#### Alerts
+
+```http
+GET /api/analytics/alerts
+```
+
+#### Trigger Import
+
+```http
+POST /api/analytics/import
+Content-Type: application/json
+```
+
+**Request Body:**
+
+```json
+{
+  "log_file": "/absolute/or/project/log/path/to/gateway.log"
+}
+```
+
+**Response:**
+
+```json
+{
+  "job_id": 12,
+  "source_file": "logs/gateway.log",
+  "status": "success",
+  "records_scanned": 42,
+  "records_inserted": 40,
+  "records_skipped": 2,
+  "records_failed": 0,
+  "alerts_generated": 1,
+  "error_message": ""
+}
+```
+
+See [ANALYTICS_OPERATIONS.md](ANALYTICS_OPERATIONS.md) for scheduler, persistence, rollback, and cloud deployment guidance.
+
 ### MCP Configuration
 
 #### Get MCP Config
