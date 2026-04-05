@@ -8,8 +8,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from deerflow.config.paths import Paths
-from deerflow.domain.coach.postmatch import PostmatchReview, TechnicalObservation, Improvement
-from deerflow.domain.coach.profile_store import append_review_log, update_profile_from_postmatch
+from deerflow.domain.coach.health_image import HealthImageObservation, HealthRecoveryAdvice
+from deerflow.domain.coach.postmatch import Improvement, PostmatchReview, TechnicalObservation
+from deerflow.domain.coach.profile_store import (
+    append_review_log,
+    persist_health_observation,
+    persist_prematch_signal,
+    update_profile_from_postmatch,
+)
 
 
 def _make_paths(base_dir: Path) -> Paths:
@@ -72,3 +78,78 @@ def test_append_review_log_writes_expected_sections(tmp_path: Path):
     assert "进步点" in content
     assert "下次重点" in content
     assert "后场步法" in content
+
+
+def test_persist_health_observation_updates_health_profile(tmp_path: Path):
+    observation = HealthImageObservation(
+        screenshot_type="sleep_recovery",
+        observed_metrics={"sleep_min": 318.0, "hrv": 28.0},
+        observations=["睡眠时长不足 6 小时，恢复质量偏弱。"],
+        risk_level="high",
+        missing_data=[],
+    )
+    advice = HealthRecoveryAdvice(
+        risk_level="high",
+        structured_observations=observation.observations,
+        recovery_actions=["今晚以恢复为主。"],
+        next_session_intensity="下一次先按恢复或低强度处理。",
+        follow_up_question="你现在是单纯累还是有明显疼痛点？",
+    )
+
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_health_observation(observation, advice, occurred_at=datetime(2026, 3, 23, 12, 45, tzinfo=UTC))
+
+    health_profile = persisted.profile["health_profile"]
+    assert persisted.profile_path.exists()
+    assert health_profile["fatigue_level"] == "high"
+    assert "health:sleep_recovery:high" in health_profile["risk_flags"]
+    assert health_profile["recent_metrics"][-1]["source"] == "sleep_recovery"
+    assert health_profile["recent_metrics"][-1]["risk_level"] == "high"
+
+
+def test_persist_prematch_signal_writes_only_high_value_fields(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_prematch_signal(
+            "我平时久坐，肩部旧伤恢复期，这两周准备比赛，优先练后场步法和反手，今晚先按双打准备。",
+            occurred_at=datetime(2026, 3, 23, 13, 0, tzinfo=UTC),
+        )
+
+    assert persisted.persisted is True
+    assert persisted.profile_path.exists()
+    assert "久坐后启动偏紧" in persisted.profile["athlete_profile"]["constraints"]
+    assert "肩部旧伤/恢复期" in persisted.profile["athlete_profile"]["constraints"]
+    assert "偏双打训练" in persisted.profile["preferences"]["training_preferences"]
+    assert "优先训练后场步法" in persisted.profile["preferences"]["training_preferences"]
+    assert any(item["goal"] == "近期以比赛准备为主" for item in persisted.profile["tech_profile"]["recent_goals"])
+
+
+def test_persist_prematch_signal_skips_when_no_stable_signal(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_prematch_signal("今晚打球前怎么热身？", occurred_at=datetime(2026, 3, 23, 13, 5, tzinfo=UTC))
+
+    assert persisted.persisted is False
+    assert persisted.extracted == {
+        "constraints": [],
+        "training_preferences": [],
+        "recent_goals": [],
+    }
+
+
+def test_persist_prematch_signal_covers_more_badminton_topics(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_prematch_signal(
+            "这阶段主要练混双，想加强发接发、平抽挡、网前封网和接杀防守，月底比赛前希望稳定性和回合衔接更好。",
+            occurred_at=datetime(2026, 3, 23, 13, 10, tzinfo=UTC),
+        )
+
+    assert persisted.persisted is True
+    prefs = persisted.profile["preferences"]["training_preferences"]
+    goals = [item["goal"] for item in persisted.profile["tech_profile"]["recent_goals"]]
+    assert "偏混双训练" in prefs
+    assert "优先训练发接发" in prefs
+    assert "优先训练平抽挡" in prefs
+    assert "优先训练网前" in prefs
+    assert "优先训练防守" in prefs
+    assert "近期以比赛准备为主" in goals
+    assert "近期目标：提升稳定性" in goals
+    assert "近期目标：提升回合衔接" in goals

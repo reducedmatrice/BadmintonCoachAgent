@@ -21,6 +21,7 @@ def test_route_single_intent_hits_prematch_chain():
     assert result.payload["chain"] == "prematch"
     assert result.payload["focus_points"]
     assert result.payload["warmup"]
+    assert result.payload["persisted"] is False
 
 
 def test_route_single_intent_hits_postmatch_chain_without_persist():
@@ -39,6 +40,7 @@ def test_route_single_intent_hits_health_chain():
     assert result.payload["chain"] == "health"
     assert result.payload["risk_level"] in {"low", "medium", "high"}
     assert result.payload["recovery_actions"]
+    assert result.payload["persisted"] is False
 
 
 def test_route_single_intent_hits_fallback_chain():
@@ -78,3 +80,32 @@ def test_route_single_intent_persist_postmatch_writes_review_log(tmp_path: Path)
     assert result.payload["persisted"] is True
     review_log_path = Path(result.payload["review_log_path"])
     assert review_log_path.exists()
+
+
+def test_route_single_intent_persist_health_writes_profile(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        result = route_single_intent(
+            "昨晚睡眠 5小时18分钟 HRV 28，今天怎么恢复？",
+            persist_postmatch=True,
+        )
+
+    assert result.route == "health"
+    assert result.payload["persisted"] is True
+    profile_path = Path(result.payload["profile_path"])
+    assert profile_path.exists()
+
+
+def test_route_single_intent_persist_prematch_writes_only_when_signal_is_stable(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        with patch("deerflow.domain.coach.prematch.get_paths", return_value=_make_paths(tmp_path)):
+            result = route_single_intent(
+                "我平时久坐，这两周准备比赛，今晚双打优先练后场步法。",
+                persist_postmatch=True,
+            )
+
+    assert result.route == "prematch"
+    assert result.payload["persisted"] is True
+    assert "constraints" in result.payload["writeback"]
+    assert "recent_goals" in result.payload["writeback"]
+    profile_path = Path(result.payload["profile_path"])
+    assert profile_path.exists()

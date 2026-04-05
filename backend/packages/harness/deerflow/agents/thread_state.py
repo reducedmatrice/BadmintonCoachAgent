@@ -29,6 +29,8 @@ class CoachIntakeData(TypedDict):
     memory_context: NotRequired[dict | None]
     coach_profile: NotRequired[dict | None]
     review_context: list[str]
+    persona: NotRequired[dict[str, str] | None]
+    persona_ignored_overrides: NotRequired[dict[str, list[str]] | None]
 
 
 def merge_artifacts(existing: list[str] | None, new: list[str] | None) -> list[str]:

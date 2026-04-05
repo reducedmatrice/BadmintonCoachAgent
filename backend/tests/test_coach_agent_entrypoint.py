@@ -60,6 +60,30 @@ def test_build_coach_middlewares_excludes_todo_and_subagent_limit(monkeypatch):
     assert "SubagentLimitMiddleware" not in names
 
 
+def test_build_coach_middlewares_keeps_expected_order(monkeypatch):
+    app_config = _make_app_config([_make_model("vision-model", supports_thinking=True, supports_vision=True)])
+    monkeypatch.setattr(coach_agent_module, "get_app_config", lambda: app_config)
+    monkeypatch.setattr(coach_agent_module, "_create_summarization_middleware", lambda: None)
+
+    middlewares = coach_agent_module._build_coach_middlewares(
+        {"configurable": {"agent_name": "badminton-coach"}},
+        model_name="vision-model",
+        agent_name="badminton-coach",
+    )
+
+    names = [type(m).__name__ for m in middlewares]
+    assert names.index("ThreadDataMiddleware") < names.index("UploadsMiddleware")
+    assert names.index("UploadsMiddleware") < names.index("SandboxMiddleware")
+    assert names.index("SandboxMiddleware") < names.index("DanglingToolCallMiddleware")
+    assert names.index("DanglingToolCallMiddleware") < names.index("ToolErrorHandlingMiddleware")
+    assert names.index("ToolErrorHandlingMiddleware") < names.index("CoachIntakeMiddleware")
+    assert names.index("CoachIntakeMiddleware") < names.index("TitleMiddleware")
+    assert names.index("TitleMiddleware") < names.index("MemoryMiddleware")
+    assert names.index("MemoryMiddleware") < names.index("ViewImageMiddleware")
+    assert names.index("ViewImageMiddleware") < names.index("LoopDetectionMiddleware")
+    assert names.index("LoopDetectionMiddleware") < names.index("ClarificationMiddleware")
+
+
 def test_make_coach_agent_disables_subagent_and_plan_mode(monkeypatch):
     app_config = _make_app_config([_make_model("coach-model", supports_thinking=True, supports_vision=False)])
     monkeypatch.setattr(coach_agent_module, "get_app_config", lambda: app_config)
@@ -95,3 +119,31 @@ def test_make_coach_agent_disables_subagent_and_plan_mode(monkeypatch):
     assert captured["prompt_kwargs"]["subagent_enabled"] is False
     assert captured["tools_kwargs"]["subagent_enabled"] is False
     assert result["middleware"] == []
+
+
+def test_make_coach_agent_sets_coach_runtime_metadata_and_state_schema(monkeypatch):
+    app_config = _make_app_config([_make_model("coach-model", supports_thinking=True, supports_vision=False)])
+    monkeypatch.setattr(coach_agent_module, "get_app_config", lambda: app_config)
+    monkeypatch.setattr(coach_agent_module, "_build_coach_middlewares", lambda config, model_name, agent_name=None: ["mw"])
+    monkeypatch.setattr(coach_agent_module, "create_chat_model", lambda **kwargs: object())
+    monkeypatch.setattr(coach_agent_module, "apply_prompt_template", lambda **kwargs: "coach prompt")
+    monkeypatch.setattr(tools_module, "get_available_tools", lambda **kwargs: [])
+    monkeypatch.setattr(coach_agent_module, "create_agent", lambda **kwargs: kwargs)
+
+    config = {
+        "configurable": {
+            "model_name": "coach-model",
+            "thinking_enabled": True,
+            "reasoning_effort": "medium",
+            "agent_name": "badminton-coach",
+        }
+    }
+
+    result = make_coach_agent(config)
+
+    assert result["middleware"] == ["mw"]
+    assert result["state_schema"] is coach_agent_module.ThreadState
+    assert config["metadata"]["runtime"] == "coach"
+    assert config["metadata"]["agent_name"] == "badminton-coach"
+    assert config["metadata"]["is_plan_mode"] is False
+    assert config["metadata"]["subagent_enabled"] is False

@@ -81,3 +81,42 @@ def merge_coach_persona(
     persona_override = CoachPersonaOverride.model_validate(filtered)
     merged = base.model_copy(update=persona_override.model_dump(exclude_none=True))
     return merged, ignored_keys
+
+
+def resolve_coach_persona_overrides(context: Mapping[str, Any] | None) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """Resolve session/task persona override layers from runtime context."""
+    if not context:
+        return None, None
+
+    session_override: dict[str, Any] | None = None
+    task_override: dict[str, Any] | None = None
+
+    raw_overrides = context.get("persona_overrides")
+    if isinstance(raw_overrides, Mapping):
+        raw_session = raw_overrides.get("session")
+        raw_task = raw_overrides.get("task")
+        if isinstance(raw_session, Mapping):
+            session_override = dict(raw_session)
+        if isinstance(raw_task, Mapping):
+            task_override = dict(raw_task)
+
+    if session_override is None and isinstance(context.get("session_persona"), Mapping):
+        session_override = dict(context["session_persona"])
+    if task_override is None and isinstance(context.get("task_persona"), Mapping):
+        task_override = dict(context["task_persona"])
+
+    return session_override, task_override
+
+
+def resolve_coach_persona(
+    base: CoachPersonaConfig,
+    context: Mapping[str, Any] | None,
+) -> tuple[CoachPersonaConfig, dict[str, list[str]]]:
+    """Apply session/task persona overrides with task taking precedence."""
+    session_override, task_override = resolve_coach_persona_overrides(context)
+
+    resolved = base
+    ignored: dict[str, list[str]] = {"session": [], "task": []}
+    resolved, ignored["session"] = merge_coach_persona(resolved, session_override)
+    resolved, ignored["task"] = merge_coach_persona(resolved, task_override)
+    return resolved, ignored

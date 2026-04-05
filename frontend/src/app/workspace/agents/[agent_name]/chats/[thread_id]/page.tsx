@@ -2,7 +2,7 @@
 
 import { useParams } from "next/navigation";
 
-import { MinimalChatDemo } from "@/components/workspace/minimal-chat-demo";
+import { AgentRoutePlaceholder } from "@/components/workspace/agent-route-placeholder";
 
 export default function AgentChatPage() {
   const { agent_name, thread_id } = useParams<{
@@ -11,12 +11,14 @@ export default function AgentChatPage() {
   }>();
 
   return (
-    <MinimalChatDemo
+    <AgentRoutePlaceholder
       title="Agent Chat Demo"
-      subtitle="这里保留了 agent chat 路由，但复杂的 thread 流、todo、artifact 和欢迎态都已移除，只剩最小对话窗口。"
+      description="`/workspace/agents/[agent_name]/chats/[thread_id]` 现在只保留最小 demo，占位展示当前 `agent_name` 和 `thread_id`，不再进入真实聊天线程。"
       badge="Agent Mode"
       agentName={agent_name}
       threadId={thread_id}
+      backHref="/workspace/agents"
+      backLabel="返回 Agents Demo"
     />
   );
 }

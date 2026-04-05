@@ -53,3 +53,34 @@ def test_before_agent_handles_list_content_and_missing_context():
     assert intake["message_count"] == 1
     assert "thread_id" in intake["missing_context"]
     assert "thread_data" in intake["missing_context"]
+
+
+def test_before_agent_includes_resolved_persona_from_runtime_context():
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="今晚训练前要注意什么"),
+        ],
+        "thread_data": {
+            "workspace_path": "/tmp/workspace",
+        },
+    }
+
+    runtime = _runtime("thread-persona")
+    runtime.context["persona_overrides"] = {
+        "session": {"verbosity": "balanced"},
+        "task": {"tone": "strict", "route": "health"},
+    }
+
+    result = mw.before_agent(state, runtime)
+    intake = result["coach_intake"]
+
+    assert intake["persona"] == {
+        "tone": "strict",
+        "strictness": "medium",
+        "verbosity": "balanced",
+        "questioning_style": "guided",
+        "encouragement_style": "calm",
+    }
+    assert intake["persona_ignored_overrides"]["session"] == []
+    assert "route" in intake["persona_ignored_overrides"]["task"]

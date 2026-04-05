@@ -36,6 +36,15 @@ extensions_config.json
 coverage.xml
 coverage/
 .deer-flow/
+!backend/.deer-flow/
+backend/.deer-flow/*
+!backend/.deer-flow/agents/
+backend/.deer-flow/agents/*
+!backend/.deer-flow/agents/badminton-coach/
+backend/.deer-flow/agents/badminton-coach/*
+!backend/.deer-flow/agents/badminton-coach/SOUL.md
+!backend/.deer-flow/agents/badminton-coach/meta.json
+!backend/.deer-flow/agents/badminton-coach/persona.md
 .claude/
 skills/custom/*
 !skills/custom/

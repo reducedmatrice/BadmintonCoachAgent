@@ -10,7 +10,16 @@ from typing import Any
 
 from deerflow.config.paths import get_paths
 
+from .health_image import HealthImageObservation, HealthRecoveryAdvice
 from .postmatch import PostmatchReview, extract_postmatch_review
+
+
+@dataclass
+class PrematchPersistenceResult:
+    extracted: dict[str, list[str]]
+    profile: dict[str, Any]
+    profile_path: Path
+    persisted: bool
 
 
 @dataclass
@@ -18,6 +27,14 @@ class PostmatchPersistenceResult:
     review: PostmatchReview
     profile: dict[str, Any]
     review_log_path: Path
+
+
+@dataclass
+class HealthPersistenceResult:
+    observation: HealthImageObservation
+    advice: HealthRecoveryAdvice
+    profile: dict[str, Any]
+    profile_path: Path
 
 
 def create_default_coach_profile() -> dict[str, Any]:
@@ -43,6 +60,7 @@ def create_default_coach_profile() -> dict[str, Any]:
             "reply_style": "concise",
             "preferred_language": "zh-CN",
             "wants_proactive_reminder": False,
+            "training_preferences": [],
         },
         "last_updated_at": "",
     }
@@ -164,6 +182,102 @@ def persist_postmatch_review(
     return PostmatchPersistenceResult(review=review, profile=profile, review_log_path=log_path)
 
 
+def persist_health_observation(
+    observation: HealthImageObservation,
+    advice: HealthRecoveryAdvice,
+    *,
+    agent_name: str = "badminton-coach",
+    occurred_at: datetime | None = None,
+) -> HealthPersistenceResult:
+    timestamp = occurred_at or datetime.now(UTC)
+    profile = load_coach_profile(agent_name)
+    health_profile = profile.setdefault("health_profile", {})
+
+    existing_flags = [str(item) for item in health_profile.get("risk_flags", []) if isinstance(item, str)]
+    if advice.risk_level in {"medium", "high"}:
+        existing_flags.append(f"health:{observation.screenshot_type}:{advice.risk_level}")
+
+    recent_metrics = list(health_profile.get("recent_metrics", []))
+    recent_metrics.append(
+        {
+            "date": timestamp.date().isoformat(),
+            "source": observation.screenshot_type,
+            "risk_level": advice.risk_level,
+            "observed_metrics": observation.observed_metrics,
+            "observations": observation.observations,
+            "next_session_intensity": advice.next_session_intensity,
+        }
+    )
+
+    health_profile["fatigue_level"] = _risk_to_fatigue_level(advice.risk_level)
+    health_profile["risk_flags"] = _unique_keep_order(existing_flags)[-5:]
+    health_profile["recent_metrics"] = recent_metrics[-5:]
+    profile["health_profile"] = health_profile
+    profile["last_updated_at"] = timestamp.isoformat().replace("+00:00", "Z")
+    profile_path = save_coach_profile(profile, agent_name)
+    return HealthPersistenceResult(observation=observation, advice=advice, profile=profile, profile_path=profile_path)
+
+
+def persist_prematch_signal(
+    message: str,
+    *,
+    agent_name: str = "badminton-coach",
+    occurred_at: datetime | None = None,
+) -> PrematchPersistenceResult:
+    timestamp = occurred_at or datetime.now(UTC)
+    extracted = _extract_prematch_writeback_signal(message)
+    if not any(extracted.values()):
+        profile = load_coach_profile(agent_name)
+        profile_path = get_paths().agent_dir(agent_name) / "coach_profile.json"
+        return PrematchPersistenceResult(extracted=extracted, profile=profile, profile_path=profile_path, persisted=False)
+
+    profile = load_coach_profile(agent_name)
+
+    athlete_profile = profile.setdefault("athlete_profile", {})
+    constraints = [str(item) for item in athlete_profile.get("constraints", []) if isinstance(item, str)]
+    constraints.extend(extracted["constraints"])
+    athlete_profile["constraints"] = _unique_keep_order(constraints)[:8]
+    profile["athlete_profile"] = athlete_profile
+
+    preferences = profile.setdefault("preferences", {})
+    training_preferences = [str(item) for item in preferences.get("training_preferences", []) if isinstance(item, str)]
+    training_preferences.extend(extracted["training_preferences"])
+    preferences["training_preferences"] = _unique_keep_order(training_preferences)[:8]
+    profile["preferences"] = preferences
+
+    tech_profile = profile.setdefault("tech_profile", {})
+    recent_goals = list(tech_profile.get("recent_goals", []))
+    for goal in extracted["recent_goals"]:
+        recent_goals.append(
+            {
+                "goal": goal,
+                "source": "prematch",
+                "recorded_at": timestamp.date().isoformat(),
+            }
+        )
+    deduped_goals: list[dict[str, Any]] = []
+    seen_goals: set[str] = set()
+    for item in reversed(recent_goals):
+        if not isinstance(item, dict):
+            continue
+        goal = item.get("goal")
+        if not isinstance(goal, str) or not goal.strip():
+            continue
+        normalized_goal = goal.strip()
+        if normalized_goal in seen_goals:
+            continue
+        seen_goals.add(normalized_goal)
+        deduped_goals.append(item)
+    prioritized_goals = list(reversed(deduped_goals))
+    prioritized_goals.sort(key=lambda item: (_prematch_goal_priority(item.get("goal")), item.get("recorded_at", "")), reverse=True)
+    tech_profile["recent_goals"] = prioritized_goals[:5]
+    profile["tech_profile"] = tech_profile
+
+    profile["last_updated_at"] = timestamp.isoformat().replace("+00:00", "Z")
+    profile_path = save_coach_profile(profile, agent_name)
+    return PrematchPersistenceResult(extracted=extracted, profile=profile, profile_path=profile_path, persisted=True)
+
+
 def process_postmatch_message(
     message: str,
     *,
@@ -172,6 +286,106 @@ def process_postmatch_message(
 ) -> PostmatchPersistenceResult:
     review = extract_postmatch_review(message)
     return persist_postmatch_review(review, agent_name=agent_name, occurred_at=occurred_at)
+
+
+def _extract_prematch_writeback_signal(message: str) -> dict[str, list[str]]:
+    text = " ".join(message.split())
+    constraints: list[str] = []
+    training_preferences: list[str] = []
+    recent_goals: list[str] = []
+    preference_triggers = (
+        "更想练",
+        "想练",
+        "优先练",
+        "主要练",
+        "重点练",
+        "多练",
+        "加强",
+        "补一补",
+        "巩固",
+        "准备",
+        "侧重",
+        "偏向",
+        "针对",
+        "着重",
+    )
+    goal_triggers = (
+        "最近",
+        "这周",
+        "这两周",
+        "近期",
+        "月底",
+        "下周",
+        "这个月",
+        "本月",
+        "接下来",
+        "这阶段",
+        "阶段性",
+    )
+    topic_aliases = {
+        "后场步法": ("后场步法", "后撤步法", "后场启动", "后退步法"),
+        "步法": ("步法", "脚步", "移动", "启动", "回位", "启动步", "启动速度", "回位节奏"),
+        "反手": ("反手", "反手过渡", "反手发力", "反手稳定性", "反手准备"),
+        "杀球": ("杀球", "进攻", "重杀", "点杀", "突击"),
+        "网前": ("网前", "搓球", "勾对角", "扑球", "放网", "封网", "推扑"),
+        "发接发": ("发接发", "发球", "接发", "接发表现", "发接发轮"),
+        "高远球": ("高远球", "高远", "拉吊", "拉开"),
+        "吊球": ("吊球", "劈吊", "轻吊"),
+        "平抽挡": ("平抽挡", "抽挡", "平抽", "快挡"),
+        "防守": ("防守", "接杀", "防反", "被动球"),
+        "体能": ("体能", "耐力", "爆发", "速度", "多拍", "连续性"),
+        "核心稳定": ("核心", "核心稳定", "躯干稳定"),
+        "肩部发力": ("肩部发力", "肩发力", "挥拍发力", "发力链"),
+    }
+
+    if "久坐" in text:
+        constraints.append("久坐后启动偏紧")
+    if any(keyword in text for keyword in ("旧伤", "老伤", "恢复期")) and "肩" in text:
+        constraints.append("肩部旧伤/恢复期")
+    if any(keyword in text for keyword in ("旧伤", "老伤", "恢复期")) and "膝" in text:
+        constraints.append("膝部旧伤/恢复期")
+    if any(keyword in text for keyword in ("旧伤", "老伤", "恢复期")) and "腰" in text:
+        constraints.append("腰部旧伤/恢复期")
+    if any(keyword in text for keyword in ("旧伤", "老伤", "恢复期")) and "踝" in text:
+        constraints.append("踝部旧伤/恢复期")
+    if any(keyword in text for keyword in ("不能连续", "别连续", "不适合连续")) and "高强度" in text:
+        constraints.append("不适合连续高强度")
+    if any(keyword in text for keyword in ("怕疼", "容易酸", "容易紧", "容易累")) and "肩" in text:
+        constraints.append("肩部负荷耐受有限")
+    if any(keyword in text for keyword in ("怕疼", "容易酸", "容易紧", "容易累")) and "膝" in text:
+        constraints.append("膝部负荷耐受有限")
+
+    if "双打" in text and any(keyword in text for keyword in preference_triggers):
+        training_preferences.append("偏双打训练")
+    if "单打" in text and any(keyword in text for keyword in preference_triggers):
+        training_preferences.append("偏单打训练")
+    if "女双" in text:
+        training_preferences.append("偏女双训练")
+    if "男双" in text:
+        training_preferences.append("偏男双训练")
+    if "混双" in text:
+        training_preferences.append("偏混双训练")
+    if any(keyword in text for keyword in preference_triggers):
+        for canonical_topic, aliases in topic_aliases.items():
+            if any(alias in text for alias in aliases):
+                training_preferences.append(f"优先训练{canonical_topic}")
+
+    if any(keyword in text for keyword in goal_triggers):
+        if "比赛" in text:
+            recent_goals.append("近期以比赛准备为主")
+        if any(keyword in text for keyword in ("稳定", "稳定性", "失误少一点", "减少失误", "别那么乱")):
+            recent_goals.append("近期目标：提升稳定性")
+        if any(keyword in text for keyword in ("节奏", "连贯", "衔接")):
+            recent_goals.append("近期目标：提升回合衔接")
+        for canonical_topic, aliases in topic_aliases.items():
+            if any(alias in text for alias in aliases):
+                recent_goals.append(f"近期目标：提升{canonical_topic}")
+
+    return {
+        "constraints": _unique_keep_order(constraints),
+        "training_preferences": _unique_keep_order(training_preferences),
+        "recent_goals": _unique_keep_order(recent_goals),
+    }
 
 
 def _format_observation_name(topic: str, finding: str) -> str:
@@ -204,3 +418,21 @@ def _unique_keep_order(items: list[str]) -> list[str]:
             seen.add(item)
             result.append(item)
     return result
+
+
+def _risk_to_fatigue_level(risk_level: str) -> str:
+    if risk_level == "high":
+        return "high"
+    if risk_level == "medium":
+        return "medium"
+    return "low"
+
+
+def _prematch_goal_priority(goal: Any) -> int:
+    if not isinstance(goal, str):
+        return 0
+    if "比赛准备" in goal:
+        return 3
+    if "稳定性" in goal or "回合衔接" in goal:
+        return 2
+    return 1

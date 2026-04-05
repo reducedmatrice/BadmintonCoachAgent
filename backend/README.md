@@ -59,7 +59,7 @@ Coach runtime is exposed via `make_coach_agent()` and uses structured domain mod
 
 - **Intent schema**: `intent.py` (`primary_intent`, `secondary_intents`, `slots`, `missing_slots`, `risk_level`)
 - **Composable router**: `router.py` (single-intent + mixed-intent routing, safety gate hook)
-- **Persona schema**: `persona.py` (style-only persona fields with protected routing/safety boundaries)
+- **Persona schema**: `persona.py` (style-only persona fields with protected routing/safety boundaries, plus session/task override resolution)
 
 ### Middleware Chain
 

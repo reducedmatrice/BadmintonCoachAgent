@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from deerflow.domain.coach.persona import CoachPersonaConfig, default_coach_persona, merge_coach_persona
+from deerflow.domain.coach.persona import (
+    CoachPersonaConfig,
+    default_coach_persona,
+    merge_coach_persona,
+    resolve_coach_persona,
+    resolve_coach_persona_overrides,
+)
 
 
 def test_default_coach_persona_has_expected_values():
@@ -52,3 +58,41 @@ def test_merge_coach_persona_keeps_boundaries_when_override_empty():
 
     assert merged == base
     assert ignored == []
+
+
+def test_resolve_coach_persona_overrides_prefers_nested_context_shape():
+    session_override, task_override = resolve_coach_persona_overrides(
+        {
+            "persona_overrides": {
+                "session": {"tone": "neutral", "verbosity": "balanced"},
+                "task": {"tone": "strict"},
+            },
+            "session_persona": {"tone": "supportive"},
+            "task_persona": {"strictness": "high"},
+        }
+    )
+
+    assert session_override == {"tone": "neutral", "verbosity": "balanced"}
+    assert task_override == {"tone": "strict"}
+
+
+def test_resolve_coach_persona_applies_session_then_task_priority():
+    resolved, ignored = resolve_coach_persona(
+        default_coach_persona(),
+        {
+            "persona_overrides": {
+                "session": {"tone": "neutral", "verbosity": "balanced"},
+                "task": {
+                    "tone": "strict",
+                    "questioning_style": "direct",
+                    "route": "health",
+                },
+            }
+        },
+    )
+
+    assert resolved.tone == "strict"
+    assert resolved.verbosity == "balanced"
+    assert resolved.questioning_style == "direct"
+    assert ignored["session"] == []
+    assert "route" in ignored["task"]

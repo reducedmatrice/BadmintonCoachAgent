@@ -9,7 +9,7 @@ from .health_image import analyze_health_image_text, build_health_recovery_advic
 from .intent import CoachIntent, CoachIntentClassifier, CoachIntentName, detect_coach_intent
 from .postmatch import extract_postmatch_review
 from .prematch import build_prematch_advice
-from .profile_store import process_postmatch_message
+from .profile_store import persist_health_observation, persist_prematch_signal, process_postmatch_message
 
 _HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "头晕", "膝盖", "肩痛", "腰痛")
 
@@ -137,6 +137,19 @@ def _run_route_chain(
             memory_data=memory_data,
             weather=weather,
         )
+        if persist_postmatch:
+            persisted = persist_prematch_signal(message, agent_name=agent_name)
+            return {
+                "chain": "prematch",
+                "focus_points": advice.focus_points,
+                "warmup": advice.warmup,
+                "risk_reminders": advice.risk_reminders,
+                "cited_context": advice.cited_context,
+                "follow_up_questions": advice.follow_up_questions,
+                "persisted": persisted.persisted,
+                "profile_path": str(persisted.profile_path),
+                "writeback": persisted.extracted,
+            }
         return {
             "chain": "prematch",
             "focus_points": advice.focus_points,
@@ -144,6 +157,7 @@ def _run_route_chain(
             "risk_reminders": advice.risk_reminders,
             "cited_context": advice.cited_context,
             "follow_up_questions": advice.follow_up_questions,
+            "persisted": False,
         }
 
     if route == "postmatch":
@@ -171,6 +185,19 @@ def _run_route_chain(
     if route == "health":
         observation = analyze_health_image_text(message)
         advice = build_health_recovery_advice(observation)
+        if persist_postmatch:
+            persisted = persist_health_observation(observation, advice, agent_name=agent_name)
+            return {
+                "chain": "health",
+                "risk_level": advice.risk_level,
+                "structured_observations": advice.structured_observations,
+                "recovery_actions": advice.recovery_actions,
+                "next_session_intensity": advice.next_session_intensity,
+                "follow_up_question": advice.follow_up_question,
+                "missing_data": observation.missing_data,
+                "profile_path": str(persisted.profile_path),
+                "persisted": True,
+            }
         return {
             "chain": "health",
             "risk_level": advice.risk_level,
@@ -179,6 +206,7 @@ def _run_route_chain(
             "next_session_intensity": advice.next_session_intensity,
             "follow_up_question": advice.follow_up_question,
             "missing_data": observation.missing_data,
+            "persisted": False,
         }
 
     return {

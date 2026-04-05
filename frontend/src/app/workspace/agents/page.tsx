@@ -1,12 +1,13 @@
-import { MinimalChatDemo } from "@/components/workspace/minimal-chat-demo";
+import { AgentRoutePlaceholder } from "@/components/workspace/agent-route-placeholder";
 
 export default function AgentsPage() {
   return (
-    <MinimalChatDemo
+    <AgentRoutePlaceholder
       title="Agents Demo"
-      subtitle="原来的 agent 列表和管理卡片先撤掉，保留一个可运行的最小入口。后续如果要恢复 agent 管理，再在这个基础上重新加。"
+      description="`/workspace/agents` 现在指向最小 demo，占位说明为主。这里不再加载旧的 agent 列表、管理卡片，也不会再连真实 agent 线程。"
       badge="Agent Mode"
-      agentName="default-agent"
+      backHref="/"
+      backLabel="返回首页"
     />
   );
 }

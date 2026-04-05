@@ -4,7 +4,7 @@
 
 ## 阶段 A：入口与中间件重构
 
-### A1 入口切换到 `make_coach_agent()`
+### A1 入口切换到 `make_coach_agent()` `Done`
 
 - 目标：建立独立 coach runtime，并将 LangGraph 正式入口切到 `make_coach_agent()`
 - 输入：现有 `lead_agent` 装配逻辑、`backend/langgraph.json`、coach 相关 domain 能力
@@ -17,7 +17,7 @@
 - 并行项：可与 A2 设计同步讨论，但代码改动建议串行
 - 阻塞项：若入口切换影响现有运行脚本，需要先统一入口命名
 
-### A2 Middleware 裁剪与重组
+### A2 Middleware 裁剪与重组 `Done`
 
 - 目标：保留必要基础中间件，去掉不适合 coach runtime 的通用编排中间件
 - 输入：现有 middleware 链、已确认取舍规则
@@ -30,7 +30,7 @@
 - 并行项：可与 A3 schema 设计并行
 - 阻塞项：无
 
-### A3 新增 `CoachIntakeMiddleware` 骨架
+### A3 新增 `CoachIntakeMiddleware` 骨架 `Done`
 
 - 目标：建立统一 intake 层，为后续 persona、意图识别和追问策略提供入口
 - 输入：线程上下文、memory/profile/reviews、persona 配置需求
@@ -45,7 +45,7 @@
 
 ## 阶段 B：意图识别与组合路由
 
-### B1 定义 intent schema
+### B1 定义 intent schema `Done`
 
 - 目标：建立统一结构化识别结果
 - 输入：已确认的主意图、复合意图与缺失槽位规则
@@ -57,7 +57,7 @@
 - 并行项：可与 C1 schema 设计并行
 - 阻塞项：无
 
-### B2 实现单意图路由
+### B2 实现单意图路由 `Done`
 
 - 目标：让 `prematch/postmatch/health/fallback` 都通过结构化路由进入正确链路
 - 输入：intent schema、现有 `domain/coach/*`
@@ -69,7 +69,7 @@
 - 并行项：无
 - 阻塞项：无
 
-### B3 实现复合意图组合路由
+### B3 实现复合意图组合路由 `Done`
 
 - 目标：支持 mixed intent 场景下的顺序控制与稳定输出
 - 输入：intent schema、组合规则
@@ -81,7 +81,7 @@
 - 并行项：无
 - 阻塞项：无
 
-### B4 预留 `safety gate` 接口
+### B4 预留 `safety gate` 接口 `Done`
 
 - 目标：在当前不深做安全系统的前提下，为后续 safety gate 预留清晰 hook
 - 输入：组合路由结构、`risk_level` 字段
@@ -95,7 +95,7 @@
 
 ## 阶段 C：Persona 与状态写回
 
-### C1 定义 persona config schema
+### C1 定义 persona config schema `Done`
 
 - 目标：将教练人格与风格做成结构化配置
 - 输入：tone、strictness、verbosity、questioning_style 等需求

@@ -272,6 +272,12 @@ Coach 不再只依赖 SOUL 或 prompt 描述，而要具备结构化 persona 能
 - 默认 persona 配置文件
 - session / task override
 
+优先级约定：
+
+- `default persona < session override < task override`
+- 运行时上下文优先使用 `persona_overrides.session` 与 `persona_overrides.task`
+- 为兼容不同接入层，也允许 `session_persona` 与 `task_persona` 作为别名
+
 建议字段：
 
 - `tone`
@@ -506,27 +512,27 @@ Phase 2 预期重点落在以下区域：
 
 #### 阶段 A：入口与中间件重构
 
-- [ ] A1 新建 `make_coach_agent()` 并切换入口
-- [ ] A2 完成 middleware 裁剪与重组
-- [ ] A3 引入 `CoachIntakeMiddleware` 骨架
+- [x] A1 新建 `make_coach_agent()` 并切换入口
+- [x] A2 完成 middleware 裁剪与重组
+- [x] A3 引入 `CoachIntakeMiddleware` 骨架
 
 #### 阶段 B：意图识别与组合路由
 
-- [ ] B1 定义 intent schema
-- [ ] B2 实现单意图路由
-- [ ] B3 实现复合意图组合路由
-- [ ] B4 预留 `safety gate` 接口
+- [x] B1 定义 intent schema
+- [x] B2 实现单意图路由
+- [x] B3 实现复合意图组合路由
+- [x] B4 预留 `safety gate` 接口
 
 #### 阶段 C：Persona 与状态写回
 
-- [ ] C1 定义 persona config schema
-- [ ] C2 支持 task/session override
-- [ ] C3 persona 接入 intake 层
-- [ ] C4 固化 route-specific writeback
+- [x] C1 定义 persona config schema
+- [x] C2 支持 task/session override
+- [x] C3 persona 接入 intake 层
+- [x] C4 固化 route-specific writeback
 
 #### 阶段 D：测试与文档收敛
 
-- [ ] D1 入口与 middleware 回归测试
+- [x] D1 入口与 middleware 回归测试
 - [ ] D2 mixed intent 与 persona 测试
 - [ ] D3 可观测性与离线评测收敛
 - [ ] D4 文档与阶段总结

@@ -2,8 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from unittest.mock import patch
+
+from deerflow.config.paths import Paths
 from deerflow.domain.coach.intent import normalize_intent_payload
 from deerflow.domain.coach.router import CoachSafetyGateDecision, route_composable_intent
+
+
+def _make_paths(base_dir: Path) -> Paths:
+    return Paths(base_dir=base_dir)
 
 
 def test_composable_router_orders_health_then_prematch():
@@ -122,3 +130,29 @@ def test_composable_router_supports_safety_gate_block():
     assert result.safety_gate is not None
     assert result.safety_gate["blocked"] is True
     assert result.safety_gate["reason"] == "manual_safety_review"
+
+
+def test_composable_router_persists_route_specific_writeback(tmp_path: Path):
+    intent = normalize_intent_payload(
+        {
+            "primary_intent": "postmatch",
+            "secondary_intents": ["health"],
+            "slots": {"review_text": "今天打完", "health_signal": "睡眠不足"},
+            "missing_slots": [],
+            "risk_level": "medium",
+        }
+    )
+
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        with patch("deerflow.domain.coach.prematch.get_paths", return_value=_make_paths(tmp_path)):
+            result = route_composable_intent(
+                "今天打完后场步法还是慢，另外昨晚睡眠 5小时18分钟 HRV 28。",
+                intent=intent,
+                persist_postmatch=True,
+            )
+
+    assert [step.route for step in result.steps] == ["postmatch", "health"]
+    assert result.steps[0].payload["persisted"] is True
+    assert Path(result.steps[0].payload["review_log_path"]).exists()
+    assert result.steps[1].payload["persisted"] is True
+    assert Path(result.steps[1].payload["profile_path"]).exists()
