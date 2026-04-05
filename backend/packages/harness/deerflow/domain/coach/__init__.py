@@ -6,6 +6,26 @@ from .health_image import (
     analyze_health_image_text,
     build_health_recovery_advice,
 )
+from .intent import (
+    CoachIntent,
+    CoachIntentClassifier,
+    CoachIntentName,
+    CoachRiskLevel,
+    classify_coach_intent,
+    detect_coach_intent,
+    normalize_intent_payload,
+)
+from .persona import (
+    CoachEncouragementStyle,
+    CoachPersonaConfig,
+    CoachPersonaOverride,
+    CoachQuestioningStyle,
+    CoachStrictness,
+    CoachTone,
+    CoachVerbosity,
+    default_coach_persona,
+    merge_coach_persona,
+)
 from .postmatch import Improvement, PostmatchReview, TechnicalObservation, extract_postmatch_review
 from .prematch import PrematchAdvice, build_prematch_advice, load_recent_review_logs
 from .profile_store import (
@@ -18,12 +38,36 @@ from .profile_store import (
     save_coach_profile,
     update_profile_from_postmatch,
 )
+from .router import (
+    CoachComposableRouteResult,
+    CoachSafetyGateDecision,
+    CoachSafetyGateHook,
+    CoachSingleIntentRouteResult,
+    default_coach_safety_gate,
+    route_composable_intent,
+    route_single_intent,
+)
 from .weather import WeatherContext, degrade_weather_context, fetch_weather_context, normalize_weather_payload
 
 __all__ = [
     "HealthImageObservation",
     "HealthRecoveryAdvice",
     "Improvement",
+    "CoachIntent",
+    "CoachIntentClassifier",
+    "CoachIntentName",
+    "CoachRiskLevel",
+    "CoachPersonaConfig",
+    "CoachPersonaOverride",
+    "CoachTone",
+    "CoachStrictness",
+    "CoachVerbosity",
+    "CoachQuestioningStyle",
+    "CoachEncouragementStyle",
+    "CoachComposableRouteResult",
+    "CoachSafetyGateDecision",
+    "CoachSafetyGateHook",
+    "CoachSingleIntentRouteResult",
     "PrematchAdvice",
     "PostmatchPersistenceResult",
     "PostmatchReview",
@@ -33,15 +77,23 @@ __all__ = [
     "append_review_log",
     "build_health_recovery_advice",
     "build_prematch_advice",
+    "classify_coach_intent",
     "create_default_coach_profile",
+    "default_coach_persona",
+    "detect_coach_intent",
     "degrade_weather_context",
     "extract_postmatch_review",
     "fetch_weather_context",
     "load_coach_profile",
     "load_recent_review_logs",
     "normalize_weather_payload",
+    "normalize_intent_payload",
+    "merge_coach_persona",
     "persist_postmatch_review",
     "process_postmatch_message",
+    "default_coach_safety_gate",
+    "route_composable_intent",
+    "route_single_intent",
     "save_coach_profile",
     "update_profile_from_postmatch",
 ]

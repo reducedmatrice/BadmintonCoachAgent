@@ -53,6 +53,14 @@ The single LangGraph agent (`lead_agent`) is the runtime entry point, created vi
 - **Subagent delegation** for parallel task execution
 - **System prompt** with skills injection, memory context, and working directory guidance
 
+### Coach Runtime (Badminton)
+
+Coach runtime is exposed via `make_coach_agent()` and uses structured domain modules under `packages/harness/deerflow/domain/coach/`:
+
+- **Intent schema**: `intent.py` (`primary_intent`, `secondary_intents`, `slots`, `missing_slots`, `risk_level`)
+- **Composable router**: `router.py` (single-intent + mixed-intent routing, safety gate hook)
+- **Persona schema**: `persona.py` (style-only persona fields with protected routing/safety boundaries)
+
 ### Middleware Chain
 
 Middlewares execute in strict order, each handling a specific concern:

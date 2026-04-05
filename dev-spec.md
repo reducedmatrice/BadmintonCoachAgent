@@ -147,7 +147,16 @@ Phase 2 的核心变化是：DeerFlow 继续作为 harness 保留，但 `lead_ag
 
 ### 2.2 意图识别、槽位抽取与组合路由
 
-路由不再主要依赖 skill prompt，而改为先输出结构化识别结果，再由代码决定执行顺序。结构化输出至少包含：
+路由不再主要依赖 skill prompt，而改为先输出结构化识别结果，再由代码决定执行顺序。意图识别采用四层结构：
+
+1. **规则强约束层**：处理高确定性 override，例如明显健康风险词。
+2. **LLM 结构化分类层**：输出 intent schema，而不是自由文本判断。
+3. **代码归一化 / guard 层**：校验字段、补默认值、保护安全边界。
+4. **澄清层**：低置信度或缺失信息过多时，不强行路由，优先追问。
+
+向量检索不作为主路由判定器，而作为后续 grounding / case recall 的辅助召回能力。
+
+结构化输出至少包含：
 
 - `primary_intent`
 - `secondary_intents`
@@ -155,6 +164,7 @@ Phase 2 的核心变化是：DeerFlow 继续作为 harness 保留，但 `lead_ag
 - `missing_slots`
 - `risk_level`
 - `confidence`
+- `needs_clarification`
 
 ### 2.3 统一 Intake 层
 
@@ -253,6 +263,7 @@ Coach 不再只依赖 SOUL 或 prompt 描述，而要具备结构化 persona 能
 - LLM 负责结构化识别
 - 代码负责执行顺序与边界控制
 - 强规则场景优先使用代码而不是 prompt 技巧
+- 向量检索只作为辅助召回，不直接替代 intent classifier
 
 ### 3.4 Persona 配置来源
 
