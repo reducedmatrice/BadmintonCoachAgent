@@ -10,6 +10,7 @@ from .intent import CoachIntent, CoachIntentClassifier, CoachIntentName, detect_
 from .postmatch import extract_postmatch_review
 from .prematch import build_prematch_advice
 from .profile_store import persist_health_observation, persist_prematch_signal, process_postmatch_message
+from .response_renderer import render_coach_route_payload
 
 _HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "头晕", "膝盖", "肩痛", "腰痛")
 
@@ -58,6 +59,7 @@ def route_single_intent(
     memory_data: dict[str, Any] | None = None,
     weather: dict[str, Any] | None = None,
     persist_postmatch: bool = False,
+    persona: dict[str, Any] | None = None,
     llm_classifier: CoachIntentClassifier | None = None,
 ) -> CoachSingleIntentRouteResult:
     """Route one message into a single coach chain based on structured intent."""
@@ -70,6 +72,7 @@ def route_single_intent(
         memory_data=memory_data,
         weather=weather,
         persist_postmatch=persist_postmatch,
+        persona=persona,
     )
     return CoachSingleIntentRouteResult(route=route, intent=resolved_intent, payload=payload)
 
@@ -82,6 +85,7 @@ def route_composable_intent(
     memory_data: dict[str, Any] | None = None,
     weather: dict[str, Any] | None = None,
     persist_postmatch: bool = False,
+    persona: dict[str, Any] | None = None,
     safety_gate: CoachSafetyGateHook | None = None,
     llm_classifier: CoachIntentClassifier | None = None,
 ) -> CoachComposableRouteResult:
@@ -104,6 +108,7 @@ def route_composable_intent(
             memory_data=memory_data,
             weather=weather,
             persist_postmatch=persist_postmatch,
+            persona=persona,
         )
         steps.append(
             CoachSingleIntentRouteResult(
@@ -129,6 +134,7 @@ def _run_route_chain(
     memory_data: dict[str, Any] | None,
     weather: dict[str, Any] | None,
     persist_postmatch: bool,
+    persona: dict[str, Any] | None,
 ) -> dict[str, Any]:
     if route == "prematch":
         advice = build_prematch_advice(
@@ -139,7 +145,7 @@ def _run_route_chain(
         )
         if persist_postmatch:
             persisted = persist_prematch_signal(message, agent_name=agent_name)
-            return {
+            payload = {
                 "chain": "prematch",
                 "focus_points": advice.focus_points,
                 "warmup": advice.warmup,
@@ -150,7 +156,9 @@ def _run_route_chain(
                 "profile_path": str(persisted.profile_path),
                 "writeback": persisted.extracted,
             }
-        return {
+            payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+            return payload
+        payload = {
             "chain": "prematch",
             "focus_points": advice.focus_points,
             "warmup": advice.warmup,
@@ -159,11 +167,13 @@ def _run_route_chain(
             "follow_up_questions": advice.follow_up_questions,
             "persisted": False,
         }
+        payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+        return payload
 
     if route == "postmatch":
         if persist_postmatch:
             persisted = process_postmatch_message(message, agent_name=agent_name)
-            return {
+            payload = {
                 "chain": "postmatch",
                 "summary": persisted.review.summary,
                 "technical_observations": [item.__dict__ for item in persisted.review.technical_observations],
@@ -172,8 +182,10 @@ def _run_route_chain(
                 "review_log_path": str(persisted.review_log_path),
                 "persisted": True,
             }
+            payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+            return payload
         review = extract_postmatch_review(message)
-        return {
+        payload = {
             "chain": "postmatch",
             "summary": review.summary,
             "technical_observations": [item.__dict__ for item in review.technical_observations],
@@ -181,13 +193,15 @@ def _run_route_chain(
             "next_focus": review.next_focus,
             "persisted": False,
         }
+        payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+        return payload
 
     if route == "health":
         observation = analyze_health_image_text(message)
         advice = build_health_recovery_advice(observation)
         if persist_postmatch:
             persisted = persist_health_observation(observation, advice, agent_name=agent_name)
-            return {
+            payload = {
                 "chain": "health",
                 "risk_level": advice.risk_level,
                 "structured_observations": advice.structured_observations,
@@ -198,7 +212,9 @@ def _run_route_chain(
                 "profile_path": str(persisted.profile_path),
                 "persisted": True,
             }
-        return {
+            payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+            return payload
+        payload = {
             "chain": "health",
             "risk_level": advice.risk_level,
             "structured_observations": advice.structured_observations,
@@ -208,12 +224,16 @@ def _run_route_chain(
             "missing_data": observation.missing_data,
             "persisted": False,
         }
+        payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+        return payload
 
-    return {
+    payload = {
         "chain": "fallback",
         "guidance": "请先说清你现在是赛前准备、赛后复盘，还是身体恢复问题，我再给你对应方案。",
         "follow_up_question": "你现在更希望我先帮你做赛前计划、赛后复盘，还是恢复建议？",
     }
+    payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+    return payload
 
 
 def _resolve_route_by_strong_rules(*, message: str, intent: CoachIntent) -> CoachIntentName:

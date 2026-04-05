@@ -15,8 +15,8 @@ def test_analytics_router_exposes_summary_and_lists(tmp_path, monkeypatch):
     import_manager_structured_log_text(
         "\n".join(
             [
-                '2026-04-05T10:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":100.0,"error":false,"token_usage":{"total_tokens":100}}',
-                '2026-04-05T10:15:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":3000.0,"error":true,"error_type":"timeout","token_usage":{"total_tokens":200}}',
+                '2026-04-05T10:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":100.0,"error":false,"token_usage":{"total_tokens":100},"clarification":{"requested":true,"reason":"underspecified_request","missing_slots":["session_goal"],"question":"先补一条信息"}}',
+                '2026-04-05T10:15:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":3000.0,"error":true,"error_type":"timeout","token_usage":{"total_tokens":200},"clarification":{"requested":false,"reason":"","missing_slots":[],"question":""}}',
             ]
         ),
         source_file="logs/gateway.log",
@@ -34,8 +34,11 @@ def test_analytics_router_exposes_summary_and_lists(tmp_path, monkeypatch):
     assert summary_response.status_code == 200
     assert summary_response.json()["total_requests"] == 2
     assert summary_response.json()["error_rate"] == 0.5
+    assert summary_response.json()["clarification_requested_count"] == 1
+    assert summary_response.json()["clarification_reasons"] == [{"reason": "underspecified_request", "count": 1}]
     assert by_route_response.status_code == 200
     assert by_route_response.json()["routes"][0]["route"] == "badminton-coach"
+    assert by_route_response.json()["routes"][0]["clarification_requested_count"] == 1
     assert errors_response.status_code == 200
     assert errors_response.json()["error_types"][0]["error_type"] == "timeout"
     assert jobs_response.status_code == 200

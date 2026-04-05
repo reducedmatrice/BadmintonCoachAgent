@@ -372,6 +372,39 @@ class TestExtractResponseText:
         # Should return "" (no text in current turn), NOT "Hi there!" from previous turn
         assert _extract_response_text(result) == ""
 
+    def test_falls_back_to_coach_intake_clarification_request(self):
+        from app.channels.manager import _extract_response_text
+
+        result = {
+            "messages": [
+                {"type": "human", "content": "帮我看下"},
+            ],
+            "coach_intake": {
+                "clarification_request": {
+                    "question": "先补一条信息，你现在希望我先帮你做哪类判断？",
+                }
+            },
+        }
+
+        assert _extract_response_text(result) == "先补一条信息，你现在希望我先帮你做哪类判断？"
+
+    def test_prefers_actual_ai_response_over_coach_intake_clarification_request(self):
+        from app.channels.manager import _extract_response_text
+
+        result = {
+            "messages": [
+                {"type": "human", "content": "今晚打球前提醒我"},
+                {"type": "ai", "content": "先别着急，今天按这个节奏来。"},
+            ],
+            "coach_intake": {
+                "clarification_request": {
+                    "question": "先补一条信息，你现在希望我先帮你做哪类判断？",
+                }
+            },
+        }
+
+        assert _extract_response_text(result) == "先别着急，今天按这个节奏来。"
+
 
 # ---------------------------------------------------------------------------
 # ChannelManager tests

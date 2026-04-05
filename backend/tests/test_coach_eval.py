@@ -48,10 +48,15 @@ def test_evaluate_cases_supports_mixed_persona_and_writeback_dimensions():
                 "id": "persona-consistency",
                 "expected_route": "prematch",
                 "message": "今天打球前提醒我一下。",
-                "candidate_response": "先别着急，今天先把节奏打顺，我们一步一步来。",
+                "persona": {
+                    "tone": "supportive",
+                    "verbosity": "balanced",
+                    "questioning_style": "guided",
+                    "encouragement_style": "calm",
+                },
                 "persona_expectations": {
-                    "required_markers": ["先别着急", "一步一步"],
-                    "forbidden_markers": ["必须", "立刻"],
+                    "required_markers": ["先别着急", "如果你愿意，我们再补一句"],
+                    "forbidden_markers": ["直接回答我", "别偷量，也别逞强"],
                 },
             },
             {

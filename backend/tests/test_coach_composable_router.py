@@ -156,3 +156,37 @@ def test_composable_router_persists_route_specific_writeback(tmp_path: Path):
     assert Path(result.steps[0].payload["review_log_path"]).exists()
     assert result.steps[1].payload["persisted"] is True
     assert Path(result.steps[1].payload["profile_path"]).exists()
+
+
+def test_composable_router_renders_persona_aware_response_text():
+    intent = normalize_intent_payload(
+        {
+            "primary_intent": "prematch",
+            "secondary_intents": ["health"],
+            "slots": {"session_goal": "今晚打球", "health_signal": "肩膀酸"},
+            "missing_slots": [],
+            "risk_level": "medium",
+        }
+    )
+
+    result = route_composable_intent(
+        "今晚打球前怎么热身？昨天肩膀也有点酸。",
+        intent=intent,
+        memory_data={"facts": []},
+        persona={
+            "tone": "strict",
+            "verbosity": "concise",
+            "questioning_style": "direct",
+            "encouragement_style": "tough_love",
+            "strictness": "high",
+        },
+    )
+
+    health_text = result.steps[0].payload["response_text"]
+    prematch_text = result.steps[1].payload["response_text"]
+
+    assert "先别硬顶强度" in health_text
+    assert "直接回答我" in health_text
+    assert "别偷量，也别逞强" in health_text
+    assert "先按计划执行" in prematch_text
+    assert "今天重点" in prematch_text

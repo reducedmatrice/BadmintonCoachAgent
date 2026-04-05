@@ -45,7 +45,8 @@ deer-flow/
 │   │           ├── models/            # Model factory with thinking/vision support
 │   │           ├── skills/            # Skills discovery, loading, parsing
 │   │           ├── config/            # Configuration system (app, model, sandbox, tool, etc.)
-│   │           ├── domain/coach/      # Coach domain modules (intent/router/persona + prematch/postmatch/health, including session/task persona overrides)
+│   │           ├── domain/coach/      # Coach domain modules (intent/router/persona/clarification policy + prematch/postmatch/health/response rendering, including session/task persona overrides)
+│   │           ├── agents/middlewares/# Includes coach clarification short-circuit before generic clarification interception
 │   │           ├── community/         # Community tools (tavily, jina_ai, firecrawl, image_search, aio_sandbox)
 │   │           ├── reflection/        # Dynamic module loading (resolve_variable, resolve_class)
 │   │           ├── utils/             # Utilities (network, readability)
@@ -97,11 +98,17 @@ make format     # Format code with ruff
 Regression tests related to Docker/provisioner behavior:
 - `tests/test_docker_sandbox_mode_detection.py` (mode detection from `config.yaml`)
 - `tests/test_provisioner_kubeconfig.py` (kubeconfig file/directory handling)
+- `tests/test_coach_eval_assets.py` (Phase 2 offline evaluation case coverage + judge prompt presence)
 
 Boundary check (harness → app import firewall):
 - `tests/test_harness_boundary.py` — ensures `packages/harness/deerflow/` never imports from `app.*`
 
 CI runs these regression tests for every pull request via [.github/workflows/backend-unit-tests.yml](../.github/workflows/backend-unit-tests.yml).
+
+Offline evaluation/report helpers:
+- `../scripts/run_coach_eval.py --cases ../docs/eval/coach_eval_cases.json --output ../docs/eval/coach_eval_report.md --json-output ../docs/eval/coach_eval_report.json`
+- `../scripts/summarize_run_logs.py --log-file tests/fixtures/analytics_stage_e_gateway.log --output ../docs/eval/run_log_summary.md`
+- `../docs/phase-2-summary.md` records the final Phase 2 scope, residual risks, and next-step guidance
 
 ## Architecture
 

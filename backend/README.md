@@ -60,6 +60,17 @@ Coach runtime is exposed via `make_coach_agent()` and uses structured domain mod
 - **Intent schema**: `intent.py` (`primary_intent`, `secondary_intents`, `slots`, `missing_slots`, `risk_level`)
 - **Composable router**: `router.py` (single-intent + mixed-intent routing, safety gate hook)
 - **Persona schema**: `persona.py` (style-only persona fields with protected routing/safety boundaries, plus session/task override resolution)
+- **Response renderer**: `response_renderer.py` (persona-aware phrasing for prematch/postmatch/health outputs without changing route decisions)
+- **Clarification policy**: `clarification_policy.py` (maps intent + missing slots + persona questioning style into structured ask-back requests)
+- **Coach clarification middleware**: `coach_clarification_middleware.py` (short-circuits the model with a standard `ask_clarification` tool call when intake already decided to ask back)
+
+Evaluation assets for Phase 2 live under `docs/eval/`:
+
+- `coach_eval_cases.json`: rules-based offline evaluation sample set
+- `coach_eval_judge_prompt.md`: reserved LLM Judge prompt entry for future grading expansion
+- `../../scripts/run_coach_eval.py`: generate markdown/json offline evaluation reports
+- `../../scripts/summarize_run_logs.py`: generate markdown summaries from `[ManagerStructured]` logs
+- `../../docs/phase-2-summary.md`: Phase 2 implementation summary, residual risks, and next-step recommendations
 
 ### Middleware Chain
 

@@ -10,6 +10,13 @@ from app.channels.structured_logging import build_run_log_record, format_run_log
 
 def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     result = {
+        "coach_intake": {
+            "intent": {
+                "missing_slots": [],
+                "clarification_reason": None,
+            },
+            "clarification_request": None,
+        },
         "messages": [
             {"type": "human", "content": "今晚打球注意什么"},
             {
@@ -47,6 +54,38 @@ def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     assert record["memory_hits"]["review_log"] is True
     assert record["memory_hits"]["weather"] is True
     assert record["memory_hits"]["status"] == "hit"
+    assert record["clarification"]["requested"] is False
+
+
+def test_build_run_log_record_includes_clarification_decision():
+    record = build_run_log_record(
+        channel_name="feishu",
+        thread_id="thread-clarify",
+        assistant_id="lead_agent",
+        run_context={"agent_name": "badminton-coach"},
+        result={
+            "coach_intake": {
+                "intent": {
+                    "missing_slots": ["session_goal"],
+                    "clarification_reason": "underspecified_request",
+                },
+                "clarification_request": {
+                    "question": "先补一条信息，你这次更偏向哪种场景？",
+                },
+            }
+        },
+        latency_ms=95.0,
+        response_text="先补一条信息，你这次更偏向哪种场景？",
+        artifacts=[],
+        streaming=False,
+    )
+
+    assert record["clarification"] == {
+        "requested": True,
+        "reason": "underspecified_request",
+        "missing_slots": ["session_goal"],
+        "question": "先补一条信息，你这次更偏向哪种场景？",
+    }
 
 
 def test_format_run_log_outputs_json_string(caplog):

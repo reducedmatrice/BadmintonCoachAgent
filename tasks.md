@@ -107,7 +107,7 @@
 - 并行项：可与 B1 并行
 - 阻塞项：无
 
-### C2 支持 task/session override
+### C2 支持 task/session override `Done`
 
 - 目标：让用户可以在飞书 task 中设置 persona 覆盖项
 - 输入：persona schema、task/session 上下文
@@ -119,7 +119,7 @@
 - 并行项：无
 - 阻塞项：需要明确 task 上下文字段来源
 
-### C3 Persona 接入 intake 层
+### C3 Persona 接入 intake 层 `Done`
 
 - 目标：在真正进入意图和路由前就完成 persona 注入
 - 输入：`CoachIntakeMiddleware`、persona schema、override
@@ -131,7 +131,7 @@
 - 并行项：无
 - 阻塞项：无
 
-### C4 固化 route-specific writeback
+### C4 固化 route-specific writeback `Done`
 
 - 目标：把 profile 更新继续锁定在 observation -> code merge 路径
 - 输入：现有 `profile_store.py`、postmatch/health 观察结果
@@ -145,7 +145,7 @@
 
 ## 阶段 D：测试与文档收敛
 
-### D1 入口与 middleware 回归测试
+### D1 入口与 middleware 回归测试 `Done`
 
 - 目标：确保 runtime 重构不破坏现有主链路
 - 输入：新入口、middleware 组合
@@ -157,7 +157,7 @@
 - 并行项：可与 B4 并行
 - 阻塞项：无
 
-### D2 mixed intent 与 persona 测试
+### D2 mixed intent 与 persona 测试 `Done`
 
 - 目标：验证复合意图和 persona 的真实行为
 - 输入：路由逻辑、persona 注入逻辑
@@ -169,7 +169,7 @@
 - 并行项：无
 - 阻塞项：无
 
-### D3 可观测性与离线评测收敛
+### D3 可观测性与离线评测收敛 `Done`
 
 - 目标：确保 runtime 重构后仍具备结构化日志与离线评测能力
 - 输入：structured logging、run log summary、coach eval 样本与脚本
@@ -183,7 +183,7 @@
 - 并行项：可与 D4 文档整理部分并行
 - 阻塞项：无
 
-### D4 文档、评测与阶段总结
+### D4 文档、评测与阶段总结 `Done`
 
 - 目标：完成 Phase 2 文档收敛和阶段总结
 - 输入：实现结果、测试结果、评测结果

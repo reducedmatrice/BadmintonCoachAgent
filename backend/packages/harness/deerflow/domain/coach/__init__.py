@@ -6,6 +6,7 @@ from .health_image import (
     analyze_health_image_text,
     build_health_recovery_advice,
 )
+from .clarification_policy import build_clarification_request
 from .intent import (
     CoachIntent,
     CoachIntentClassifier,
@@ -44,6 +45,7 @@ from .profile_store import (
     save_coach_profile,
     update_profile_from_postmatch,
 )
+from .response_renderer import render_coach_route_payload, resolve_persona_config
 from .router import (
     CoachComposableRouteResult,
     CoachSafetyGateDecision,
@@ -58,6 +60,7 @@ from .weather import WeatherContext, degrade_weather_context, fetch_weather_cont
 __all__ = [
     "HealthImageObservation",
     "HealthRecoveryAdvice",
+    "build_clarification_request",
     "HealthPersistenceResult",
     "PrematchPersistenceResult",
     "Improvement",
@@ -101,6 +104,8 @@ __all__ = [
     "merge_coach_persona",
     "resolve_coach_persona",
     "resolve_coach_persona_overrides",
+    "resolve_persona_config",
+    "render_coach_route_payload",
     "persist_postmatch_review",
     "process_postmatch_message",
     "default_coach_safety_gate",

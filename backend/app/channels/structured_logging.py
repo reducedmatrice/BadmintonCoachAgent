@@ -39,6 +39,7 @@ def build_run_log_record(
         "error_type": error_type,
         "token_usage": extract_token_usage(result),
         "memory_hits": extract_memory_hits(result),
+        "clarification": extract_clarification(result),
     }
 
 
@@ -117,6 +118,54 @@ def extract_memory_hits(result: dict[str, Any] | list[Any] | None) -> dict[str, 
     }
     hits["status"] = "hit" if any(hits.values()) else "unknown"
     return hits
+
+
+def extract_clarification(result: dict[str, Any] | list[Any] | None) -> dict[str, Any]:
+    """Extract clarification decision signals from coach intake state."""
+    if not isinstance(result, dict):
+        return {
+            "requested": False,
+            "reason": "",
+            "missing_slots": [],
+            "question": "",
+        }
+
+    coach_intake = result.get("coach_intake")
+    if not isinstance(coach_intake, dict):
+        return {
+            "requested": False,
+            "reason": "",
+            "missing_slots": [],
+            "question": "",
+        }
+
+    intent = coach_intake.get("intent")
+    clarification_request = coach_intake.get("clarification_request")
+
+    reason = ""
+    missing_slots: list[str] = []
+    if isinstance(intent, dict):
+        raw_reason = intent.get("clarification_reason")
+        if isinstance(raw_reason, str):
+            reason = raw_reason
+        raw_missing_slots = intent.get("missing_slots")
+        if isinstance(raw_missing_slots, list):
+            missing_slots = [item for item in raw_missing_slots if isinstance(item, str) and item]
+
+    question = ""
+    requested = False
+    if isinstance(clarification_request, dict):
+        raw_question = clarification_request.get("question")
+        if isinstance(raw_question, str):
+            question = raw_question
+        requested = bool(question)
+
+    return {
+        "requested": requested,
+        "reason": reason,
+        "missing_slots": missing_slots,
+        "question": question,
+    }
 
 
 def _coerce_context_list(value: Any) -> list[str]:

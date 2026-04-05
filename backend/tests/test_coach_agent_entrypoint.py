@@ -53,6 +53,7 @@ def test_build_coach_middlewares_excludes_todo_and_subagent_limit(monkeypatch):
     assert "SandboxMiddleware" in names
     assert "ToolErrorHandlingMiddleware" in names
     assert "CoachIntakeMiddleware" in names
+    assert "CoachClarificationMiddleware" in names
     assert "MemoryMiddleware" in names
     assert "ViewImageMiddleware" in names
     assert "ClarificationMiddleware" in names
@@ -77,7 +78,8 @@ def test_build_coach_middlewares_keeps_expected_order(monkeypatch):
     assert names.index("SandboxMiddleware") < names.index("DanglingToolCallMiddleware")
     assert names.index("DanglingToolCallMiddleware") < names.index("ToolErrorHandlingMiddleware")
     assert names.index("ToolErrorHandlingMiddleware") < names.index("CoachIntakeMiddleware")
-    assert names.index("CoachIntakeMiddleware") < names.index("TitleMiddleware")
+    assert names.index("CoachIntakeMiddleware") < names.index("CoachClarificationMiddleware")
+    assert names.index("CoachClarificationMiddleware") < names.index("TitleMiddleware")
     assert names.index("TitleMiddleware") < names.index("MemoryMiddleware")
     assert names.index("MemoryMiddleware") < names.index("ViewImageMiddleware")
     assert names.index("ViewImageMiddleware") < names.index("LoopDetectionMiddleware")

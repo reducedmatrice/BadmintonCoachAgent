@@ -214,6 +214,8 @@ Coach 不再只依赖 SOUL 或 prompt 描述，而要具备结构化 persona 能
 - **Structured Logs**：面向真实运行链路，记录 latency、token、route、memory hit、error
 - **Offline Evaluation**：面向固定样本集，评估 route、structure、actionability、grounding、safety
 
+补充：当前 structured logs 也记录 clarification 决策信号，包括是否触发追问、触发原因、缺失槽位与实际追问文案，便于后续统计 intake 误追问率与追问命中原因。
+
 这两类能力共同构成可解释的证据链：
 
 - structured logs 回答“系统在线上跑得怎么样”
@@ -256,7 +258,7 @@ Coach 不再只依赖 SOUL 或 prompt 描述，而要具备结构化 persona 能
 #### 3.2.4 新增
 
 - `CoachIntakeMiddleware`
-- `CoachPersonaMiddleware`（若 persona 逻辑最终独立拆层）
+- `CoachPersonaMiddleware`（可选；当前实现采用 intake + response renderer，不单独拆 middleware）
 
 ### 3.3 路由实现原则
 
@@ -533,13 +535,13 @@ Phase 2 预期重点落在以下区域：
 #### 阶段 D：测试与文档收敛
 
 - [x] D1 入口与 middleware 回归测试
-- [ ] D2 mixed intent 与 persona 测试
-- [ ] D3 可观测性与离线评测收敛
-- [ ] D4 文档与阶段总结
+- [x] D2 mixed intent 与 persona 测试
+- [x] D3 可观测性与离线评测收敛
+- [x] D4 文档与阶段总结
 
 ### 📈 总体进度
 
-- 当前阶段：Phase 2 规格制定完成，待进入实现
+- 当前阶段：Phase 2 已完成，实现与文档已基本收敛
 
 ***
 
@@ -580,6 +582,13 @@ Phase 2 预期重点落在以下区域：
 ### D3：可观测性与离线评测收敛
 
 ### D4：文档与阶段总结
+
+### 实现对照补充
+
+- Persona 当前通过 `CoachIntakeMiddleware` 完成注入，通过 `response_renderer.py` 落到表达层，而不是单独增加 `CoachPersonaMiddleware`
+- run log 汇总脚本为 `scripts/summarize_run_logs.py`
+- offline eval CLI 为 `scripts/run_coach_eval.py`
+- 评测样本与报告位于 `docs/eval/`
 
 ## 7. 可扩展性与未来展望
 

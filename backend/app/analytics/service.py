@@ -17,6 +17,9 @@ class AnalyticsSummary:
     p50_latency_ms: float
     p95_latency_ms: float
     avg_total_tokens: float
+    clarification_requested_count: int
+    clarification_request_rate: float
+    clarification_reasons: list[dict[str, Any]]
 
     def model_dump(self) -> dict[str, Any]:
         return asdict(self)
@@ -140,17 +143,38 @@ def _summarize_runs(runs: list[dict[str, Any]]) -> AnalyticsSummary:
             p50_latency_ms=0.0,
             p95_latency_ms=0.0,
             avg_total_tokens=0.0,
+            clarification_requested_count=0,
+            clarification_request_rate=0.0,
+            clarification_reasons=[],
         )
 
     latencies = [float(run["latency_ms"]) for run in runs if run.get("latency_ms") is not None]
     total_tokens = [float(run["total_tokens"]) for run in runs if run.get("total_tokens") is not None]
     errors = sum(1 for run in runs if run.get("error"))
+    clarification_requested_count = 0
+    clarification_reason_counts: dict[str, int] = {}
+    for run in runs:
+        clarification = run.get("raw", {}).get("clarification", {})
+        if not isinstance(clarification, dict):
+            continue
+        if clarification.get("requested"):
+            clarification_requested_count += 1
+            reason = clarification.get("reason")
+            if isinstance(reason, str) and reason:
+                clarification_reason_counts[reason] = clarification_reason_counts.get(reason, 0) + 1
+
     return AnalyticsSummary(
         total_requests=len(runs),
         error_rate=round(errors / len(runs), 4),
         p50_latency_ms=_percentile(latencies, 50),
         p95_latency_ms=_percentile(latencies, 95),
         avg_total_tokens=round(mean(total_tokens), 2) if total_tokens else 0.0,
+        clarification_requested_count=clarification_requested_count,
+        clarification_request_rate=round(clarification_requested_count / len(runs), 4),
+        clarification_reasons=[
+            {"reason": reason, "count": count}
+            for reason, count in sorted(clarification_reason_counts.items(), key=lambda item: (-item[1], item[0]))
+        ],
     )
 
 

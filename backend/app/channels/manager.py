@@ -105,6 +105,15 @@ def _extract_response_text(result: dict | list) -> str:
                 text = "".join(parts)
                 if text:
                     return text
+
+    if isinstance(result, dict):
+        coach_intake = result.get("coach_intake")
+        if isinstance(coach_intake, Mapping):
+            clarification_request = coach_intake.get("clarification_request")
+            if isinstance(clarification_request, Mapping):
+                question = clarification_request.get("question")
+                if isinstance(question, str) and question:
+                    return question
     return ""
 
 

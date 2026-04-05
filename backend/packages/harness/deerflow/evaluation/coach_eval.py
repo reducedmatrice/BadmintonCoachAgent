@@ -16,6 +16,7 @@ from deerflow.domain.coach import (
     build_health_recovery_advice,
     build_prematch_advice,
     extract_postmatch_review,
+    render_coach_route_payload,
 )
 from deerflow.domain.coach.profile_store import process_postmatch_message
 
@@ -181,64 +182,113 @@ def _resolve_execution_order(intents: list[str]) -> list[str]:
 
 
 def _run_case(case: dict[str, Any], route: str) -> Any:
+    persona = case.get("persona")
     if route == "prematch":
         review_logs = [
             (Path(f"sample-{index}.md"), content)
             for index, content in enumerate(case.get("review_logs", []), start=1)
             if isinstance(content, str)
         ]
-        return build_prematch_advice(
+        advice = build_prematch_advice(
             str(case.get("message", "")),
             memory_data=case.get("memory_data", {"facts": []}),
             coach_profile=case.get("coach_profile"),
             review_logs=review_logs,
             weather=case.get("weather"),
         )
+        return {
+            "focus_points": advice.focus_points,
+            "warmup": advice.warmup,
+            "risk_reminders": advice.risk_reminders,
+            "cited_context": advice.cited_context,
+            "follow_up_questions": advice.follow_up_questions,
+            "response_text": render_coach_route_payload(
+                route,
+                {
+                    "focus_points": advice.focus_points,
+                    "warmup": advice.warmup,
+                    "risk_reminders": advice.risk_reminders,
+                    "follow_up_questions": advice.follow_up_questions,
+                },
+                persona=persona,
+            ),
+        }
     if route == "postmatch":
-        return extract_postmatch_review(str(case.get("message", "")))
+        review = extract_postmatch_review(str(case.get("message", "")))
+        return {
+            "summary": review.summary,
+            "technical_observations": review.technical_observations,
+            "improvements": review.improvements,
+            "next_focus": review.next_focus,
+            "response_text": render_coach_route_payload(
+                route,
+                {
+                    "summary": review.summary,
+                    "next_focus": review.next_focus,
+                },
+                persona=persona,
+            ),
+        }
     if route == "health":
         observation = analyze_health_image_text(str(case.get("image_summary") or case.get("message", "")))
-        return build_health_recovery_advice(observation)
+        advice = build_health_recovery_advice(observation)
+        return {
+            "risk_level": advice.risk_level,
+            "structured_observations": advice.structured_observations,
+            "recovery_actions": advice.recovery_actions,
+            "next_session_intensity": advice.next_session_intensity,
+            "follow_up_question": advice.follow_up_question,
+            "response_text": render_coach_route_payload(
+                route,
+                {
+                    "structured_observations": advice.structured_observations,
+                    "recovery_actions": advice.recovery_actions,
+                    "next_session_intensity": advice.next_session_intensity,
+                    "follow_up_question": advice.follow_up_question,
+                },
+                persona=persona,
+            ),
+        }
     return {"message": str(case.get("message", ""))}
 
 
 def _score_structure(route: str, output: Any) -> float:
     if route == "prematch":
-        return 5.0 if output.focus_points and output.warmup and output.risk_reminders else 2.0
+        return 5.0 if output["focus_points"] and output["warmup"] and output["risk_reminders"] else 2.0
     if route == "postmatch":
-        return 5.0 if output.summary and output.next_focus else 2.0
+        return 5.0 if output["summary"] and output["next_focus"] else 2.0
     if route == "health":
-        return 5.0 if output.structured_observations and output.recovery_actions else 2.0
+        return 5.0 if output["structured_observations"] and output["recovery_actions"] else 2.0
     return 1.0
 
 
 def _score_actionability(route: str, output: Any) -> float:
     if route == "prematch":
-        return 5.0 if len(output.focus_points) >= 2 and output.risk_reminders else 3.0
+        return 5.0 if len(output["focus_points"]) >= 2 and output["risk_reminders"] else 3.0
     if route == "postmatch":
-        return 5.0 if output.next_focus else 2.0
+        return 5.0 if output["next_focus"] else 2.0
     if route == "health":
-        return 5.0 if output.next_session_intensity and output.follow_up_question else 3.0
+        return 5.0 if output["next_session_intensity"] and output["follow_up_question"] else 3.0
     return 1.0
 
 
 def _score_grounding(route: str, output: Any) -> float:
     if route == "prematch":
-        return 5.0 if output.cited_context else 2.0
+        return 5.0 if output["cited_context"] else 2.0
     if route == "postmatch":
-        return 5.0 if output.technical_observations or output.improvements else 2.0
+        return 5.0 if output["technical_observations"] or output["improvements"] else 2.0
     if route == "health":
-        return 5.0 if output.structured_observations else 2.0
+        return 5.0 if output["structured_observations"] else 2.0
     return 1.0
 
 
 def _score_safety(route: str, output: Any) -> float:
     if route == "prematch":
-        return 5.0 if output.risk_reminders else 2.0
+        return 5.0 if output["risk_reminders"] else 2.0
     if route == "postmatch":
-        return 4.0 if output.next_focus else 2.0
+        return 4.0 if output["next_focus"] else 2.0
     if route == "health":
-        text = f"{output.next_session_intensity} {' '.join(output.recovery_actions)}"
+        text = f"{output['next_session_intensity']} {' '.join(output['recovery_actions'])}"
         return 5.0 if any(keyword in text for keyword in ("恢复", "低强度", "中低强度")) else 2.0
     return 1.0
 
@@ -287,7 +337,7 @@ def _score_persona_consistency(case: dict[str, Any], output: Any) -> float | Non
     if not isinstance(expectations, dict):
         return None
 
-    response_text = str(case.get("candidate_response") or _stringify_output(output))
+    response_text = str(case.get("candidate_response") or output.get("response_text") or _stringify_output(output))
     required_markers = [item for item in expectations.get("required_markers", []) if isinstance(item, str) and item]
     forbidden_markers = [item for item in expectations.get("forbidden_markers", []) if isinstance(item, str) and item]
 

@@ -84,3 +84,41 @@ def test_before_agent_includes_resolved_persona_from_runtime_context():
     }
     assert intake["persona_ignored_overrides"]["session"] == []
     assert "route" in intake["persona_ignored_overrides"]["task"]
+
+
+def test_before_agent_builds_clarification_request_for_underspecified_query():
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="帮我看看"),
+        ],
+    }
+
+    result = mw.before_agent(state, _runtime("thread-clarify"))
+    intake = result["coach_intake"]
+
+    assert intake["intent"]["needs_clarification"] is True
+    assert intake["clarification_request"] is not None
+    assert intake["clarification_request"]["reason"] in {"low_intent_confidence", "no_stable_intent_detected", "underspecified_request"}
+    assert "你现在希望我先帮你做哪类判断" in intake["clarification_request"]["question"]
+
+
+def test_before_agent_uses_persona_questioning_style_in_clarification_request():
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="帮我看下"),
+        ],
+    }
+
+    runtime = _runtime("thread-direct")
+    runtime.context["persona_overrides"] = {
+        "task": {"questioning_style": "direct"},
+    }
+
+    result = mw.before_agent(state, runtime)
+    intake = result["coach_intake"]
+
+    assert intake["intent"]["needs_clarification"] is True
+    assert intake["clarification_request"] is not None
+    assert intake["clarification_request"]["question"].startswith("直接说，")

@@ -25,6 +25,9 @@ class SummaryResponse(BaseModel):
     p50_latency_ms: float
     p95_latency_ms: float
     avg_total_tokens: float
+    clarification_requested_count: int
+    clarification_request_rate: float
+    clarification_reasons: list[dict[str, int | str]]
     filters: AnalyticsFiltersResponse
 
 
@@ -52,6 +55,9 @@ class RouteMetricsResponse(BaseModel):
     p50_latency_ms: float
     p95_latency_ms: float
     avg_total_tokens: float
+    clarification_requested_count: int
+    clarification_request_rate: float
+    clarification_reasons: list[dict[str, int | str]]
 
 
 class ByRouteResponse(BaseModel):
