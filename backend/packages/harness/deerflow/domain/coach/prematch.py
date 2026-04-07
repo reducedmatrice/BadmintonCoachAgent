@@ -7,7 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from deerflow.agents.memory.updater import get_memory_data
+from deerflow.agents.memory.accessor import MemoryEntry, get_memory_access_result
+from deerflow.agents.memory.schema import MemoryGet, MemoryReadMode
 from deerflow.config.paths import get_paths
 
 
@@ -59,9 +60,15 @@ def build_prematch_advice(
 ) -> PrematchAdvice:
     """Generate a prematch plan using available history and current context."""
     normalized_message = message.strip()
-    memory = memory_data if memory_data is not None else get_memory_data(agent_name)
     profile = coach_profile if coach_profile is not None else load_coach_profile(agent_name)
     reviews = review_logs if review_logs is not None else load_recent_review_logs(agent_name)
+    memory_access = get_memory_access_result(
+        agent_name=agent_name,
+        request=_build_prematch_memory_request(normalized_message, profile=profile, reviews=reviews),
+        memory_data=memory_data,
+        message=normalized_message,
+    )
+    memory = memory_access.memory_index
 
     focus_points: list[str] = []
     warmup: list[str] = ["先做 8-10 分钟慢跑或跳绳，把心率和脚下节奏带起来。"]
@@ -88,6 +95,12 @@ def build_prematch_advice(
     if memory_signal is not None and not cited_context:
         focus_points.append(f"从长期记忆看，今天别忽略：{memory_signal}。")
         cited_context.append(f"memory:{memory_signal}")
+
+    drilled_signal = _extract_memory_entry_signal(memory_access.entries)
+    if drilled_signal is not None and not profile_signal and not review_signal:
+        signal, citation = drilled_signal
+        focus_points.append(f"回看来源记录，最近一次相关上下文提示：{signal}。")
+        cited_context.append(citation)
 
     if len(focus_points) == 1 and cited_context:
         focus_points.append("前 15 分钟先把节奏打顺，再逐步抬强度，不要一上来就拼速度。")
@@ -190,6 +203,33 @@ def _extract_memory_signal(memory_data: dict[str, Any]) -> str | None:
         if isinstance(content, str) and content.strip():
             return content.strip()
     return None
+
+
+def _extract_memory_entry_signal(entries: list[MemoryEntry]) -> tuple[str, str] | None:
+    for entry in entries:
+        for signal in entry.extracted_signals:
+            if signal != "none":
+                return signal, f"memory_entry:{entry.entry_id}"
+
+        if entry.user_summary:
+            return entry.user_summary.splitlines()[0].strip(), f"memory_entry:{entry.entry_id}"
+    return None
+
+
+def _build_prematch_memory_request(
+    message: str,
+    *,
+    profile: dict[str, Any] | None,
+    reviews: list[tuple[Path, str]],
+) -> MemoryGet:
+    needs_source = any(keyword in message for keyword in ("来源", "为什么", "根据", "最近", "上次"))
+    lacks_stronger_history = not profile and not reviews
+    return MemoryGet(
+        read_mode=MemoryReadMode.ALLOW_DRILL_DOWN if (needs_source or lacks_stronger_history) else MemoryReadMode.INDEX_ONLY,
+        require_source=needs_source,
+        prefer_coach_profile=True,
+        reason="prematch drill-down" if (needs_source or lacks_stronger_history) else "prematch index-only",
+    )
 
 
 def _extend_risk_reminders(

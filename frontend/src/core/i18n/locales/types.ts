@@ -235,6 +235,9 @@ export interface Translations {
         earlierContext: string;
         longTermBackground: string;
         updatedAt: string;
+        sources: string;
+        threadIds: string;
+        none: string;
         facts: string;
         empty: string;
         table: {
@@ -248,6 +251,8 @@ export interface Translations {
           };
           content: string;
           source: string;
+          sourceEntry: string;
+          thread: string;
           createdAt: string;
           view: string;
         };

@@ -18,18 +18,18 @@
 
 ## Phase 3：后端读取链路与下钻策略
 
-- [ ] prematch 读取顺序符合 spec
-- [ ] health 读取顺序符合 spec
-- [ ] fallback/general 读取顺序符合 spec
-- [ ] 下钻原文条件在代码层可执行
-- [ ] `coach_profile.json` 优先级不被弱化
+- [x] prematch 读取顺序符合 spec
+- [x] health 读取顺序符合 spec
+- [x] fallback/general 读取顺序符合 spec
+- [x] 下钻原文条件在代码层可执行
+- [x] `coach_profile.json` 优先级不被弱化
 
 ## Phase 4：查询与前端展示最小补齐
 
-- [ ] API 能返回 `sources` 与 `thread_ids`
-- [ ] 前端 memory 页面能显示来源信息
-- [ ] facts 能展示 thread 引用
-- [ ] summary 能展示 entry 引用
+- [x] API 能返回 `sources` 与 `thread_ids`
+- [x] 前端 memory 页面能显示来源信息
+- [x] facts 能展示 thread 引用
+- [x] summary 能展示 entry 引用
 
 ## Phase 5：回归与验收
 

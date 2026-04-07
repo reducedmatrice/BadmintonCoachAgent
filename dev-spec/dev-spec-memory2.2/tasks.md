@@ -32,7 +32,7 @@
 
 ## Phase 3：后端读取链路与下钻策略
 
-- 状态：进行中
+- 状态：已完成
 - 目标：明确何时读取 `memory.json`，何时下钻 `memory/YYYY-MM-DD.md`
 - 输入：coach route、lead agent prompt、memory accessor 需求
 - 输出：读取顺序、下钻条件、coach 优先级约束
@@ -46,7 +46,7 @@
 
 ## Phase 4：查询与前端展示最小补齐
 
-- 状态：未开始
+- 状态：已完成
 - 目标：让前端 memory 页面具备最小来源查看能力
 - 输入：`/api/memory` 返回结构、前端 memory 页面展示需求
 - 输出：sources/thread_ids API 字段、来源展示与查看入口
@@ -59,7 +59,7 @@
 
 ## Phase 5：回归与验收
 
-- 状态：未开始
+- 状态：进行中
 - 目标：验证该架构满足“可追溯、可审阅、可重建”
 - 输入：memory 测试、coach 测试、双写链路结果
 - 输出：回归测试、验收结论、重建路径说明

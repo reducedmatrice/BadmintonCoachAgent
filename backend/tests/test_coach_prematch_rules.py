@@ -92,3 +92,48 @@ def test_prematch_degrades_gracefully_when_weather_context_missing(tmp_path: Pat
         )
 
     assert any("未获取到天气上下文" in item for item in advice.risk_reminders)
+
+
+def test_prematch_can_drill_down_memory_entry_when_profile_and_reviews_missing(tmp_path: Path):
+    agent_dir = tmp_path / "agents" / "badminton-coach"
+    memory_dir = agent_dir / "memory"
+    memory_dir.mkdir(parents=True)
+    (memory_dir / "2026-04-07.md").write_text(
+        "## mem_20260407T093000Z_deadbeef\n\n"
+        "- thread_id: thread_abc\n"
+        "- ts: 2026-04-07T09:30:00Z\n\n"
+        "### User Summary\n\n"
+        "昨天复盘里提到后场步法还是慢。\n\n"
+        "### Assistant Summary\n\n"
+        "建议继续盯启动和回位。\n\n"
+        "### Extracted Signals\n\n"
+        "- fact:goal:继续盯后场步法\n",
+        encoding="utf-8",
+    )
+
+    with (
+        patch("deerflow.domain.coach.prematch.get_paths", return_value=_make_paths(tmp_path)),
+        patch("deerflow.agents.memory.accessor.get_paths", return_value=_make_paths(tmp_path)),
+    ):
+        advice = build_prematch_advice(
+            "根据最近记录，今晚打球注意什么？",
+            memory_data={
+                "user": {},
+                "history": {},
+                "facts": [
+                    {
+                        "id": "fact_1",
+                        "content": "长期记忆提到后场步法问题",
+                        "category": "goal",
+                        "confidence": 0.9,
+                        "createdAt": "2026-04-07T09:30:00Z",
+                        "source": "thread_abc",
+                        "sources": ["mem_20260407T093000Z_deadbeef"],
+                        "thread_ids": ["thread_abc"],
+                    }
+                ],
+            },
+        )
+
+    assert any("后场步法" in item for item in advice.focus_points)
+    assert any(context == "memory_entry:mem_20260407T093000Z_deadbeef" for context in advice.cited_context)

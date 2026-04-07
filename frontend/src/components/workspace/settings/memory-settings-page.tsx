@@ -35,6 +35,8 @@ function formatMemorySection(
   title: string,
   summary: string,
   updatedAt: string | undefined,
+  sources: string[],
+  threadIds: string[],
   t: ReturnType<typeof useI18n>["t"],
 ): string {
   const content =
@@ -46,6 +48,16 @@ function formatMemorySection(
     "",
     updatedAt &&
       `> ${t.settings.memory.markdown.updatedAt}: \`${formatTimeAgo(updatedAt)}\``,
+    `> ${t.settings.memory.markdown.sources}: ${
+      sources.length > 0
+        ? sources.map((source) => `\`${source}\``).join(", ")
+        : t.settings.memory.markdown.none
+    }`,
+    `> ${t.settings.memory.markdown.threadIds}: ${
+      threadIds.length > 0
+        ? threadIds.map((threadId) => `[${threadId}](${pathOfThread(threadId)})`).join(", ")
+        : t.settings.memory.markdown.none
+    }`,
   ]
     .filter(Boolean)
     .join("\n");
@@ -68,6 +80,8 @@ function memoryToMarkdown(
       t.settings.memory.markdown.work,
       memory.user.workContext.summary,
       memory.user.workContext.updatedAt,
+      memory.user.workContext.sources,
+      memory.user.workContext.thread_ids,
       t,
     ),
   );
@@ -76,6 +90,8 @@ function memoryToMarkdown(
       t.settings.memory.markdown.personal,
       memory.user.personalContext.summary,
       memory.user.personalContext.updatedAt,
+      memory.user.personalContext.sources,
+      memory.user.personalContext.thread_ids,
       t,
     ),
   );
@@ -84,6 +100,8 @@ function memoryToMarkdown(
       t.settings.memory.markdown.topOfMind,
       memory.user.topOfMind.summary,
       memory.user.topOfMind.updatedAt,
+      memory.user.topOfMind.sources,
+      memory.user.topOfMind.thread_ids,
       t,
     ),
   );
@@ -94,6 +112,8 @@ function memoryToMarkdown(
       t.settings.memory.markdown.recentMonths,
       memory.history.recentMonths.summary,
       memory.history.recentMonths.updatedAt,
+      memory.history.recentMonths.sources,
+      memory.history.recentMonths.thread_ids,
       t,
     ),
   );
@@ -102,6 +122,8 @@ function memoryToMarkdown(
       t.settings.memory.markdown.earlierContext,
       memory.history.earlierContext.summary,
       memory.history.earlierContext.updatedAt,
+      memory.history.earlierContext.sources,
+      memory.history.earlierContext.thread_ids,
       t,
     ),
   );
@@ -110,6 +132,8 @@ function memoryToMarkdown(
       t.settings.memory.markdown.longTermBackground,
       memory.history.longTermBackground.summary,
       memory.history.longTermBackground.updatedAt,
+      memory.history.longTermBackground.sources,
+      memory.history.longTermBackground.thread_ids,
       t,
     ),
   );
@@ -122,15 +146,27 @@ function memoryToMarkdown(
   } else {
     parts.push(
       [
-        `| ${t.settings.memory.markdown.table.category} | ${t.settings.memory.markdown.table.confidence} | ${t.settings.memory.markdown.table.content} | ${t.settings.memory.markdown.table.source} | ${t.settings.memory.markdown.table.createdAt} |`,
-        "|---|---|---|---|---|",
+        `| ${t.settings.memory.markdown.table.category} | ${t.settings.memory.markdown.table.confidence} | ${t.settings.memory.markdown.table.content} | ${t.settings.memory.markdown.table.sourceEntry} | ${t.settings.memory.markdown.table.thread} | ${t.settings.memory.markdown.table.createdAt} |`,
+        "|---|---|---|---|---|---|",
         ...memory.facts.map((f) => {
           const { key, value } = confidenceToLevelKey(f.confidence);
           const levelLabel =
             t.settings.memory.markdown.table.confidenceLevel[key];
           const confidenceText =
             typeof value === "number" ? `${levelLabel}` : levelLabel;
-          return `| ${upperFirst(f.category)} | ${confidenceText} | ${f.content} | [${t.settings.memory.markdown.table.view}](${pathOfThread(f.source)}) | ${formatTimeAgo(f.createdAt)} |`;
+          const sourceText =
+            f.sources.length > 0
+              ? f.sources.map((source) => `\`${source}\``).join("<br/>")
+              : t.settings.memory.markdown.none;
+          const threadText =
+            f.thread_ids.length > 0
+              ? f.thread_ids
+                  .map((threadId) => `[${t.settings.memory.markdown.table.view}](${pathOfThread(threadId)})`)
+                  .join("<br/>")
+              : (f.source && f.source !== "unknown"
+                  ? `[${t.settings.memory.markdown.table.view}](${pathOfThread(f.source)})`
+                  : t.settings.memory.markdown.none);
+          return `| ${upperFirst(f.category)} | ${confidenceText} | ${f.content} | ${sourceText} | ${threadText} | ${formatTimeAgo(f.createdAt)} |`;
         }),
       ].join("\n"),
     );

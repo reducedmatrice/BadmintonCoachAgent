@@ -286,6 +286,9 @@ export const zhCN: Translations = {
         earlierContext: "更早上下文",
         longTermBackground: "长期背景",
         updatedAt: "更新于",
+        sources: "来源条目",
+        threadIds: "关联线程",
+        none: "无",
         facts: "事实",
         empty: "（空）",
         table: {
@@ -299,6 +302,8 @@ export const zhCN: Translations = {
           },
           content: "内容",
           source: "来源",
+          sourceEntry: "来源条目",
+          thread: "线程",
           createdAt: "创建时间",
           view: "查看",
         },

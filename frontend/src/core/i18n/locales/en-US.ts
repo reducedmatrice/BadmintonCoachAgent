@@ -299,6 +299,9 @@ export const enUS: Translations = {
         earlierContext: "Earlier context",
         longTermBackground: "Long-term background",
         updatedAt: "Updated at",
+        sources: "Source entries",
+        threadIds: "Threads",
+        none: "None",
         facts: "Facts",
         empty: "(empty)",
         table: {
@@ -312,6 +315,8 @@ export const enUS: Translations = {
           },
           content: "Content",
           source: "Source",
+          sourceEntry: "Source entry",
+          thread: "Thread",
           createdAt: "CreatedAt",
           view: "View",
         },

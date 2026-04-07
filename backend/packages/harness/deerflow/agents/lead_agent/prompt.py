@@ -345,14 +345,23 @@ def _get_memory_context(agent_name: str | None = None) -> str:
         Formatted memory context string wrapped in XML tags, or empty string if disabled.
     """
     try:
-        from deerflow.agents.memory import format_memory_for_injection, get_memory_data
+        from deerflow.agents.memory import format_memory_for_injection
+        from deerflow.agents.memory.accessor import get_memory_access_result
+        from deerflow.agents.memory.schema import MemoryGet, MemoryReadMode
         from deerflow.config.memory_config import get_memory_config
 
         config = get_memory_config()
         if not config.enabled or not config.injection_enabled:
             return ""
 
-        memory_data = get_memory_data(agent_name)
+        memory_data = get_memory_access_result(
+            agent_name=agent_name,
+            request=MemoryGet(
+                read_mode=MemoryReadMode.INDEX_ONLY,
+                prefer_coach_profile=True,
+                reason="lead prompt injection",
+            ),
+        ).memory_index
         memory_content = format_memory_for_injection(memory_data, max_tokens=config.max_injection_tokens)
 
         if not memory_content.strip():
