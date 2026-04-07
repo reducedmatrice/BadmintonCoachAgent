@@ -1,7 +1,10 @@
 """Tests for phase 2.2 memory schema and trace metadata."""
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
+
+from langchain_core.messages import AIMessage, HumanMessage
 
 from deerflow.agents.memory.schema import (
     MemoryGet,
@@ -10,7 +13,12 @@ from deerflow.agents.memory.schema import (
     build_memory_entry_path,
     generate_memory_entry_id,
 )
-from deerflow.agents.memory.updater import MemoryUpdater, _create_empty_memory, _normalize_memory_shape
+from deerflow.agents.memory.updater import (
+    MemoryUpdater,
+    _append_memory_entry,
+    _create_empty_memory,
+    _normalize_memory_shape,
+)
 
 
 def test_create_empty_memory_includes_traceability_fields() -> None:
@@ -71,12 +79,18 @@ def test_apply_updates_sets_thread_trace_metadata() -> None:
         ],
     }
 
-    updated = updater._apply_updates(current_memory, update_data, thread_id="thread_abc")
+    updated = updater._apply_updates(
+        current_memory,
+        update_data,
+        thread_id="thread_abc",
+        entry_metadata={"entry_id": "mem_20260407T093000Z_deadbeef"},
+    )
 
     assert updated["user"]["topOfMind"]["thread_ids"] == ["thread_abc"]
-    assert updated["user"]["topOfMind"]["sources"] == []
+    assert updated["user"]["topOfMind"]["sources"] == ["mem_20260407T093000Z_deadbeef"]
     assert updated["facts"][0]["thread_ids"] == ["thread_abc"]
     assert updated["facts"][0]["source"] == "thread_abc"
+    assert updated["facts"][0]["sources"] == ["mem_20260407T093000Z_deadbeef"]
 
 
 def test_memory_entry_helpers_follow_file_first_contract() -> None:
@@ -96,3 +110,50 @@ def test_memory_get_and_set_defaults_capture_phase_22_semantics() -> None:
     assert get_request.prefer_coach_profile is True
     assert set_request.write_markdown_first is True
     assert set_request.require_source_for_index is True
+
+
+def test_append_memory_entry_writes_daily_markdown(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setattr("deerflow.agents.memory.updater._get_memory_owner_root", lambda agent_name=None: tmp_path)
+
+    entry = _append_memory_entry(
+        [
+            HumanMessage(content="今天打球后场步法还是慢。"),
+            AIMessage(content="下次继续关注启动和步频。"),
+        ],
+        thread_id="thread_abc",
+        agent_name="badminton-coach",
+    )
+
+    assert entry is not None
+    entry_path = Path(entry["entry_path"])
+    content = entry_path.read_text(encoding="utf-8")
+    assert entry_path == tmp_path / "memory" / f"{datetime.now(UTC).strftime('%Y-%m-%d')}.md"
+    assert entry["entry_id"] in content
+    assert "thread_id: thread_abc" in content
+    assert "今天打球后场步法还是慢。" in content
+
+
+def test_update_memory_requires_thread_id_for_file_first_indexing(monkeypatch) -> None:
+    updater = MemoryUpdater()
+    monkeypatch.setattr("deerflow.agents.memory.updater.get_memory_data", lambda agent_name=None: _create_empty_memory())
+
+    class _Model:
+        def invoke(self, prompt: str):
+            return type(
+                "_Resp",
+                (),
+                {
+                    "content": json.dumps(
+                        {
+                            "user": {},
+                            "history": {},
+                            "newFacts": [],
+                            "factsToRemove": [],
+                        }
+                    )
+                },
+            )()
+
+    monkeypatch.setattr(updater, "_get_model", lambda: _Model())
+
+    assert updater.update_memory([HumanMessage(content="hello")], thread_id=None) is False

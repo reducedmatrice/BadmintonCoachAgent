@@ -10,11 +10,11 @@
 
 ## Phase 2：后端写入链路调整
 
-- [ ] 新记忆先落 Markdown
-- [ ] 新 facts 带 `sources` 与 `thread_ids`
-- [ ] summary section 带 `sources` 与 `thread_ids`
-- [ ] 无来源 entry 的索引写入被禁止
-- [ ] 现有 memory queue 流程不被破坏
+- [x] 新记忆先落 Markdown
+- [x] 新 facts 带 `sources` 与 `thread_ids`
+- [x] summary section 带 `sources` 与 `thread_ids`
+- [x] 无来源 entry 的索引写入被禁止
+- [x] 现有 memory queue 流程不被破坏
 
 ## Phase 3：后端读取链路与下钻策略
 

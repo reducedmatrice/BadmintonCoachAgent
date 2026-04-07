@@ -12,11 +12,14 @@ from deerflow.agents.memory.prompt import (
     format_conversation_for_update,
 )
 from deerflow.agents.memory.schema import (
+    build_memory_entry_path,
     build_trace_metadata,
     empty_context_section,
+    generate_memory_entry_id,
     isoformat_z,
     normalize_sources,
     normalize_thread_ids,
+    render_memory_entry_markdown,
 )
 from deerflow.config.memory_config import get_memory_config
 from deerflow.config.paths import get_paths
@@ -61,6 +64,13 @@ def _create_empty_memory() -> dict[str, Any]:
         },
         "facts": [],
     }
+
+
+def _get_memory_owner_root(agent_name: str | None = None) -> Path:
+    """Return the directory that owns the memory index and markdown entries."""
+    if agent_name is not None:
+        return get_paths().agent_dir(agent_name)
+    return get_paths().base_dir
 
 
 # Per-agent memory cache: keyed by agent_name (None = global)
@@ -268,6 +278,133 @@ def _save_memory_to_file(memory_data: dict[str, Any], agent_name: str | None = N
         return False
 
 
+def _summarize_messages_for_entry(messages: list[Any]) -> tuple[str, str]:
+    """Build lightweight user/assistant summaries from conversation messages."""
+    user_parts: list[str] = []
+    assistant_parts: list[str] = []
+
+    for message in messages:
+        content = getattr(message, "content", "")
+        if isinstance(content, list):
+            text_parts = []
+            for item in content:
+                if isinstance(item, dict) and item.get("type") == "text" and isinstance(item.get("text"), str):
+                    text_parts.append(item["text"])
+            content = "\n".join(text_parts)
+
+        if not isinstance(content, str):
+            continue
+
+        text = content.strip()
+        if not text:
+            continue
+
+        msg_type = getattr(message, "type", "")
+        if msg_type == "human":
+            user_parts.append(text)
+        elif msg_type == "ai":
+            assistant_parts.append(text)
+
+    user_summary = "\n\n".join(user_parts[-3:]).strip()
+    assistant_summary = "\n\n".join(assistant_parts[-3:]).strip()
+    return user_summary, assistant_summary
+
+
+def _extract_signals_from_update(update_data: dict[str, Any]) -> list[str]:
+    """Build simple trace signals for the markdown entry."""
+    signals: list[str] = []
+
+    for section_group in ("user", "history"):
+        group = update_data.get(section_group, {})
+        if not isinstance(group, dict):
+            continue
+        for name, payload in group.items():
+            if isinstance(payload, dict) and payload.get("shouldUpdate") and payload.get("summary"):
+                signals.append(f"{section_group}.{name}")
+
+    for fact in update_data.get("newFacts", []):
+        if not isinstance(fact, dict):
+            continue
+        category = fact.get("category", "context")
+        content = fact.get("content", "")
+        if isinstance(content, str) and content.strip():
+            signals.append(f"fact:{category}:{content.strip()[:80]}")
+
+    for fact_id in update_data.get("factsToRemove", []):
+        if isinstance(fact_id, str) and fact_id:
+            signals.append(f"remove_fact:{fact_id}")
+
+    deduped: list[str] = []
+    for signal in signals:
+        if signal not in deduped:
+            deduped.append(signal)
+    return deduped
+
+
+def _append_memory_entry(
+    messages: list[Any],
+    thread_id: str,
+    agent_name: str | None = None,
+) -> dict[str, Any] | None:
+    """Append a markdown memory entry and return its trace metadata."""
+    owner_root = _get_memory_owner_root(agent_name)
+    now = isoformat_z()
+    entry_id = generate_memory_entry_id()
+    entry_path = build_memory_entry_path(owner_root)
+    user_summary, assistant_summary = _summarize_messages_for_entry(messages)
+    entry_markdown = render_memory_entry_markdown(
+        entry_id=entry_id,
+        thread_id=thread_id,
+        ts=now,
+        user_summary=user_summary,
+        assistant_summary=assistant_summary,
+    )
+
+    try:
+        entry_path.parent.mkdir(parents=True, exist_ok=True)
+        if entry_path.exists() and entry_path.stat().st_size > 0:
+            prefix = "\n\n"
+        else:
+            prefix = ""
+        with open(entry_path, "a", encoding="utf-8") as f:
+            f.write(prefix + entry_markdown)
+    except OSError as e:
+        print(f"Failed to append memory entry: {e}")
+        return None
+
+    return {
+        "entry_id": entry_id,
+        "entry_path": str(entry_path),
+        "timestamp": now,
+        "thread_id": thread_id,
+    }
+
+
+def _rewrite_memory_entry_signals(entry_path: Path, entry_id: str, signals: list[str]) -> None:
+    """Patch the just-appended entry's signal block with extracted signals."""
+    if not signals:
+        return
+
+    try:
+        content = entry_path.read_text(encoding="utf-8")
+        marker = f"## {entry_id}"
+        start = content.rfind(marker)
+        if start < 0:
+            return
+
+        entry_text = content[start:]
+        replacement = "### Extracted Signals\n\n" + "\n".join(f"- {signal}" for signal in signals) + "\n"
+        updated_entry_text = re.sub(
+            r"### Extracted Signals\n\n(?:- .*\n?)+",
+            replacement,
+            entry_text,
+            count=1,
+        )
+        entry_path.write_text(content[:start] + updated_entry_text, encoding="utf-8")
+    except OSError as e:
+        print(f"Failed to rewrite memory entry signals: {e}")
+
+
 class MemoryUpdater:
     """Updates memory using LLM based on conversation context."""
 
@@ -332,8 +469,25 @@ class MemoryUpdater:
 
             update_data = json.loads(response_text)
 
+            # File-first memory: append source entry before writing the index.
+            if not thread_id:
+                print("Memory update aborted: thread_id is required for file-first memory indexing")
+                return False
+
+            entry_metadata = _append_memory_entry(messages, thread_id=thread_id, agent_name=agent_name)
+            if entry_metadata is None:
+                print("Memory update aborted: markdown entry append failed")
+                return False
+
             # Apply updates
-            updated_memory = self._apply_updates(current_memory, update_data, thread_id)
+            updated_memory = self._apply_updates(current_memory, update_data, thread_id, entry_metadata)
+
+            if entry_metadata:
+                _rewrite_memory_entry_signals(
+                    Path(entry_metadata["entry_path"]),
+                    entry_metadata["entry_id"],
+                    _extract_signals_from_update(update_data),
+                )
 
             # Strip file-upload mentions from all summaries before saving.
             # Uploaded files are session-scoped and won't exist in future sessions,
@@ -356,6 +510,7 @@ class MemoryUpdater:
         current_memory: dict[str, Any],
         update_data: dict[str, Any],
         thread_id: str | None = None,
+        entry_metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Apply LLM-generated updates to memory.
 
@@ -369,13 +524,14 @@ class MemoryUpdater:
         """
         config = get_memory_config()
         now = isoformat_z()
+        entry_sources = [entry_metadata["entry_id"]] if entry_metadata and entry_metadata.get("entry_id") else []
 
         # Update user sections
         user_updates = update_data.get("user", {})
         for section in ["workContext", "personalContext", "topOfMind"]:
             section_data = user_updates.get(section, {})
             if section_data.get("shouldUpdate") and section_data.get("summary"):
-                sources, thread_ids = build_trace_metadata(thread_id=thread_id)
+                sources, thread_ids = build_trace_metadata(sources=entry_sources, thread_id=thread_id)
                 current_memory["user"][section] = {
                     "summary": section_data["summary"],
                     "updatedAt": now,
@@ -388,7 +544,7 @@ class MemoryUpdater:
         for section in ["recentMonths", "earlierContext", "longTermBackground"]:
             section_data = history_updates.get(section, {})
             if section_data.get("shouldUpdate") and section_data.get("summary"):
-                sources, thread_ids = build_trace_metadata(thread_id=thread_id)
+                sources, thread_ids = build_trace_metadata(sources=entry_sources, thread_id=thread_id)
                 current_memory["history"][section] = {
                     "summary": section_data["summary"],
                     "updatedAt": now,
@@ -406,8 +562,10 @@ class MemoryUpdater:
         for fact in new_facts:
             confidence = fact.get("confidence", 0.5)
             if confidence >= config.fact_confidence_threshold:
+                if not entry_sources:
+                    continue
                 sources, thread_ids = build_trace_metadata(
-                    sources=fact.get("sources"),
+                    sources=entry_sources + normalize_sources(fact.get("sources")),
                     thread_id=thread_id,
                     thread_ids=fact.get("thread_ids"),
                 )

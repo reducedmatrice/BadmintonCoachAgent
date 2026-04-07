@@ -41,6 +41,32 @@ def build_memory_entry_path(agent_root: Path, ts: datetime | None = None) -> Pat
     return agent_root / "memory" / f"{value.strftime('%Y-%m-%d')}.md"
 
 
+def render_memory_entry_markdown(
+    *,
+    entry_id: str,
+    thread_id: str,
+    ts: str,
+    user_summary: str,
+    assistant_summary: str,
+    extracted_signals: list[str] | None = None,
+) -> str:
+    """Render a markdown memory entry in a stable, append-friendly format."""
+    signals = extracted_signals or []
+    signal_block = "\n".join(f"- {signal}" for signal in signals) if signals else "- none"
+
+    return (
+        f"## {entry_id}\n\n"
+        f"- thread_id: {thread_id}\n"
+        f"- ts: {ts}\n\n"
+        "### User Summary\n\n"
+        f"{user_summary or 'No user summary.'}\n\n"
+        "### Assistant Summary\n\n"
+        f"{assistant_summary or 'No assistant summary.'}\n\n"
+        "### Extracted Signals\n\n"
+        f"{signal_block}\n"
+    )
+
+
 def empty_context_section() -> dict[str, object]:
     """Create a traceable summary section."""
     return {
@@ -117,4 +143,3 @@ class MemorySet:
     write_markdown_first: bool = True
     require_source_for_index: bool = True
     sources: list[str] = field(default_factory=list)
-

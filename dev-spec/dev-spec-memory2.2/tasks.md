@@ -18,7 +18,7 @@
 
 ## Phase 2：后端写入链路调整
 
-- 状态：进行中
+- 状态：已完成
 - 目标：让长期记忆先写 Markdown，再更新 `memory.json`
 - 输入：memory updater、queue、prompt 注入流程
 - 输出：Markdown append 能力、来源字段写回、双写链路约束
@@ -32,7 +32,7 @@
 
 ## Phase 3：后端读取链路与下钻策略
 
-- 状态：未开始
+- 状态：进行中
 - 目标：明确何时读取 `memory.json`，何时下钻 `memory/YYYY-MM-DD.md`
 - 输入：coach route、lead agent prompt、memory accessor 需求
 - 输出：读取顺序、下钻条件、coach 优先级约束
