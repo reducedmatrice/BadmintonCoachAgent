@@ -1,6 +1,6 @@
 # Structured Log Warehouse & Analytics Dashboard 2.1 Tasks
 
-本文件从 [dev-spec-database2.1.md](file:///Users/reducedmatrice/Documents/github/note-agent/dev-spec-database2.1.md) 映射而来，按阶段拆分实现任务。
+本文件从 [dev-spec-database2.1.md](./dev-spec-database2.1.md) 映射而来，按阶段拆分实现任务。
 
 ## 阶段 A：数据模型与入库基础
 
@@ -230,7 +230,7 @@
 - 输出：更新后的文档、自检记录、风险总结
 - 依赖：E1、E2
 - 完成定义（DoD）：
-  - `dev-spec-database2.1.md`、`tasks-2.1.md`、`checklist-2.1.md` 与实现一致
+  - `dev-spec-database2.1.md`、`tasks.md`、`checklist.md` 与实现一致
   - 风险与迁移边界已记录
   - 后续版本演进建议已补充
 - 并行项：无

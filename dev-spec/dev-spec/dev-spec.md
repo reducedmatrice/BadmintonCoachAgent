@@ -101,7 +101,7 @@
 - DeerFlow 原始架构以 `make_lead_agent(config)` 为单入口，当前项目要显式替换这一层
 - 当前 coach 能力已分散存在于 `domain/coach/*`，但尚未成为 runtime 主链路
 - 当前飞书入口以文本为主
-- 仓库中 skill 与 auto-coder 工作流默认围绕 `dev-spec.md` 运作
+- 仓库中 skills 与 auto-coder 工作流默认从 `dev-spec/` 目录解析 spec，并优先选择最新版本
 
 ### 1.6 关键假设
 

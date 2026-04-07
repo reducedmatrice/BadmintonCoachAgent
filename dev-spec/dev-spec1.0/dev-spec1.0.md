@@ -10,9 +10,7 @@
 >
 > 本文件现作为 Phase 1 / v1.0 历史规格归档，不再作为当前开发主规格。
 >
-> 当前活动规格请查看：
-> - [`dev-spec.md`](/Users/reducedmatrice/Documents/github/note-agent/dev-spec.md)
-> - [`dev-spec2.0.md`](/Users/reducedmatrice/Documents/github/note-agent/dev-spec2.0.md)
+> 当前活动规格请查看 `dev-spec/` 目录中的对应阶段文件夹；当前默认读取最新版本 spec。
 
 > 版本：1.0- 羽毛球教练 + 身体指引 Coach
 

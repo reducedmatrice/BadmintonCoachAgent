@@ -9,7 +9,7 @@ Use this skill when the conversation should behave like a senior interviewer eva
 
 ## Mandatory First Step
 
-Before asking the first interview question, read the active spec at the repository root. Prefer `dev-spec.md`; if needed, also consult the current versioned spec such as `dev-spec2.0.md`.
+Before asking the first interview question, read the active spec under the repository `dev-spec/` directory. Prefer the highest available version by default; if the user names a stage, consult that specific stage folder first.
 
 Extract only the facts that materially shape the interview:
 

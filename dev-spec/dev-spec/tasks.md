@@ -1,6 +1,6 @@
 # Phase 2 Tasks
 
-本文件从 [`dev-spec.md`](/Users/reducedmatrice/Documents/github/note-agent/dev-spec.md) 映射而来，按阶段拆分实现任务。
+本文件从 [`dev-spec.md`](./dev-spec.md) 映射而来，按阶段拆分实现任务。
 
 ## 阶段 A：入口与中间件重构
 
