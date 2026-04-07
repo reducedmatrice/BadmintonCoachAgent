@@ -5,28 +5,40 @@ export interface UserMemory {
     workContext: {
       summary: string;
       updatedAt: string;
+      sources: string[];
+      thread_ids: string[];
     };
     personalContext: {
       summary: string;
       updatedAt: string;
+      sources: string[];
+      thread_ids: string[];
     };
     topOfMind: {
       summary: string;
       updatedAt: string;
+      sources: string[];
+      thread_ids: string[];
     };
   };
   history: {
     recentMonths: {
       summary: string;
       updatedAt: string;
+      sources: string[];
+      thread_ids: string[];
     };
     earlierContext: {
       summary: string;
       updatedAt: string;
+      sources: string[];
+      thread_ids: string[];
     };
     longTermBackground: {
       summary: string;
       updatedAt: string;
+      sources: string[];
+      thread_ids: string[];
     };
   };
   facts: {
@@ -36,5 +48,7 @@ export interface UserMemory {
     confidence: number;
     createdAt: string;
     source: string;
+    sources: string[];
+    thread_ids: string[];
   }[];
 }

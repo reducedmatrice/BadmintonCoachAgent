@@ -14,6 +14,8 @@ class ContextSection(BaseModel):
 
     summary: str = Field(default="", description="Summary content")
     updatedAt: str = Field(default="", description="Last update timestamp")
+    sources: list[str] = Field(default_factory=list, description="Source memory entry ids")
+    thread_ids: list[str] = Field(default_factory=list, description="Referenced thread ids")
 
 
 class UserContext(BaseModel):
@@ -40,7 +42,9 @@ class Fact(BaseModel):
     category: str = Field(default="context", description="Fact category")
     confidence: float = Field(default=0.5, description="Confidence score (0-1)")
     createdAt: str = Field(default="", description="Creation timestamp")
-    source: str = Field(default="unknown", description="Source thread ID")
+    source: str = Field(default="unknown", description="Legacy source thread ID")
+    sources: list[str] = Field(default_factory=list, description="Source memory entry ids")
+    thread_ids: list[str] = Field(default_factory=list, description="Referenced thread ids")
 
 
 class MemoryResponse(BaseModel):

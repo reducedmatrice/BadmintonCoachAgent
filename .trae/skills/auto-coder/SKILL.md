@@ -1,7 +1,7 @@
 ***
 
 name: auto-coder
-description: Autonomous spec-driven development agent. Syncs the selected dev spec into chapter-based reference files, identifies the next pending task from the schedule, implements code following spec architecture and patterns, runs tests with up to 3 auto-fix rounds, and persists progress with small reviewable commits. Use when user says "auto code", "自动开发", "自动写代码", "auto dev", "一键开发", "autopilot", or wants fully automated spec-to-code workflow. If the user does not specify a spec file or version, default to dev-spec.md. If the user says a version or selector like "auto code 2.1 A1" or "auto code dev-spec-database2.1 A1", resolve the matching versioned dev-spec file first and then execute that task from the selected spec.
+description: Autonomous spec-driven development agent. Syncs the selected dev spec into chapter-based reference files, identifies the next pending task from the schedule, implements code following spec architecture and patterns, runs tests with up to 3 auto-fix rounds, and persists progress with small reviewable commits. Use when user says "auto code", "自动开发", "自动写代码", "auto dev", "一键开发", "autopilot", or wants fully automated spec-to-code workflow. Read specs from either the repository root `dev-spec*.md` files or the staged `dev-spec/` directory. If the user does not specify a spec file or version, default to the latest resolved spec across the supported layouts. If the user says a version or selector like "auto code 2.1 A1" or "auto code dev-spec-database2.1 A1", resolve the best matching spec first and then execute the task from the selected spec.
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Auto Coder
@@ -9,7 +9,7 @@ description: Autonomous spec-driven development agent. Syncs the selected dev sp
 One trigger completes **read spec → find task → code → test → persist progress**.
 
 Optional modifiers:
-- append a task ID (e.g. `auto code B2`) to target a specific task in `dev-spec.md`
+- append a task ID (e.g. `auto code B2`) to target a specific task in the latest resolved spec
 - append a version selector plus task ID (e.g. `auto code 2.1 A1`) to target the matching versioned spec
 - append an explicit spec selector plus task ID (e.g. `auto code dev-spec-database2.1 A1`)
 - append `--no-commit` to skip git commit
@@ -35,21 +35,22 @@ Resolve the spec file from the user request before doing anything else.
 
 Default behavior:
 
-1. If the user does not specify a version or spec selector, use `dev-spec.md`
-2. Only fall back to the highest versioned `dev-spec*.md` file when `dev-spec.md` does not exist
+1. Read specs from the repository root `dev-spec*.md` files and from `dev-spec/` when that staged layout exists
+2. If the user does not specify a version or spec selector, resolve the highest available version as the default active spec
+3. If multiple minor versions are in progress in parallel, prefer the highest version number by default
 
 Selector behavior:
 
-1. If the user provides a version token such as `2.1`, resolve the matching versioned spec file whose name contains that version
-2. If the user provides an explicit selector such as `dev-spec-database2.1`, resolve that exact or closest matching versioned spec file
+1. If the user provides a version token such as `2.1`, resolve the matching stage folder whose spec version is `2.1`
+2. If the user provides an explicit selector such as `dev-spec-database2.1`, resolve that exact or closest matching spec file or stage folder
 3. After the spec file is resolved, read tasks from that spec's schedule section only
 
 Examples:
 
-- `auto code` → use `dev-spec.md`
-- `auto code A1` → use `dev-spec.md`, target task `A1`
+- `auto code` → use the latest resolved spec across supported layouts (for example `dev-spec-memory2.2.md` or `dev-spec/dev-spec-memory2.2/dev-spec-memory2.2.md`)
+- `auto code A1` → use the latest resolved spec, target task `A1`
 - `auto code 2.1 A1` → use the spec file matching version `2.1`, then target task `A1`
-- `auto code dev-spec-database2.1 A1` → use `dev-spec-database2.1.md`, then target task `A1`
+- `auto code dev-spec-database2.1 A1` → use the best matching spec file, such as `dev-spec-database2.1.md` or `dev-spec/dev-spec-database2.1/dev-spec-database2.1.md`, then target task `A1`
 
 Do not infer task state from archived specs unrelated to the resolved selector.
 
@@ -188,7 +189,7 @@ On "next", loop back to step 1 and start the next task.
 
 For this repository:
 - Prefer the resolved spec selected from the user request as the source of truth
-- When the user says only `auto code`, default to `dev-spec.md`
+- When the user says only `auto code`, default to the highest version across root-level `dev-spec*.md` files and `dev-spec/` staged specs
 - When the user says a version like `2.1`, resolve the matching versioned spec before reading the schedule
 - Treat stage-summary tasks (`A4/B4/C4/D4/E3`) and any task marked `[doc]` as documentation tasks to run only after the paired implementation tasks are complete
 - Prefer the smallest meaningful commit, not arbitrary time-based slicing

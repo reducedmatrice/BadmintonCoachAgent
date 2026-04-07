@@ -11,6 +11,13 @@ from deerflow.agents.memory.prompt import (
     MEMORY_UPDATE_PROMPT,
     format_conversation_for_update,
 )
+from deerflow.agents.memory.schema import (
+    build_trace_metadata,
+    empty_context_section,
+    isoformat_z,
+    normalize_sources,
+    normalize_thread_ids,
+)
 from deerflow.config.memory_config import get_memory_config
 from deerflow.config.paths import get_paths
 from deerflow.models import create_chat_model
@@ -41,16 +48,16 @@ def _create_empty_memory() -> dict[str, Any]:
     """Create an empty memory structure."""
     return {
         "version": "1.0",
-        "lastUpdated": datetime.utcnow().isoformat() + "Z",
+        "lastUpdated": isoformat_z(),
         "user": {
-            "workContext": {"summary": "", "updatedAt": ""},
-            "personalContext": {"summary": "", "updatedAt": ""},
-            "topOfMind": {"summary": "", "updatedAt": ""},
+            "workContext": empty_context_section(),
+            "personalContext": empty_context_section(),
+            "topOfMind": empty_context_section(),
         },
         "history": {
-            "recentMonths": {"summary": "", "updatedAt": ""},
-            "earlierContext": {"summary": "", "updatedAt": ""},
-            "longTermBackground": {"summary": "", "updatedAt": ""},
+            "recentMonths": empty_context_section(),
+            "earlierContext": empty_context_section(),
+            "longTermBackground": empty_context_section(),
         },
         "facts": [],
     }
@@ -130,10 +137,56 @@ def _load_memory_from_file(agent_name: str | None = None) -> dict[str, Any]:
     try:
         with open(file_path, encoding="utf-8") as f:
             data = json.load(f)
-        return data
+        return _normalize_memory_shape(data)
     except (json.JSONDecodeError, OSError) as e:
         print(f"Failed to load memory file: {e}")
         return _create_empty_memory()
+
+
+def _normalize_memory_shape(memory_data: dict[str, Any]) -> dict[str, Any]:
+    """Backfill new traceability fields for legacy memory payloads."""
+    normalized = _create_empty_memory()
+    normalized.update(
+        {
+            "version": memory_data.get("version", normalized["version"]),
+            "lastUpdated": memory_data.get("lastUpdated", normalized["lastUpdated"]),
+        }
+    )
+
+    for section_name in ("user", "history"):
+        section_payload = memory_data.get(section_name, {})
+        if not isinstance(section_payload, dict):
+            continue
+
+        for key, default_value in normalized[section_name].items():
+            raw_value = section_payload.get(key, {})
+            if not isinstance(raw_value, dict):
+                continue
+            normalized[section_name][key] = {
+                "summary": raw_value.get("summary", ""),
+                "updatedAt": raw_value.get("updatedAt", ""),
+                "sources": normalize_sources(raw_value.get("sources")),
+                "thread_ids": normalize_thread_ids(raw_value.get("thread_ids")),
+            }
+
+    normalized_facts: list[dict[str, Any]] = []
+    for fact in memory_data.get("facts", []):
+        if not isinstance(fact, dict):
+            continue
+        normalized_facts.append(
+            {
+                "id": fact.get("id", f"fact_{uuid.uuid4().hex[:8]}"),
+                "content": fact.get("content", ""),
+                "category": fact.get("category", "context"),
+                "confidence": fact.get("confidence", 0.5),
+                "createdAt": fact.get("createdAt", ""),
+                "source": fact.get("source", "unknown"),
+                "sources": normalize_sources(fact.get("sources")),
+                "thread_ids": normalize_thread_ids(fact.get("thread_ids"), fact.get("source")),
+            }
+        )
+    normalized["facts"] = normalized_facts
+    return normalized
 
 
 # Matches sentences that describe a file-upload *event* rather than general
@@ -190,7 +243,7 @@ def _save_memory_to_file(memory_data: dict[str, Any], agent_name: str | None = N
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Update lastUpdated timestamp
-        memory_data["lastUpdated"] = datetime.utcnow().isoformat() + "Z"
+        memory_data["lastUpdated"] = isoformat_z()
 
         # Write atomically using temp file
         temp_path = file_path.with_suffix(".tmp")
@@ -315,16 +368,19 @@ class MemoryUpdater:
             Updated memory data.
         """
         config = get_memory_config()
-        now = datetime.utcnow().isoformat() + "Z"
+        now = isoformat_z()
 
         # Update user sections
         user_updates = update_data.get("user", {})
         for section in ["workContext", "personalContext", "topOfMind"]:
             section_data = user_updates.get(section, {})
             if section_data.get("shouldUpdate") and section_data.get("summary"):
+                sources, thread_ids = build_trace_metadata(thread_id=thread_id)
                 current_memory["user"][section] = {
                     "summary": section_data["summary"],
                     "updatedAt": now,
+                    "sources": sources,
+                    "thread_ids": thread_ids,
                 }
 
         # Update history sections
@@ -332,9 +388,12 @@ class MemoryUpdater:
         for section in ["recentMonths", "earlierContext", "longTermBackground"]:
             section_data = history_updates.get(section, {})
             if section_data.get("shouldUpdate") and section_data.get("summary"):
+                sources, thread_ids = build_trace_metadata(thread_id=thread_id)
                 current_memory["history"][section] = {
                     "summary": section_data["summary"],
                     "updatedAt": now,
+                    "sources": sources,
+                    "thread_ids": thread_ids,
                 }
 
         # Remove facts
@@ -347,6 +406,11 @@ class MemoryUpdater:
         for fact in new_facts:
             confidence = fact.get("confidence", 0.5)
             if confidence >= config.fact_confidence_threshold:
+                sources, thread_ids = build_trace_metadata(
+                    sources=fact.get("sources"),
+                    thread_id=thread_id,
+                    thread_ids=fact.get("thread_ids"),
+                )
                 fact_entry = {
                     "id": f"fact_{uuid.uuid4().hex[:8]}",
                     "content": fact.get("content", ""),
@@ -354,6 +418,8 @@ class MemoryUpdater:
                     "confidence": confidence,
                     "createdAt": now,
                     "source": thread_id or "unknown",
+                    "sources": sources,
+                    "thread_ids": thread_ids,
                 }
                 current_memory["facts"].append(fact_entry)
 
