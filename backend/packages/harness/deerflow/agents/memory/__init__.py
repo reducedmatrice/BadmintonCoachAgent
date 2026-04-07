@@ -12,6 +12,12 @@ from deerflow.agents.memory.prompt import (
     format_conversation_for_update,
     format_memory_for_injection,
 )
+from deerflow.agents.memory.accessor import (
+    get_memory_access_result,
+    iter_memory_entries,
+    load_memory_entry,
+    rebuild_memory_index_from_markdown,
+)
 from deerflow.agents.memory.queue import (
     ConversationContext,
     MemoryUpdateQueue,
@@ -31,6 +37,10 @@ __all__ = [
     "FACT_EXTRACTION_PROMPT",
     "format_memory_for_injection",
     "format_conversation_for_update",
+    "get_memory_access_result",
+    "iter_memory_entries",
+    "load_memory_entry",
+    "rebuild_memory_index_from_markdown",
     # Queue
     "ConversationContext",
     "MemoryUpdateQueue",

@@ -33,9 +33,9 @@
 
 ## Phase 5：回归与验收
 
-- [ ] `memory.json` 与 Markdown 双写链路通过
-- [ ] 至少一个 fact 可回指 thread
-- [ ] 至少一个 summary 可回指 entry
-- [ ] `memory.json` 注入格式兼容现有 prompt
-- [ ] 索引缺失时存在可重建路径
-- [ ] coach route 在读取时不会错误跳过 `coach_profile.json`
+- [x] `memory.json` 与 Markdown 双写链路通过
+- [x] 至少一个 fact 可回指 thread
+- [x] 至少一个 summary 可回指 entry
+- [x] `memory.json` 注入格式兼容现有 prompt
+- [x] 索引缺失时存在可重建路径
+- [x] coach route 在读取时不会错误跳过 `coach_profile.json`

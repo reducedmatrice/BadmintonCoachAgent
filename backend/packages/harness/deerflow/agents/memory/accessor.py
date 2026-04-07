@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from deerflow.agents.memory.schema import MemoryGet, MemoryReadMode
+from deerflow.agents.memory.schema import MemoryGet, MemoryReadMode, empty_context_section, isoformat_z
 from deerflow.agents.memory.updater import get_memory_data
 from deerflow.config.paths import get_paths
 
@@ -115,6 +115,31 @@ def load_memory_entry(entry_id: str, agent_name: str | None = None) -> MemoryEnt
     return None
 
 
+def iter_memory_entries(agent_name: str | None = None) -> list[MemoryEntry]:
+    """Load all markdown memory entries ordered from newest to oldest."""
+    memory_dir = _get_memory_owner_root(agent_name) / "memory"
+    if not memory_dir.exists():
+        return []
+
+    entries: list[MemoryEntry] = []
+    for entry_path in sorted((path for path in memory_dir.glob("*.md") if path.is_file()), reverse=True):
+        try:
+            content = entry_path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+
+        matches = list(re.finditer(r"^## (mem_[^\n]+)$", content, re.MULTILINE))
+        for idx, match in enumerate(matches):
+            start = match.start()
+            end = matches[idx + 1].start() if idx + 1 < len(matches) else len(content)
+            parsed = _parse_memory_entry(content[start:end], match.group(1))
+            if parsed is not None:
+                entries.append(parsed)
+
+    entries.sort(key=lambda entry: entry.ts, reverse=True)
+    return entries
+
+
 def should_drill_down(message: str, request: MemoryGet, memory_data: dict[str, Any]) -> bool:
     """Decide whether the caller should read markdown entries."""
     if request.read_mode != MemoryReadMode.ALLOW_DRILL_DOWN:
@@ -164,3 +189,77 @@ def get_memory_access_result(
         drilled_down=bool(entries),
         reason=resolved_request.reason,
     )
+
+
+def rebuild_memory_index_from_markdown(agent_name: str | None = None) -> dict[str, Any]:
+    """Rebuild a minimal memory.json-style index from markdown entries."""
+    entries = iter_memory_entries(agent_name)
+    rebuilt = {
+        "version": "1.0",
+        "lastUpdated": isoformat_z(),
+        "user": {
+            "workContext": empty_context_section(),
+            "personalContext": empty_context_section(),
+            "topOfMind": empty_context_section(),
+        },
+        "history": {
+            "recentMonths": empty_context_section(),
+            "earlierContext": empty_context_section(),
+            "longTermBackground": empty_context_section(),
+        },
+        "facts": [],
+    }
+
+    if not entries:
+        return rebuilt
+
+    latest = entries[0]
+    rebuilt["user"]["topOfMind"] = {
+        "summary": latest.user_summary,
+        "updatedAt": latest.ts,
+        "sources": [latest.entry_id],
+        "thread_ids": [latest.thread_id],
+    }
+
+    recent_entries = entries[:3]
+    rebuilt["history"]["recentMonths"] = {
+        "summary": "\n\n".join(
+            f"- {entry.ts}: {entry.user_summary.splitlines()[0].strip()}" for entry in recent_entries if entry.user_summary.strip()
+        ),
+        "updatedAt": recent_entries[0].ts,
+        "sources": [entry.entry_id for entry in recent_entries],
+        "thread_ids": _dedupe([entry.thread_id for entry in recent_entries]),
+    }
+
+    facts: list[dict[str, Any]] = []
+    for index, entry in enumerate(entries, start=1):
+        for signal in entry.extracted_signals:
+            if not signal.startswith("fact:"):
+                continue
+            parts = signal.split(":", 2)
+            if len(parts) != 3:
+                continue
+            _, category, content = parts
+            facts.append(
+                {
+                    "id": f"fact_rebuilt_{index}_{len(facts) + 1}",
+                    "content": content,
+                    "category": category or "context",
+                    "confidence": 0.8,
+                    "createdAt": entry.ts,
+                    "source": entry.thread_id,
+                    "sources": [entry.entry_id],
+                    "thread_ids": [entry.thread_id],
+                }
+            )
+
+    rebuilt["facts"] = facts
+    return rebuilt
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    deduped: list[str] = []
+    for value in values:
+        if value and value not in deduped:
+            deduped.append(value)
+    return deduped
