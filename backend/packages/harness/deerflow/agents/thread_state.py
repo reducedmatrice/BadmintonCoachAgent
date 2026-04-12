@@ -28,6 +28,7 @@ class CoachIntakeData(TypedDict):
     missing_context: list[str]
     memory_context: NotRequired[dict | None]
     coach_profile: NotRequired[dict | None]
+    multimodal: NotRequired[dict | None]
     review_context: list[str]
     recall_context: NotRequired[dict | None]
     persona: NotRequired[dict[str, str] | None]
@@ -71,4 +72,5 @@ class ThreadState(AgentState):
     todos: NotRequired[list | None]
     uploaded_files: NotRequired[list[dict] | None]
     viewed_images: Annotated[dict[str, ViewedImageData], merge_viewed_images]  # image_path -> {base64, mime_type}
+    coach_multimodal: NotRequired[dict | None]
     coach_intake: NotRequired[CoachIntakeData | None]

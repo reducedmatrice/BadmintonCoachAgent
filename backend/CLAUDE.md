@@ -313,6 +313,8 @@ Bridges external messaging platforms (Feishu, Slack, Telegram) to the DeerFlow a
 8. For commands (`/new`, `/status`, `/models`, `/memory`, `/help`): handle locally or query Gateway API
 9. Outbound → channel callbacks → platform reply
 
+Structured run logs emitted from `manager.py` (`[ManagerStructured]`) include a `multimodal` block extracted from `coach_intake.multimodal` so dashboards can separate `success`, `disabled`, `model_unavailable`, and `extract_failed` outcomes.
+
 **Configuration** (`config.yaml` -> `channels`):
 - `langgraph_url` - LangGraph Server URL (default: `http://localhost:2024`)
 - `gateway_url` - Gateway API URL for auxiliary commands (default: `http://localhost:8001`)

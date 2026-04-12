@@ -11,6 +11,11 @@ from app.channels.structured_logging import build_run_log_record, format_run_log
 def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     result = {
         "coach_intake": {
+            "multimodal": {
+                "status": "success",
+                "model_name": "gpt-4o",
+                "extraction_latency_ms": 321.2,
+            },
             "intent": {
                 "missing_slots": [],
                 "clarification_reason": None,
@@ -55,6 +60,8 @@ def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     assert record["memory_hits"]["weather"] is True
     assert record["memory_hits"]["status"] == "hit"
     assert record["clarification"]["requested"] is False
+    assert record["multimodal"]["status"] == "success"
+    assert record["multimodal"]["model_name"] == "gpt-4o"
 
 
 def test_build_run_log_record_includes_clarification_decision():
@@ -109,3 +116,30 @@ def test_format_run_log_outputs_json_string(caplog):
     decoded = json.loads(payload)
     assert decoded["artifact_count"] == 1
     assert decoded["route"]["streaming"] is False
+    assert decoded["multimodal"]["status"] == "unknown"
+
+
+def test_build_run_log_record_includes_multimodal_failure_type():
+    record = build_run_log_record(
+        channel_name="feishu",
+        thread_id="thread-mm-fail",
+        assistant_id="lead_agent",
+        run_context={"agent_name": "badminton-coach"},
+        result={
+            "coach_intake": {
+                "multimodal": {
+                    "status": "extract_failed",
+                    "error_type": "ValueError",
+                    "model_name": "gpt-4o",
+                    "extraction_latency_ms": 912.4,
+                }
+            }
+        },
+        latency_ms=1000.0,
+        response_text="截图识别失败，先补充文字。",
+        artifacts=[],
+        streaming=False,
+    )
+
+    assert record["multimodal"]["status"] == "extract_failed"
+    assert record["multimodal"]["error_type"] == "ValueError"

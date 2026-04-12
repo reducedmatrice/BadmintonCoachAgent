@@ -11,7 +11,10 @@ import pytest
 from deerflow.config.paths import Paths
 from deerflow.domain.coach.prematch import build_prematch_advice
 from deerflow.domain.coach.weather import fetch_weather_context
-from deerflow.domain.coach.profile_store import process_postmatch_message
+from deerflow.domain.coach.profile_store import persist_exercise_record, process_postmatch_message
+from deerflow.domain.coach.multimodal_schema import ExerciseScreenshotRecord
+from deerflow.domain.coach.recall import build_recall_context
+from deerflow.domain.coach.router import route_single_intent
 
 
 def _make_paths(base_dir: Path) -> Paths:
@@ -54,3 +57,49 @@ async def test_weather_context_changes_prematch_output():
     assert any("60-75 分钟" in item for item in hot_advice.risk_reminders)
     assert any("75-90 分钟" in item for item in normal_advice.risk_reminders)
     assert hot_advice.risk_reminders != normal_advice.risk_reminders
+
+
+def test_exercise_writeback_feeds_next_prematch_recall(tmp_path: Path):
+    record = ExerciseScreenshotRecord(
+        sport_type="badminton",
+        screenshot_type="training_load",
+        duration_min=92.0,
+        avg_heart_rate=154.0,
+        max_heart_rate=183.0,
+        training_load=166.0,
+        aerobic_stress=None,
+        calories_kcal=760.0,
+        recovery_hours=26.0,
+        confidence=0.92,
+        missing_fields=[],
+        raw_summary="高负荷训练，恢复时间偏长",
+    )
+
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_exercise_record(
+            record,
+            occurred_at=datetime(2026, 4, 10, 18, 0, tzinfo=UTC),
+            thread_id="thread-mm",
+            source_message_id="om-image-1",
+        )
+    assert persisted.wrote_event_evidence is True
+    assert persisted.updated_profile is True
+
+    with patch("deerflow.domain.coach.recall.load_coach_profile", return_value=persisted.profile):
+        recall_context = build_recall_context(
+            latest_user_input="今晚打球前注意什么",
+            primary_intent="prematch",
+            now=datetime(2026, 4, 11, 9, 0, tzinfo=UTC),
+        )
+    assert recall_context is not None
+    assert recall_context["should_mention"] is True
+
+    with patch("deerflow.domain.coach.prematch.get_paths", return_value=_make_paths(tmp_path)):
+        result = route_single_intent(
+            "今晚打球前注意什么",
+            memory_data={"facts": []},
+            recall_context=recall_context,
+        )
+
+    assert result.route == "prematch"
+    assert "我回忆到你最近一次相关记录" in result.payload["response_text"]

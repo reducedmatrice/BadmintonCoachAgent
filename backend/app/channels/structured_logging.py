@@ -40,6 +40,7 @@ def build_run_log_record(
         "token_usage": extract_token_usage(result),
         "memory_hits": extract_memory_hits(result),
         "clarification": extract_clarification(result),
+        "multimodal": extract_multimodal(result),
     }
 
 
@@ -166,6 +167,23 @@ def extract_clarification(result: dict[str, Any] | list[Any] | None) -> dict[str
         "missing_slots": missing_slots,
         "question": question,
     }
+
+
+def extract_multimodal(result: dict[str, Any] | list[Any] | None) -> dict[str, Any]:
+    """Extract multimodal intake/extraction status from coach intake."""
+    if not isinstance(result, dict):
+        return {"status": "unknown"}
+    coach_intake = result.get("coach_intake")
+    if not isinstance(coach_intake, dict):
+        return {"status": "unknown"}
+    multimodal = coach_intake.get("multimodal")
+    if not isinstance(multimodal, dict):
+        return {"status": "unknown"}
+
+    status = multimodal.get("status")
+    if isinstance(status, str) and status:
+        return dict(multimodal)
+    return {"status": "unknown"}
 
 
 def _coerce_context_list(value: Any) -> list[str]:

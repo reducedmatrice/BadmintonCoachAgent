@@ -7,6 +7,7 @@ via a dedicated VLM call, then inject the record into the current turn context.
 from __future__ import annotations
 
 import logging
+import time
 from pathlib import Path
 from typing import Any, Mapping, NotRequired, override
 
@@ -28,6 +29,7 @@ _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
 class CoachMultimodalIntakeMiddlewareState(AgentState):
     thread_data: NotRequired[dict[str, Any] | None]
     uploaded_files: NotRequired[list[dict] | None]
+    coach_multimodal: NotRequired[dict[str, Any] | None]
 
 
 def _extract_text_content(content: Any) -> str:
@@ -89,6 +91,10 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
         if not uploaded_files:
             return None
 
+        ctx = runtime.context or {}
+        if not _as_bool(ctx.get("coach_multimodal_enabled"), True):
+            return {"coach_multimodal": {"status": "disabled", "reason": "feature_flag_off"}}
+
         thread_id = runtime.context.get("thread_id")
         if not isinstance(thread_id, str) or not thread_id:
             return None
@@ -120,12 +126,18 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
         model_name = _resolve_vlm_model_name(runtime)
         if model_name is None:
             logger.info("[CoachMultimodal] no vision-capable model configured; skipping extraction")
-            return None
+            return {"coach_multimodal": {"status": "model_unavailable"}}
 
         virtual_path = str(image_file.get("path") or "")
         if not virtual_path.startswith("/mnt/user-data/"):
-            return None
+            return {
+                "coach_multimodal": {
+                    "status": "skipped",
+                    "reason": "non_sandbox_upload_path",
+                }
+            }
 
+        started = time.monotonic()
         try:
             actual_path = get_paths().resolve_virtual_path(thread_id, virtual_path)
             record = extract_exercise_screenshot_record(
@@ -141,7 +153,6 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
                 if isinstance(mid, str) and mid.strip():
                     source_message_id = mid.strip()
 
-            ctx = runtime.context or {}
             event_min_confidence = _as_float(ctx.get("coach_multimodal_event_min_confidence"), 0.5)
             profile_min_confidence = _as_float(ctx.get("coach_multimodal_profile_min_confidence"), 0.75)
             allow_event_only = _as_bool(ctx.get("coach_multimodal_allow_event_only"), True)
@@ -180,6 +191,15 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
                     Path(actual_path).unlink(missing_ok=True)
                 except OSError:
                     logger.info("[CoachMultimodal] failed to delete temp upload: %s", actual_path)
+            coach_multimodal = {
+                "status": "success",
+                "model_name": model_name,
+                "record_type": record.record_type,
+                "confidence": record.confidence,
+                "wrote_event_evidence": persistence.wrote_event_evidence,
+                "updated_profile": persistence.updated_profile,
+                "extraction_latency_ms": round((time.monotonic() - started) * 1000, 2),
+            }
         except Exception as exc:
             logger.exception("[CoachMultimodal] extraction failed: thread_id=%s path=%s", thread_id, virtual_path)
             injected = (
@@ -188,10 +208,16 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
                 "</exercise_screenshot_error>\n\n"
                 + original_text
             )
+            coach_multimodal = {
+                "status": "extract_failed",
+                "error_type": type(exc).__name__,
+                "model_name": model_name,
+                "extraction_latency_ms": round((time.monotonic() - started) * 1000, 2),
+            }
 
         messages[last_idx] = HumanMessage(
             content=injected,
             id=last.id,
             additional_kwargs=last.additional_kwargs,
         )
-        return {"messages": messages}
+        return {"messages": messages, "coach_multimodal": coach_multimodal}

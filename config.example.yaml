@@ -493,6 +493,7 @@ checkpointer:
 #         is_plan_mode: false
 #         subagent_enabled: false
 #         # Spec 3.0: multimodal exercise screenshot intake (optional)
+#         # coach_multimodal_enabled: true
 #         # coach_multimodal_model_name: gpt-4o
 #         # coach_multimodal_event_min_confidence: 0.5
 #         # coach_multimodal_profile_min_confidence: 0.75

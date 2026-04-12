@@ -13,13 +13,15 @@ from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
 from deerflow.agents.thread_state import CoachIntakeData, ThreadDataState
-from deerflow.domain.coach import build_clarification_request, build_recall_context, default_coach_persona, detect_coach_intent, resolve_coach_persona
+from deerflow.domain.coach import build_clarification_request, default_coach_persona, detect_coach_intent, resolve_coach_persona
+from deerflow.domain.coach.recall import build_recall_context
 
 
 class CoachIntakeMiddlewareState(AgentState):
     """Compatible with the `ThreadState` schema."""
 
     thread_data: NotRequired[ThreadDataState | None]
+    coach_multimodal: NotRequired[dict[str, Any] | None]
     coach_intake: NotRequired[CoachIntakeData | None]
 
 
@@ -93,6 +95,7 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
             # Placeholders for A3/B/C follow-up layers to consume.
             "memory_context": state.get("memory"),
             "coach_profile": state.get("coach_profile"),
+            "multimodal": state.get("coach_multimodal"),
             "review_context": [],
             "recall_context": recall_context,
             "persona": persona.model_dump(),
