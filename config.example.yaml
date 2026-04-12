@@ -498,7 +498,8 @@ checkpointer:
 #         # coach_multimodal_event_min_confidence: 0.5
 #         # coach_multimodal_profile_min_confidence: 0.75
 #         # coach_multimodal_allow_event_only: true
-#         # coach_multimodal_keep_uploads: false
+#         # coach_multimodal_keep_uploads: true
+#         # coach_multimodal_upload_retention_days: 30
 #
 #   slack:
 #     enabled: false

@@ -20,6 +20,7 @@ from deerflow.config.app_config import get_app_config
 from deerflow.config.paths import get_paths
 from deerflow.domain.coach.multimodal_extraction import extract_exercise_screenshot_record
 from deerflow.domain.coach.profile_store import persist_exercise_record
+from deerflow.domain.coach.upload_cache import write_multimodal_upload_manifest
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +157,7 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
             event_min_confidence = _as_float(ctx.get("coach_multimodal_event_min_confidence"), 0.5)
             profile_min_confidence = _as_float(ctx.get("coach_multimodal_profile_min_confidence"), 0.75)
             allow_event_only = _as_bool(ctx.get("coach_multimodal_allow_event_only"), True)
-            keep_uploads = _as_bool(ctx.get("coach_multimodal_keep_uploads"), False)
+            keep_uploads = _as_bool(ctx.get("coach_multimodal_keep_uploads"), True)
 
             persistence = persist_exercise_record(
                 record,
@@ -191,6 +192,16 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
                     Path(actual_path).unlink(missing_ok=True)
                 except OSError:
                     logger.info("[CoachMultimodal] failed to delete temp upload: %s", actual_path)
+            else:
+                write_multimodal_upload_manifest(
+                    Path(actual_path),
+                    status="success",
+                    thread_id=thread_id,
+                    wrote_event_evidence=persistence.wrote_event_evidence,
+                    updated_profile=persistence.updated_profile,
+                    review_log_path=str(persistence.review_log_path) if persistence.review_log_path else None,
+                    profile_path=str(persistence.profile_path) if persistence.profile_path else None,
+                )
             coach_multimodal = {
                 "status": "success",
                 "model_name": model_name,
@@ -214,6 +225,19 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
                 "model_name": model_name,
                 "extraction_latency_ms": round((time.monotonic() - started) * 1000, 2),
             }
+            try:
+                actual = get_paths().resolve_virtual_path(thread_id, virtual_path)
+                write_multimodal_upload_manifest(
+                    Path(actual),
+                    status="extract_failed",
+                    thread_id=thread_id,
+                    wrote_event_evidence=False,
+                    updated_profile=False,
+                    reason="extract_failed",
+                    error_type=type(exc).__name__,
+                )
+            except Exception:
+                logger.debug("[CoachMultimodal] failed to write failure manifest", exc_info=True)
 
         messages[last_idx] = HumanMessage(
             content=injected,

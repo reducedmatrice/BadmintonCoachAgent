@@ -314,6 +314,7 @@ Bridges external messaging platforms (Feishu, Slack, Telegram) to the DeerFlow a
 9. Outbound → channel callbacks → platform reply
 
 Structured run logs emitted from `manager.py` (`[ManagerStructured]`) include a `multimodal` block extracted from `coach_intake.multimodal` so dashboards can separate `success`, `disabled`, `model_unavailable`, and `extract_failed` outcomes.
+Multimodal upload cache cleanup is handled by `scripts/cleanup_multimodal_uploads.py`; deletion only proceeds when sidecar verification confirms required writeback artifacts exist.
 
 **Configuration** (`config.yaml` -> `channels`):
 - `langgraph_url` - LangGraph Server URL (default: `http://localhost:2024`)

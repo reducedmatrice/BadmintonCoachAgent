@@ -69,6 +69,7 @@ Coach runtime is exposed via `make_coach_agent()` and uses structured domain mod
 For safe rollback and observability in IM flows:
 - Set `channels.<channel>.session.context.coach_multimodal_enabled=false` to disable multimodal extraction and fall back to text-only coach flow.
 - Structured run logs (`[ManagerStructured]`) include a `multimodal` field with status (`success`, `disabled`, `model_unavailable`, `extract_failed`) and latency/error details when available.
+- Multimodal upload cache now uses sidecar manifests and should be cleaned by `python3 scripts/cleanup_multimodal_uploads.py --retention-days 30` (delete only after writeback verification passes).
 
 Evaluation assets for Phase 2 live under `docs/eval/`:
 

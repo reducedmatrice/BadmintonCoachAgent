@@ -56,6 +56,7 @@ from .router import (
     route_composable_intent,
     route_single_intent,
 )
+from .upload_cache import cleanup_multimodal_upload_cache, write_multimodal_upload_manifest
 from .weather import WeatherContext, degrade_weather_context, fetch_weather_context, normalize_weather_payload
 
 __all__ = [
@@ -114,5 +115,7 @@ __all__ = [
     "route_composable_intent",
     "route_single_intent",
     "save_coach_profile",
+    "cleanup_multimodal_upload_cache",
+    "write_multimodal_upload_manifest",
     "update_profile_from_postmatch",
 ]
