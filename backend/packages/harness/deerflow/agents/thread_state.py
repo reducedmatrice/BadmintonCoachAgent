@@ -29,6 +29,7 @@ class CoachIntakeData(TypedDict):
     memory_context: NotRequired[dict | None]
     coach_profile: NotRequired[dict | None]
     review_context: list[str]
+    recall_context: NotRequired[dict | None]
     persona: NotRequired[dict[str, str] | None]
     persona_ignored_overrides: NotRequired[dict[str, list[str]] | None]
     intent: NotRequired[dict | None]

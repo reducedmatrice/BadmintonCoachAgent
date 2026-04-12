@@ -46,6 +46,7 @@ from .profile_store import (
     update_profile_from_postmatch,
 )
 from .response_renderer import render_coach_route_payload, resolve_persona_config
+from .recall import build_recall_context
 from .router import (
     CoachComposableRouteResult,
     CoachSafetyGateDecision,
@@ -106,6 +107,7 @@ __all__ = [
     "resolve_coach_persona_overrides",
     "resolve_persona_config",
     "render_coach_route_payload",
+    "build_recall_context",
     "persist_postmatch_review",
     "process_postmatch_message",
     "default_coach_safety_gate",

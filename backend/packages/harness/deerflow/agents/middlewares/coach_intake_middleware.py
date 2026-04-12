@@ -13,7 +13,7 @@ from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
 from deerflow.agents.thread_state import CoachIntakeData, ThreadDataState
-from deerflow.domain.coach import build_clarification_request, default_coach_persona, detect_coach_intent, resolve_coach_persona
+from deerflow.domain.coach import build_clarification_request, build_recall_context, default_coach_persona, detect_coach_intent, resolve_coach_persona
 
 
 class CoachIntakeMiddlewareState(AgentState):
@@ -78,6 +78,11 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
         persona, ignored_overrides = resolve_coach_persona(default_coach_persona(), runtime.context)
         intent = detect_coach_intent(latest_user_input or "")
         clarification_request = build_clarification_request(intent, persona=persona)
+        recall_context = build_recall_context(
+            latest_user_input=latest_user_input or "",
+            primary_intent=intent.primary_intent,
+            agent_name=str(runtime.context.get("agent_name") or "badminton-coach"),
+        )
 
         intake: CoachIntakeData = {
             "thread_id": thread_id,
@@ -89,6 +94,7 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
             "memory_context": state.get("memory"),
             "coach_profile": state.get("coach_profile"),
             "review_context": [],
+            "recall_context": recall_context,
             "persona": persona.model_dump(),
             "persona_ignored_overrides": ignored_overrides,
             "intent": {

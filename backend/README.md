@@ -64,6 +64,7 @@ Coach runtime is exposed via `make_coach_agent()` and uses structured domain mod
 - **Clarification policy**: `clarification_policy.py` (maps intent + missing slots + persona questioning style into structured ask-back requests)
 - **Coach clarification middleware**: `coach_clarification_middleware.py` (short-circuits the model with a standard `ask_clarification` tool call when intake already decided to ask back)
 - **Multimodal exercise intake (Spec 3.0)**: `coach_multimodal_intake_middleware.py` + `multimodal_extraction.py` + `multimodal_schema.py` (downloads Feishu images into thread uploads, extracts a strong JSON record via a dedicated VLM call, then conservatively writes event evidence and merges `health_profile`)
+- **Recall context (Spec 3.0 phase C)**: `recall.py` + `coach_intake_middleware.py` + `response_renderer.py` (builds route-aware recall context from recent `health_profile.recent_metrics` and renders it as "recalled context" for `health`/`prematch` responses)
 
 Evaluation assets for Phase 2 live under `docs/eval/`:
 

@@ -45,7 +45,7 @@ deer-flow/
 │   │           ├── models/            # Model factory with thinking/vision support
 │   │           ├── skills/            # Skills discovery, loading, parsing
 │   │           ├── config/            # Configuration system (app, model, sandbox, tool, etc.)
-│   │           ├── domain/coach/      # Coach domain modules (intent/router/persona/clarification policy + prematch/postmatch/health/response rendering, including session/task persona overrides)
+│   │           ├── domain/coach/      # Coach domain modules (intent/router/persona/clarification policy + prematch/postmatch/health/response rendering + multimodal extraction + recall policy, including session/task persona overrides)
 │   │           ├── agents/middlewares/# Includes coach clarification short-circuit before generic clarification interception
 │   │           ├── community/         # Community tools (tavily, jina_ai, firecrawl, image_search, aio_sandbox)
 │   │           ├── reflection/        # Dynamic module loading (resolve_variable, resolve_class)

@@ -58,6 +58,7 @@ def route_single_intent(
     agent_name: str = "badminton-coach",
     memory_data: dict[str, Any] | None = None,
     weather: dict[str, Any] | None = None,
+    recall_context: dict[str, Any] | None = None,
     persist_postmatch: bool = False,
     persona: dict[str, Any] | None = None,
     llm_classifier: CoachIntentClassifier | None = None,
@@ -71,6 +72,7 @@ def route_single_intent(
         agent_name=agent_name,
         memory_data=memory_data,
         weather=weather,
+        recall_context=recall_context,
         persist_postmatch=persist_postmatch,
         persona=persona,
     )
@@ -84,6 +86,7 @@ def route_composable_intent(
     agent_name: str = "badminton-coach",
     memory_data: dict[str, Any] | None = None,
     weather: dict[str, Any] | None = None,
+    recall_context: dict[str, Any] | None = None,
     persist_postmatch: bool = False,
     persona: dict[str, Any] | None = None,
     safety_gate: CoachSafetyGateHook | None = None,
@@ -107,6 +110,7 @@ def route_composable_intent(
             agent_name=agent_name,
             memory_data=memory_data,
             weather=weather,
+            recall_context=recall_context,
             persist_postmatch=persist_postmatch,
             persona=persona,
         )
@@ -133,6 +137,7 @@ def _run_route_chain(
     agent_name: str,
     memory_data: dict[str, Any] | None,
     weather: dict[str, Any] | None,
+    recall_context: dict[str, Any] | None,
     persist_postmatch: bool,
     persona: dict[str, Any] | None,
 ) -> dict[str, Any]:
@@ -152,6 +157,7 @@ def _run_route_chain(
                 "risk_reminders": advice.risk_reminders,
                 "cited_context": advice.cited_context,
                 "follow_up_questions": advice.follow_up_questions,
+                "recall_context": recall_context,
                 "persisted": persisted.persisted,
                 "profile_path": str(persisted.profile_path),
                 "writeback": persisted.extracted,
@@ -165,6 +171,7 @@ def _run_route_chain(
             "risk_reminders": advice.risk_reminders,
             "cited_context": advice.cited_context,
             "follow_up_questions": advice.follow_up_questions,
+            "recall_context": recall_context,
             "persisted": False,
         }
         payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
@@ -209,6 +216,7 @@ def _run_route_chain(
                 "next_session_intensity": advice.next_session_intensity,
                 "follow_up_question": advice.follow_up_question,
                 "missing_data": observation.missing_data,
+                "recall_context": recall_context,
                 "profile_path": str(persisted.profile_path),
                 "persisted": True,
             }
@@ -222,6 +230,7 @@ def _run_route_chain(
             "next_session_intensity": advice.next_session_intensity,
             "follow_up_question": advice.follow_up_question,
             "missing_data": observation.missing_data,
+            "recall_context": recall_context,
             "persisted": False,
         }
         payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)

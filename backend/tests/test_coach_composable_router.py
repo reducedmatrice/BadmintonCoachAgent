@@ -190,3 +190,36 @@ def test_composable_router_renders_persona_aware_response_text():
     assert "别偷量，也别逞强" in health_text
     assert "先按计划执行" in prematch_text
     assert "今天重点" in prematch_text
+
+
+def test_composable_router_renders_recall_line_for_health_and_prematch():
+    intent = normalize_intent_payload(
+        {
+            "primary_intent": "prematch",
+            "secondary_intents": ["health"],
+            "slots": {"session_goal": "今晚打球", "health_signal": "腿沉"},
+            "missing_slots": [],
+            "risk_level": "medium",
+        }
+    )
+
+    recall_context = {
+        "source": "exercise_screenshot",
+        "recorded_at": "2026-04-10",
+        "summary": "训练负荷约 165，建议恢复 26 小时",
+        "risk_level": "high",
+        "should_mention": True,
+        "mention_reason": "prematch_high_fatigue",
+    }
+
+    result = route_composable_intent(
+        "今晚打球前怎么安排，腿有点沉。",
+        intent=intent,
+        memory_data={"facts": []},
+        recall_context=recall_context,
+    )
+
+    health_text = result.steps[0].payload["response_text"]
+    prematch_text = result.steps[1].payload["response_text"]
+    assert "我回忆到你最近一次相关记录" in health_text
+    assert "我回忆到你最近一次相关记录" in prematch_text

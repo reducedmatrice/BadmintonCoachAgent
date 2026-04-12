@@ -122,3 +122,33 @@ def test_before_agent_uses_persona_questioning_style_in_clarification_request():
     assert intake["intent"]["needs_clarification"] is True
     assert intake["clarification_request"] is not None
     assert intake["clarification_request"]["question"].startswith("直接说，")
+
+
+def test_before_agent_includes_recall_context_when_policy_returns_one(monkeypatch):
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="今晚打球前注意什么"),
+        ],
+    }
+
+    monkeypatch.setattr(
+        "deerflow.agents.middlewares.coach_intake_middleware.build_recall_context",
+        lambda **kwargs: {
+            "source": "exercise_screenshot",
+            "recorded_at": "2026-04-10",
+            "summary": "训练负荷较高",
+            "risk_level": "high",
+            "should_mention": True,
+            "mention_reason": "prematch_high_fatigue",
+        },
+    )
+
+    runtime = _runtime("thread-recall")
+    runtime.context["agent_name"] = "badminton-coach"
+    result = mw.before_agent(state, runtime)
+    intake = result["coach_intake"]
+
+    assert intake["recall_context"] is not None
+    assert intake["recall_context"]["should_mention"] is True
+    assert intake["recall_context"]["risk_level"] == "high"

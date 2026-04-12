@@ -40,6 +40,9 @@ def _render_prematch(payload: Mapping[str, Any], persona: CoachPersonaConfig) ->
     follow_up_questions = _limit_items(payload.get("follow_up_questions"), persona.verbosity)
 
     lines = [_opening_line("prematch", persona)]
+    recall_line = _render_recall_line(payload.get("recall_context"))
+    if recall_line:
+        lines.append(recall_line)
     if focus_points:
         lines.append(_format_section("今天重点", focus_points))
     if warmup:
@@ -73,6 +76,9 @@ def _render_health(payload: Mapping[str, Any], persona: CoachPersonaConfig) -> s
     follow_up = str(payload.get("follow_up_question", "")).strip()
 
     lines = [_opening_line("health", persona)]
+    recall_line = _render_recall_line(payload.get("recall_context"))
+    if recall_line:
+        lines.append(recall_line)
     if observations:
         lines.append(_format_section("恢复判断", observations))
     if actions:
@@ -133,6 +139,32 @@ def _render_questions(questions: list[str], persona: CoachPersonaConfig) -> str:
 def _format_section(title: str, items: list[str]) -> str:
     body = " ".join(f"{index}. {item}" for index, item in enumerate(items, start=1))
     return f"{title}：{body}"
+
+
+def _render_recall_line(recall_context: Any) -> str:
+    if not isinstance(recall_context, Mapping):
+        return ""
+    if recall_context.get("should_mention") is not True:
+        return ""
+
+    summary = str(recall_context.get("summary") or "").strip()
+    recorded_at = str(recall_context.get("recorded_at") or "").strip()
+    risk_level = str(recall_context.get("risk_level") or "").strip()
+    mention_reason = str(recall_context.get("mention_reason") or "").strip()
+
+    tokens: list[str] = []
+    if recorded_at:
+        tokens.append(f"记录时间 {recorded_at}")
+    if summary:
+        tokens.append(summary)
+    if risk_level:
+        tokens.append(f"风险等级 {risk_level}")
+    if mention_reason:
+        tokens.append(f"触发原因 {mention_reason}")
+
+    if not tokens:
+        return ""
+    return "我回忆到你最近一次相关记录：" + "；".join(tokens) + "。"
 
 
 def _limit_items(value: Any, verbosity: str) -> list[str]:
