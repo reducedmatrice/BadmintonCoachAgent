@@ -11,6 +11,7 @@ from typing import Any
 from deerflow.config.paths import get_paths
 
 from .health_image import HealthImageObservation, HealthRecoveryAdvice
+from .multimodal_schema import ExerciseScreenshotRecord
 from .postmatch import PostmatchReview, extract_postmatch_review
 
 
@@ -35,6 +36,16 @@ class HealthPersistenceResult:
     advice: HealthRecoveryAdvice
     profile: dict[str, Any]
     profile_path: Path
+
+
+@dataclass
+class ExercisePersistenceResult:
+    record: ExerciseScreenshotRecord
+    profile: dict[str, Any]
+    review_log_path: Path | None
+    profile_path: Path | None
+    wrote_event_evidence: bool
+    updated_profile: bool
 
 
 def create_default_coach_profile() -> dict[str, Any]:
@@ -111,6 +122,117 @@ def append_review_log(
         handle.write("\n".join(entry_lines))
 
     return log_path
+
+
+def append_exercise_review_log(
+    record: ExerciseScreenshotRecord,
+    *,
+    agent_name: str = "badminton-coach",
+    occurred_at: datetime | None = None,
+    thread_id: str | None = None,
+    source_message_id: str | None = None,
+) -> Path:
+    timestamp = occurred_at or datetime.now(UTC)
+    reviews_dir = get_paths().agent_dir(agent_name) / "memory" / "reviews"
+    reviews_dir.mkdir(parents=True, exist_ok=True)
+    log_path = reviews_dir / f"{timestamp.date().isoformat()}.md"
+
+    missing = ", ".join(record.missing_fields) if record.missing_fields else ""
+
+    def _fmt(value: float | None, suffix: str) -> str:
+        if value is None:
+            return "（缺失）"
+        if value.is_integer():
+            return f"{int(value)}{suffix}"
+        return f"{value:.1f}{suffix}"
+
+    entry_lines = [
+        f"## {timestamp.astimezone(UTC).strftime('%H:%M')} UTC",
+        f"- 记录类型：{record.record_type}",
+        f"- 运动类型：{record.sport_type or 'unknown'}",
+        f"- 截图类型：{record.screenshot_type or 'unknown'}",
+        f"- 时长：{_fmt(record.duration_min, 'min')}",
+        f"- 平均心率：{_fmt(record.avg_heart_rate, 'bpm')}",
+        f"- 最高心率：{_fmt(record.max_heart_rate, 'bpm')}",
+        f"- 训练负荷：{_fmt(record.training_load, '')}",
+        f"- 有氧压力：{_fmt(record.aerobic_stress, '')}",
+        f"- 热量：{_fmt(record.calories_kcal, 'kcal')}",
+        f"- 恢复时间：{_fmt(record.recovery_hours, 'h')}",
+        f"- 置信度：{record.confidence:.2f}",
+        f"- 缺失字段：{missing or '（无）'}",
+    ]
+    if record.raw_summary:
+        entry_lines.append(f"- 抽取摘要：{record.raw_summary}")
+    if thread_id:
+        entry_lines.append(f"- thread_id：{thread_id}")
+    if source_message_id:
+        entry_lines.append(f"- source_message_id：{source_message_id}")
+    entry_lines.append("")
+
+    with log_path.open("a", encoding="utf-8") as handle:
+        handle.write("\n".join(entry_lines))
+
+    return log_path
+
+
+def _infer_exercise_fatigue_level(record: ExerciseScreenshotRecord) -> str:
+    # Conservative heuristic: prefer medium/high when load or recovery hints are large.
+    if (record.training_load or 0) >= 160 or (record.recovery_hours or 0) >= 24:
+        return "high"
+    if (record.avg_heart_rate or 0) >= 160 and (record.duration_min or 0) >= 75:
+        return "high"
+    if (record.duration_min or 0) >= 110:
+        return "high"
+
+    if (record.training_load or 0) >= 110 or (record.recovery_hours or 0) >= 16:
+        return "medium"
+    if (record.avg_heart_rate or 0) >= 145 or (record.duration_min or 0) >= 60:
+        return "medium"
+
+    return "low"
+
+
+def update_profile_from_exercise_record(
+    record: ExerciseScreenshotRecord,
+    *,
+    agent_name: str = "badminton-coach",
+    occurred_at: datetime | None = None,
+) -> dict[str, Any]:
+    timestamp = occurred_at or datetime.now(UTC)
+    profile = load_coach_profile(agent_name)
+    health_profile = profile.setdefault("health_profile", {})
+
+    fatigue_level = _infer_exercise_fatigue_level(record)
+    health_profile["fatigue_level"] = fatigue_level
+
+    risk_flags = [str(item) for item in health_profile.get("risk_flags", []) if isinstance(item, str)]
+    risk_flags.append(f"exercise:{fatigue_level}")
+    health_profile["risk_flags"] = _unique_keep_order(risk_flags)[-12:]
+
+    recent_metrics = list(health_profile.get("recent_metrics", []))
+    recent_metrics.append(
+        {
+            "source": "exercise_screenshot",
+            "recorded_at": timestamp.date().isoformat(),
+            "sport_type": record.sport_type or "unknown",
+            "duration_min": record.duration_min,
+            "avg_heart_rate": record.avg_heart_rate,
+            "max_heart_rate": record.max_heart_rate,
+            "training_load": record.training_load,
+            "aerobic_stress": record.aerobic_stress,
+            "calories_kcal": record.calories_kcal,
+            "recovery_hours": record.recovery_hours,
+            "confidence": record.confidence,
+            "missing_fields": record.missing_fields,
+            "raw_summary": record.raw_summary,
+            "fatigue_level": fatigue_level,
+        }
+    )
+    health_profile["recent_metrics"] = recent_metrics[-10:]
+    profile["health_profile"] = health_profile
+    profile["last_updated_at"] = timestamp.isoformat().replace("+00:00", "Z")
+    save_coach_profile(profile, agent_name)
+    return profile
 
 
 def update_profile_from_postmatch(
@@ -216,6 +338,68 @@ def persist_health_observation(
     profile["last_updated_at"] = timestamp.isoformat().replace("+00:00", "Z")
     profile_path = save_coach_profile(profile, agent_name)
     return HealthPersistenceResult(observation=observation, advice=advice, profile=profile, profile_path=profile_path)
+
+
+def persist_exercise_record(
+    record: ExerciseScreenshotRecord,
+    *,
+    agent_name: str = "badminton-coach",
+    occurred_at: datetime | None = None,
+    thread_id: str | None = None,
+    source_message_id: str | None = None,
+    event_min_confidence: float = 0.5,
+    profile_min_confidence: float = 0.75,
+    allow_event_only: bool = True,
+) -> ExercisePersistenceResult:
+    """Persist a single extracted exercise record.
+
+    Writeback policy (Spec 3.0):
+    - VLM/Schema failure => handled upstream, this function assumes a validated record
+    - Low confidence: allow writing event evidence, but skip profile merge
+    - Very low confidence: skip all writeback
+    """
+    timestamp = occurred_at or datetime.now(UTC)
+    profile = load_coach_profile(agent_name)
+    profile_path = get_paths().agent_dir(agent_name) / "coach_profile.json"
+
+    wrote_event_evidence = False
+    updated_profile = False
+    review_log_path: Path | None = None
+    saved_profile_path: Path | None = None
+
+    if not allow_event_only and record.confidence < profile_min_confidence:
+        return ExercisePersistenceResult(
+            record=record,
+            profile=profile,
+            review_log_path=None,
+            profile_path=profile_path if profile_path.exists() else None,
+            wrote_event_evidence=False,
+            updated_profile=False,
+        )
+
+    if record.confidence >= event_min_confidence:
+        review_log_path = append_exercise_review_log(
+            record,
+            agent_name=agent_name,
+            occurred_at=timestamp,
+            thread_id=thread_id,
+            source_message_id=source_message_id,
+        )
+        wrote_event_evidence = True
+
+    if record.confidence >= profile_min_confidence:
+        profile = update_profile_from_exercise_record(record, agent_name=agent_name, occurred_at=timestamp)
+        saved_profile_path = get_paths().agent_dir(agent_name) / "coach_profile.json"
+        updated_profile = True
+
+    return ExercisePersistenceResult(
+        record=record,
+        profile=profile,
+        review_log_path=review_log_path,
+        profile_path=saved_profile_path,
+        wrote_event_evidence=wrote_event_evidence,
+        updated_profile=updated_profile,
+    )
 
 
 def persist_prematch_signal(

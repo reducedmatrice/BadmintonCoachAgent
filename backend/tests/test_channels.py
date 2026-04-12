@@ -1374,7 +1374,7 @@ class TestFeishuChannel:
             msg_id="om-image-1",
         )
 
-        assert "图片消息" in text
+        assert "图片" in text
         assert files[0]["filename"] == "feishu-image-om-image-1.png"
         assert files[0]["image_key"] == "img_123"
         assert files[0]["path"] == "feishu://image/img_123"

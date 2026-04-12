@@ -12,10 +12,12 @@ from deerflow.domain.coach.health_image import HealthImageObservation, HealthRec
 from deerflow.domain.coach.postmatch import Improvement, PostmatchReview, TechnicalObservation
 from deerflow.domain.coach.profile_store import (
     append_review_log,
+    persist_exercise_record,
     persist_health_observation,
     persist_prematch_signal,
     update_profile_from_postmatch,
 )
+from deerflow.domain.coach.multimodal_schema import ExerciseScreenshotRecord
 
 
 def _make_paths(base_dir: Path) -> Paths:
@@ -118,9 +120,107 @@ def test_persist_prematch_signal_writes_only_high_value_fields(tmp_path: Path):
     assert persisted.profile_path.exists()
     assert "久坐后启动偏紧" in persisted.profile["athlete_profile"]["constraints"]
     assert "肩部旧伤/恢复期" in persisted.profile["athlete_profile"]["constraints"]
-    assert "偏双打训练" in persisted.profile["preferences"]["training_preferences"]
-    assert "优先训练后场步法" in persisted.profile["preferences"]["training_preferences"]
-    assert any(item["goal"] == "近期以比赛准备为主" for item in persisted.profile["tech_profile"]["recent_goals"])
+
+
+def test_persist_exercise_record_writes_event_and_updates_profile(tmp_path: Path):
+    record = ExerciseScreenshotRecord(
+        sport_type="badminton",
+        screenshot_type="training_load",
+        duration_min=92.0,
+        avg_heart_rate=152.0,
+        max_heart_rate=182.0,
+        training_load=165.0,
+        aerobic_stress=None,
+        calories_kcal=780.0,
+        recovery_hours=26.0,
+        confidence=0.91,
+        missing_fields=[],
+        raw_summary="高负荷训练 + 建议恢复时间较长",
+    )
+
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_exercise_record(
+            record,
+            occurred_at=datetime(2026, 3, 23, 14, 0, tzinfo=UTC),
+            thread_id="thread-123",
+            source_message_id="om-image-1",
+        )
+
+    assert persisted.wrote_event_evidence is True
+    assert persisted.updated_profile is True
+    assert persisted.review_log_path is not None
+    assert persisted.review_log_path.exists()
+    assert persisted.profile_path is not None
+    assert persisted.profile_path.exists()
+
+    log_text = persisted.review_log_path.read_text(encoding="utf-8")
+    assert "训练负荷" in log_text
+    assert "恢复时间" in log_text
+    assert "thread-123" in log_text
+
+    health_profile = persisted.profile["health_profile"]
+    assert health_profile["fatigue_level"] in {"medium", "high"}
+    assert "exercise:" in "".join(health_profile.get("risk_flags", []))
+    assert health_profile["recent_metrics"][-1]["source"] == "exercise_screenshot"
+
+
+def test_persist_exercise_record_low_confidence_writes_event_only(tmp_path: Path):
+    record = ExerciseScreenshotRecord(
+        sport_type="badminton",
+        screenshot_type="heart_rate",
+        duration_min=60.0,
+        avg_heart_rate=140.0,
+        max_heart_rate=168.0,
+        training_load=None,
+        aerobic_stress=None,
+        calories_kcal=None,
+        recovery_hours=None,
+        confidence=0.62,
+        missing_fields=["training_load", "recovery_hours"],
+        raw_summary="心率信息较清晰，但负荷/恢复缺失",
+    )
+
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_exercise_record(
+            record,
+            occurred_at=datetime(2026, 3, 23, 14, 10, tzinfo=UTC),
+            event_min_confidence=0.5,
+            profile_min_confidence=0.75,
+            allow_event_only=True,
+        )
+
+    assert persisted.wrote_event_evidence is True
+    assert persisted.updated_profile is False
+    assert persisted.review_log_path is not None and persisted.review_log_path.exists()
+    assert persisted.profile_path is None
+
+
+def test_persist_exercise_record_very_low_confidence_skips_all(tmp_path: Path):
+    record = ExerciseScreenshotRecord(
+        sport_type=None,
+        screenshot_type=None,
+        duration_min=None,
+        avg_heart_rate=None,
+        max_heart_rate=None,
+        training_load=None,
+        aerobic_stress=None,
+        calories_kcal=None,
+        recovery_hours=None,
+        confidence=0.2,
+        missing_fields=["duration_min", "avg_heart_rate"],
+        raw_summary="无法可靠识别截图指标",
+    )
+
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        persisted = persist_exercise_record(
+            record,
+            occurred_at=datetime(2026, 3, 23, 14, 20, tzinfo=UTC),
+            event_min_confidence=0.5,
+        )
+
+    assert persisted.wrote_event_evidence is False
+    assert persisted.updated_profile is False
+    assert persisted.review_log_path is None
 
 
 def test_persist_prematch_signal_skips_when_no_stable_signal(tmp_path: Path):

@@ -7,7 +7,7 @@ import logging
 import mimetypes
 import time
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Callable
 
 from app.channels.message_bus import InboundMessage, InboundMessageType, MessageBus, OutboundMessage, ResolvedAttachment
 from app.channels.store import ChannelStore
@@ -350,6 +350,7 @@ class ChannelManager:
         assistant_id: str = DEFAULT_ASSISTANT_ID,
         default_session: dict[str, Any] | None = None,
         channel_sessions: dict[str, Any] | None = None,
+        channel_lookup: Callable[[str], Any | None] | None = None,
     ) -> None:
         self.bus = bus
         self.store = store
@@ -359,6 +360,7 @@ class ChannelManager:
         self._assistant_id = assistant_id
         self._default_session = _as_dict(default_session)
         self._channel_sessions = dict(channel_sessions or {})
+        self._channel_lookup = channel_lookup
         self._client = None  # lazy init — langgraph_sdk async client
         self._semaphore: asyncio.Semaphore | None = None
         self._running = False
@@ -489,6 +491,34 @@ class ChannelManager:
         logger.info("[Manager] new thread created on LangGraph Server: thread_id=%s for chat_id=%s topic_id=%s", thread_id, msg.chat_id, msg.topic_id)
         return thread_id
 
+    async def _materialize_inbound_files(self, msg: InboundMessage, thread_id: str) -> None:
+        """Resolve channel-specific remote attachments into thread uploads when possible."""
+        if not msg.files:
+            return
+        if self._channel_lookup is None:
+            return
+
+        channel = self._channel_lookup(msg.channel_name)
+        if channel is None:
+            return
+
+        materializer = getattr(channel, "materialize_inbound_files", None)
+        if not callable(materializer):
+            return
+
+        try:
+            new_files = await materializer(thread_id=thread_id, files=list(msg.files), metadata=dict(msg.metadata))
+        except Exception:
+            logger.exception(
+                "[Manager] failed to materialize inbound files: channel=%s thread_id=%s",
+                msg.channel_name,
+                thread_id,
+            )
+            return
+
+        if isinstance(new_files, list) and new_files:
+            msg.files = new_files
+
     async def _handle_chat(self, msg: InboundMessage) -> None:
         client = self._get_client()
         started_at = time.monotonic()
@@ -503,6 +533,8 @@ class ChannelManager:
         # No existing thread found — create a new one
         if thread_id is None:
             thread_id = await self._create_thread(client, msg)
+
+        await self._materialize_inbound_files(msg, thread_id)
 
         assistant_id, run_config, run_context = self._resolve_run_params(msg, thread_id)
         if msg.channel_name == "feishu":

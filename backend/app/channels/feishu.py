@@ -50,6 +50,7 @@ class FeishuChannel(Channel):
         self._CreateFileRequestBody = None
         self._CreateImageRequest = None
         self._CreateImageRequestBody = None
+        self._GetImageRequest = None
 
     async def start(self) -> None:
         if self._running:
@@ -67,6 +68,7 @@ class FeishuChannel(Channel):
                 CreateMessageRequest,
                 CreateMessageRequestBody,
                 Emoji,
+                GetImageRequest,
                 PatchMessageRequest,
                 PatchMessageRequestBody,
                 ReplyMessageRequest,
@@ -90,6 +92,7 @@ class FeishuChannel(Channel):
         self._CreateFileRequestBody = CreateFileRequestBody
         self._CreateImageRequest = CreateImageRequest
         self._CreateImageRequestBody = CreateImageRequestBody
+        self._GetImageRequest = GetImageRequest
 
         app_id = self.config.get("app_id", "")
         app_secret = self.config.get("app_secret", "")
@@ -263,6 +266,107 @@ class FeishuChannel(Channel):
         if not response.success():
             raise RuntimeError(f"Feishu file upload failed: code={response.code}, msg={response.msg}")
         return response.data.file_key
+
+    async def materialize_inbound_files(
+        self,
+        *,
+        thread_id: str,
+        files: list[dict[str, Any]],
+        metadata: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Best-effort: download Feishu remote images into the thread uploads dir.
+
+        This turns IM-only metadata (e.g. ``feishu://image/<image_key>``) into a
+        real file under ``/mnt/user-data/uploads/`` so the coach runtime can
+        consume it via multimodal extraction.
+        """
+        if not files:
+            return files
+        if not self._api_client or not self._GetImageRequest:
+            return files
+
+        try:
+            from deerflow.config.paths import get_paths
+        except Exception:
+            # Avoid breaking chat if deerflow isn't importable for some reason.
+            return files
+
+        meta = dict(metadata or {})
+        message_id = str(meta.get("message_id") or "").strip()
+        paths = get_paths()
+        paths.ensure_thread_dirs(thread_id)
+        uploads_dir = paths.sandbox_uploads_dir(thread_id)
+
+        materialized: list[dict[str, Any]] = []
+        for entry in files:
+            if not isinstance(entry, dict):
+                continue
+            path = str(entry.get("path") or "")
+            if not path.startswith("feishu://image/"):
+                materialized.append(entry)
+                continue
+
+            image_key = str(entry.get("image_key") or path.split("/")[-1]).strip()
+            if not image_key:
+                materialized.append(entry)
+                continue
+
+            try:
+                request = self._GetImageRequest.builder().image_key(image_key).build()
+                response = await asyncio.to_thread(self._api_client.im.v1.image.get, request)
+                if not response.success():
+                    raise RuntimeError(f"Feishu get image failed: code={response.code}, msg={response.msg}")
+
+                response_file = getattr(response, "file", None)
+                response_filename = str(getattr(response, "file_name", "") or "")
+                if not response_file:
+                    raise RuntimeError("Feishu get image returned empty file stream")
+
+                desired_name = str(entry.get("filename") or "").strip()
+                if desired_name:
+                    desired_name = Path(desired_name).name
+
+                suffix = Path(response_filename).suffix or Path(desired_name).suffix or ".png"
+                stem = Path(desired_name).stem or Path(response_filename).stem or f"feishu-image-{message_id or image_key}"
+                candidate = Path(f"{stem}{suffix}").name
+
+                dest = uploads_dir / candidate
+                if dest.exists():
+                    base = dest.stem
+                    for i in range(1, 50):
+                        alt = uploads_dir / f"{base}-{i}{dest.suffix}"
+                        if not alt.exists():
+                            dest = alt
+                            break
+
+                try:
+                    data = response_file.read()
+                finally:
+                    close = getattr(response_file, "close", None)
+                    if callable(close):
+                        close()
+
+                if not isinstance(data, (bytes, bytearray)) or not data:
+                    raise RuntimeError("Feishu get image returned empty bytes")
+
+                dest.write_bytes(bytes(data))
+
+                materialized.append(
+                    {
+                        "filename": dest.name,
+                        "size": dest.stat().st_size,
+                        "path": f"/mnt/user-data/uploads/{dest.name}",
+                        "status": "uploaded",
+                        "source": "feishu",
+                        "message_type": "image",
+                        "image_key": image_key,
+                    }
+                )
+            except Exception as exc:
+                logger.warning("[Feishu] failed to materialize image_key=%s: %s", image_key, exc)
+                materialized.append(entry)
+
+        return materialized or files
 
     # -- message formatting ------------------------------------------------
 
@@ -544,7 +648,7 @@ class FeishuChannel(Channel):
                     "image_key": image_key,
                 }
             )
-            text = "用户发送了一张飞书图片消息。当前系统已记录图片元数据；如需精确分析，请让用户补文字描述或把原图上传到 Web Workspace。"
+            text = "用户发送了一张运动记录截图（图片）。请优先从图片中抽取关键指标（时长、心率、训练负荷/压力、热量、恢复提示），再给出恢复/训练建议；若关键字段缺失再追问。"
             return text, files, metadata
 
         if normalized_type == "file":

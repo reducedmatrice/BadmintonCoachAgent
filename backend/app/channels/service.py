@@ -30,6 +30,8 @@ class ChannelService:
     def __init__(self, channels_config: dict[str, Any] | None = None) -> None:
         self.bus = MessageBus()
         self.store = ChannelStore()
+        # Keep an eager map so ChannelManager can resolve channel-specific helpers.
+        self._channels: dict[str, Any] = {}  # name -> Channel instance
         config = dict(channels_config or {})
         langgraph_url = config.pop("langgraph_url", None) or "http://localhost:2024"
         gateway_url = config.pop("gateway_url", None) or "http://localhost:8001"
@@ -42,8 +44,8 @@ class ChannelService:
             gateway_url=gateway_url,
             default_session=default_session if isinstance(default_session, dict) else None,
             channel_sessions=channel_sessions,
+            channel_lookup=self._channels.get,
         )
-        self._channels: dict[str, Any] = {}  # name -> Channel instance
         self._config = config
         self._reminder_scheduler = ReminderScheduler(self.bus, channels_config=self._config)
         self._running = False

@@ -11,6 +11,7 @@ from deerflow.agents.lead_agent.agent import _create_summarization_middleware, _
 from deerflow.agents.lead_agent.prompt import apply_prompt_template
 from deerflow.agents.middlewares.coach_clarification_middleware import CoachClarificationMiddleware
 from deerflow.agents.middlewares.coach_intake_middleware import CoachIntakeMiddleware
+from deerflow.agents.middlewares.coach_multimodal_intake_middleware import CoachMultimodalIntakeMiddleware
 from deerflow.agents.middlewares.clarification_middleware import ClarificationMiddleware
 from deerflow.agents.middlewares.loop_detection_middleware import LoopDetectionMiddleware
 from deerflow.agents.middlewares.memory_middleware import MemoryMiddleware
@@ -33,6 +34,7 @@ def _build_coach_middlewares(config: RunnableConfig, model_name: str | None, age
     Compatible keep: ClarificationMiddleware.
     """
     middlewares = build_lead_runtime_middlewares(lazy_init=True)
+    middlewares.append(CoachMultimodalIntakeMiddleware())
     middlewares.append(CoachIntakeMiddleware())
     middlewares.append(CoachClarificationMiddleware())
 
