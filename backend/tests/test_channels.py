@@ -1481,6 +1481,43 @@ class TestFeishuChannel:
 
         _run(go())
 
+    def test_on_message_targets_root_thread_when_root_id_exists(self):
+        from app.channels.feishu import FeishuChannel
+
+        async def go():
+            bus = MessageBus()
+            bus.publish_inbound = AsyncMock()
+            channel = FeishuChannel(bus, config={})
+            channel._main_loop = asyncio.get_running_loop()
+            channel._add_reaction = AsyncMock()
+            channel._ensure_running_card_started = MagicMock()
+
+            event = SimpleNamespace(
+                event=SimpleNamespace(
+                    message=SimpleNamespace(
+                        chat_id="chat-1",
+                        message_id="om-reply-1",
+                        root_id="om-root-1",
+                        message_type="text",
+                        content=json.dumps({"text": "@_user_1 你好"}),
+                    ),
+                    sender=SimpleNamespace(
+                        sender_id=SimpleNamespace(open_id="user-1"),
+                    ),
+                )
+            )
+
+            channel._on_message(event)
+            await _wait_for(lambda: bus.publish_inbound.await_count == 1)
+
+            inbound = bus.publish_inbound.await_args.args[0]
+            assert inbound.thread_ts == "om-root-1"
+            assert inbound.topic_id == "om-root-1"
+            assert inbound.metadata["message_id"] == "om-reply-1"
+            assert inbound.metadata["root_id"] == "om-root-1"
+
+        _run(go())
+
     def test_prepare_inbound_and_send_share_running_card_task(self):
         from app.channels.feishu import FeishuChannel
 

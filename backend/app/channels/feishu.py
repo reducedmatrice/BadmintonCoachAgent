@@ -743,12 +743,17 @@ class FeishuChannel(Channel):
             # topic_id: use root_id for replies (same topic), msg_id for new messages (new topic)
             topic_id = root_id or msg_id
 
+            # For replies already inside a Feishu thread, target the thread
+            # root for outbound replies/cards so the response stays visible in
+            # the main thread instead of hanging off a nested reply.
+            reply_target = root_id or msg_id
+
             inbound = self._make_inbound(
                 chat_id=chat_id,
                 user_id=sender_id,
                 text=text,
                 msg_type=msg_type,
-                thread_ts=msg_id,
+                thread_ts=reply_target,
                 files=files,
                 metadata={"message_id": msg_id, "root_id": root_id, **parsed_metadata},
             )
