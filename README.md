@@ -1,4 +1,4 @@
-# Badminton-Coach-Agent
+# Badminton-Coach-Agent（郭德纲风味板）
 
 Badminton-Coach-Agent 是一个面向羽毛球训练与身体恢复场景的垂直 Agent 项目。它的目标不是做通用聊天，而是构建一个能够持续理解用户训练状态、提供赛前建议、赛后复盘和恢复提醒的个人教练系统。
 
