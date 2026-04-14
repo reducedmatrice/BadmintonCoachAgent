@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from deerflow.config.agents_config import load_agent_soul
+from deerflow.config.agents_config import load_agent_personality, load_agent_soul
 from deerflow.skills import load_skills
 
 
@@ -153,6 +153,7 @@ You are {agent_name}, an open-source super agent.
 </role>
 
 {soul}
+{persona}
 {memory_context}
 
 <thinking_style>
@@ -428,6 +429,14 @@ def get_agent_soul(agent_name: str | None) -> str:
     return ""
 
 
+def get_agent_persona(agent_name: str | None, personality_id: str | None = None) -> str:
+    """Append the selected persona asset if present."""
+    asset = load_agent_personality(agent_name, personality_id=personality_id)
+    if asset is None:
+        return ""
+    return f'<persona id="{asset.id}">\n{asset.persona}\n</persona>\n'
+
+
 def get_deferred_tools_prompt_section() -> str:
     """Generate <available-deferred-tools> block for the system prompt.
 
@@ -442,7 +451,7 @@ def get_deferred_tools_prompt_section() -> str:
 
         if not get_app_config().tool_search.enabled:
             return ""
-    except FileNotFoundError:
+    except (FileNotFoundError, ValueError):
         return ""
 
     registry = get_deferred_registry()
@@ -453,7 +462,14 @@ def get_deferred_tools_prompt_section() -> str:
     return f"<available-deferred-tools>\n{names}\n</available-deferred-tools>"
 
 
-def apply_prompt_template(subagent_enabled: bool = False, max_concurrent_subagents: int = 3, *, agent_name: str | None = None, available_skills: set[str] | None = None) -> str:
+def apply_prompt_template(
+    subagent_enabled: bool = False,
+    max_concurrent_subagents: int = 3,
+    *,
+    agent_name: str | None = None,
+    personality_id: str | None = None,
+    available_skills: set[str] | None = None,
+) -> str:
     # Get memory context
     memory_context = _get_memory_context(agent_name)
 
@@ -489,6 +505,7 @@ def apply_prompt_template(subagent_enabled: bool = False, max_concurrent_subagen
     prompt = SYSTEM_PROMPT_TEMPLATE.format(
         agent_name=agent_name or "DeerFlow 2.0",
         soul=get_agent_soul(agent_name),
+        persona=get_agent_persona(agent_name, personality_id=personality_id),
         skills_section=skills_section,
         deferred_tools_section=deferred_tools_section,
         memory_context=memory_context,

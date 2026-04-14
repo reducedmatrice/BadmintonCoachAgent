@@ -79,9 +79,10 @@ def test_before_agent_includes_resolved_persona_from_runtime_context():
         "tone": "strict",
         "strictness": "medium",
         "verbosity": "balanced",
-        "questioning_style": "guided",
-        "encouragement_style": "calm",
+        "questioning_style": "direct",
+        "encouragement_style": "tough_love",
     }
+    assert intake["persona_ignored_overrides"]["personality"] == []
     assert intake["persona_ignored_overrides"]["session"] == []
     assert "route" in intake["persona_ignored_overrides"]["task"]
 
@@ -152,3 +153,23 @@ def test_before_agent_includes_recall_context_when_policy_returns_one(monkeypatc
     assert intake["recall_context"] is not None
     assert intake["recall_context"]["should_mention"] is True
     assert intake["recall_context"]["risk_level"] == "high"
+
+
+def test_before_agent_can_disable_intent_detection_from_runtime_context():
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="你好"),
+        ],
+    }
+
+    runtime = _runtime("thread-no-intent")
+    runtime.context["coach_intent_detection_enabled"] = False
+
+    result = mw.before_agent(state, runtime)
+    intake = result["coach_intake"]
+
+    assert intake["intent"]["primary_intent"] == "fallback"
+    assert intake["intent"]["source"] == "intent_detection_disabled"
+    assert intake["intent"]["needs_clarification"] is False
+    assert intake["clarification_request"] is None

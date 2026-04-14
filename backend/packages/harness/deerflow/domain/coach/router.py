@@ -7,6 +7,7 @@ from typing import Any, Callable
 
 from .health_image import analyze_health_image_text, build_health_recovery_advice
 from .intent import CoachIntent, CoachIntentClassifier, CoachIntentName, detect_coach_intent
+from .persona import build_agent_coach_persona
 from .postmatch import extract_postmatch_review
 from .prematch import build_prematch_advice
 from .profile_store import persist_health_observation, persist_prematch_signal, process_postmatch_message
@@ -61,6 +62,7 @@ def route_single_intent(
     recall_context: dict[str, Any] | None = None,
     persist_postmatch: bool = False,
     persona: dict[str, Any] | None = None,
+    personality_id: str | None = None,
     llm_classifier: CoachIntentClassifier | None = None,
 ) -> CoachSingleIntentRouteResult:
     """Route one message into a single coach chain based on structured intent."""
@@ -75,6 +77,7 @@ def route_single_intent(
         recall_context=recall_context,
         persist_postmatch=persist_postmatch,
         persona=persona,
+        personality_id=personality_id,
     )
     return CoachSingleIntentRouteResult(route=route, intent=resolved_intent, payload=payload)
 
@@ -89,6 +92,7 @@ def route_composable_intent(
     recall_context: dict[str, Any] | None = None,
     persist_postmatch: bool = False,
     persona: dict[str, Any] | None = None,
+    personality_id: str | None = None,
     safety_gate: CoachSafetyGateHook | None = None,
     llm_classifier: CoachIntentClassifier | None = None,
 ) -> CoachComposableRouteResult:
@@ -113,6 +117,7 @@ def route_composable_intent(
             recall_context=recall_context,
             persist_postmatch=persist_postmatch,
             persona=persona,
+            personality_id=personality_id,
         )
         steps.append(
             CoachSingleIntentRouteResult(
@@ -140,7 +145,13 @@ def _run_route_chain(
     recall_context: dict[str, Any] | None,
     persist_postmatch: bool,
     persona: dict[str, Any] | None,
+    personality_id: str | None,
 ) -> dict[str, Any]:
+    resolved_persona = persona
+    if resolved_persona is None:
+        base_persona, _ = build_agent_coach_persona(agent_name=agent_name, personality_id=personality_id)
+        resolved_persona = base_persona.model_dump()
+
     if route == "prematch":
         advice = build_prematch_advice(
             message,
@@ -162,7 +173,7 @@ def _run_route_chain(
                 "profile_path": str(persisted.profile_path),
                 "writeback": persisted.extracted,
             }
-            payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+            payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         payload = {
             "chain": "prematch",
@@ -174,7 +185,7 @@ def _run_route_chain(
             "recall_context": recall_context,
             "persisted": False,
         }
-        payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+        payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
     if route == "postmatch":
@@ -189,7 +200,7 @@ def _run_route_chain(
                 "review_log_path": str(persisted.review_log_path),
                 "persisted": True,
             }
-            payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+            payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         review = extract_postmatch_review(message)
         payload = {
@@ -200,7 +211,7 @@ def _run_route_chain(
             "next_focus": review.next_focus,
             "persisted": False,
         }
-        payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+        payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
     if route == "health":
@@ -220,7 +231,7 @@ def _run_route_chain(
                 "profile_path": str(persisted.profile_path),
                 "persisted": True,
             }
-            payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+            payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         payload = {
             "chain": "health",
@@ -233,7 +244,7 @@ def _run_route_chain(
             "recall_context": recall_context,
             "persisted": False,
         }
-        payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+        payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
     payload = {
@@ -241,7 +252,7 @@ def _run_route_chain(
         "guidance": "请先说清你现在是赛前准备、赛后复盘，还是身体恢复问题，我再给你对应方案。",
         "follow_up_question": "你现在更希望我先帮你做赛前计划、赛后复盘，还是恢复建议？",
     }
-    payload["response_text"] = render_coach_route_payload(route, payload, persona=persona)
+    payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
     return payload
 
 

@@ -1,2 +1,3 @@
 name: badminton-coach
 description: Badminton coach focused on training, match prep, review, and recovery
+default_personality: guodegang

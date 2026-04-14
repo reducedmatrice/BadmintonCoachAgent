@@ -24,10 +24,13 @@ from .persona import (
     CoachStrictness,
     CoachTone,
     CoachVerbosity,
+    build_agent_coach_persona,
     default_coach_persona,
     merge_coach_persona,
     resolve_coach_persona,
+    resolve_coach_personality_id,
     resolve_coach_persona_overrides,
+    resolve_runtime_coach_persona,
 )
 from .postmatch import Improvement, PostmatchReview, TechnicalObservation, extract_postmatch_review
 from .prematch import PrematchAdvice, build_prematch_advice, load_recent_review_logs
@@ -92,6 +95,7 @@ __all__ = [
     "build_prematch_advice",
     "classify_coach_intent",
     "create_default_coach_profile",
+    "build_agent_coach_persona",
     "default_coach_persona",
     "detect_coach_intent",
     "degrade_weather_context",
@@ -105,7 +109,9 @@ __all__ = [
     "normalize_intent_payload",
     "merge_coach_persona",
     "resolve_coach_persona",
+    "resolve_coach_personality_id",
     "resolve_coach_persona_overrides",
+    "resolve_runtime_coach_persona",
     "resolve_persona_config",
     "render_coach_route_payload",
     "build_recall_context",

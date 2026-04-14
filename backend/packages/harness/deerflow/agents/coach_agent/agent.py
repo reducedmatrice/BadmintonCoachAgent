@@ -78,6 +78,7 @@ def make_coach_agent(config: RunnableConfig):
     max_concurrent_subagents = cfg.get("max_concurrent_subagents", 3)
     is_bootstrap = cfg.get("is_bootstrap", False)
     agent_name = cfg.get("agent_name")
+    personality_id = cfg.get("personality_id")
 
     agent_config = load_agent_config(agent_name) if not is_bootstrap else None
     if requested_model_name:
@@ -113,7 +114,12 @@ def make_coach_agent(config: RunnableConfig):
             model=create_chat_model(name=model_name, thinking_enabled=thinking_enabled),
             tools=get_available_tools(model_name=model_name, subagent_enabled=False) + [setup_agent],
             middleware=_build_coach_middlewares(config, model_name=model_name),
-            system_prompt=apply_prompt_template(subagent_enabled=False, max_concurrent_subagents=max_concurrent_subagents, available_skills=set(["bootstrap"])),
+            system_prompt=apply_prompt_template(
+                subagent_enabled=False,
+                max_concurrent_subagents=max_concurrent_subagents,
+                personality_id=personality_id,
+                available_skills=set(["bootstrap"]),
+            ),
             state_schema=ThreadState,
         )
 
@@ -121,6 +127,11 @@ def make_coach_agent(config: RunnableConfig):
         model=create_chat_model(name=model_name, thinking_enabled=thinking_enabled, reasoning_effort=reasoning_effort),
         tools=get_available_tools(model_name=model_name, groups=agent_config.tool_groups if agent_config else None, subagent_enabled=False),
         middleware=_build_coach_middlewares(config, model_name=model_name, agent_name=agent_name),
-        system_prompt=apply_prompt_template(subagent_enabled=False, max_concurrent_subagents=max_concurrent_subagents, agent_name=agent_name),
+        system_prompt=apply_prompt_template(
+            subagent_enabled=False,
+            max_concurrent_subagents=max_concurrent_subagents,
+            agent_name=agent_name,
+            personality_id=personality_id,
+        ),
         state_schema=ThreadState,
     )

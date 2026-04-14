@@ -113,12 +113,14 @@ def test_make_coach_agent_disables_subagent_and_plan_mode(monkeypatch):
                 "thinking_enabled": True,
                 "is_plan_mode": True,
                 "subagent_enabled": True,
+                "personality_id": "guodegang",
             }
         }
     )
 
     assert result["system_prompt"] == "coach prompt"
     assert captured["prompt_kwargs"]["subagent_enabled"] is False
+    assert captured["prompt_kwargs"]["personality_id"] == "guodegang"
     assert captured["tools_kwargs"]["subagent_enabled"] is False
     assert result["middleware"] == []
 

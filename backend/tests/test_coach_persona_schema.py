@@ -6,10 +6,13 @@ import pytest
 
 from deerflow.domain.coach.persona import (
     CoachPersonaConfig,
+    build_agent_coach_persona,
     default_coach_persona,
     merge_coach_persona,
     resolve_coach_persona,
+    resolve_coach_personality_id,
     resolve_coach_persona_overrides,
+    resolve_runtime_coach_persona,
 )
 
 
@@ -95,4 +98,69 @@ def test_resolve_coach_persona_applies_session_then_task_priority():
     assert resolved.verbosity == "balanced"
     assert resolved.questioning_style == "direct"
     assert ignored["session"] == []
+    assert "route" in ignored["task"]
+
+
+def test_build_agent_coach_persona_applies_selected_personality_style(monkeypatch):
+    monkeypatch.setattr(
+        "deerflow.config.agents_config.load_agent_personality_style",
+        lambda agent_name, personality_id=None: {
+            "tone": "strict",
+            "verbosity": "balanced",
+            "questioning_style": "direct",
+            "encouragement_style": "tough_love",
+        },
+    )
+
+    resolved, ignored = build_agent_coach_persona("badminton-coach", personality_id="guodegang")
+
+    assert resolved.tone == "strict"
+    assert resolved.verbosity == "balanced"
+    assert resolved.questioning_style == "direct"
+    assert resolved.encouragement_style == "tough_love"
+    assert ignored == []
+
+
+def test_resolve_coach_personality_id_prefers_nested_override():
+    personality_id = resolve_coach_personality_id(
+        {
+            "personality_id": "fallback-id",
+            "persona_overrides": {
+                "personality_id": "guodegang",
+            },
+        }
+    )
+
+    assert personality_id == "guodegang"
+
+
+def test_resolve_runtime_coach_persona_merges_personality_then_context(monkeypatch):
+    monkeypatch.setattr(
+        "deerflow.config.agents_config.load_agent_personality_style",
+        lambda agent_name, personality_id=None: {
+            "tone": "strict",
+            "verbosity": "balanced",
+            "questioning_style": "direct",
+            "encouragement_style": "tough_love",
+        },
+    )
+
+    resolved, ignored = resolve_runtime_coach_persona(
+        {
+            "personality_id": "guodegang",
+            "persona_overrides": {
+                "task": {
+                    "verbosity": "detailed",
+                    "route": "health",
+                }
+            },
+        },
+        agent_name="badminton-coach",
+    )
+
+    assert resolved.tone == "strict"
+    assert resolved.verbosity == "detailed"
+    assert resolved.questioning_style == "direct"
+    assert resolved.encouragement_style == "tough_love"
+    assert ignored["personality"] == []
     assert "route" in ignored["task"]

@@ -54,6 +54,13 @@ def default_coach_persona() -> CoachPersonaConfig:
     return CoachPersonaConfig()
 
 
+def _normalize_personality_id(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
 def merge_coach_persona(
     base: CoachPersonaConfig,
     override: Mapping[str, Any] | None,
@@ -83,6 +90,18 @@ def merge_coach_persona(
     return merged, ignored_keys
 
 
+def build_agent_coach_persona(
+    agent_name: str = "badminton-coach",
+    *,
+    personality_id: str | None = None,
+) -> tuple[CoachPersonaConfig, list[str]]:
+    """Resolve base persona for an agent from its selected personality style."""
+    from deerflow.config.agents_config import load_agent_personality_style
+
+    style = load_agent_personality_style(agent_name, personality_id=personality_id)
+    return merge_coach_persona(default_coach_persona(), style)
+
+
 def resolve_coach_persona_overrides(context: Mapping[str, Any] | None) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
     """Resolve session/task persona override layers from runtime context."""
     if not context:
@@ -108,6 +127,20 @@ def resolve_coach_persona_overrides(context: Mapping[str, Any] | None) -> tuple[
     return session_override, task_override
 
 
+def resolve_coach_personality_id(context: Mapping[str, Any] | None) -> str | None:
+    """Resolve selected personality id from runtime context."""
+    if not context:
+        return None
+
+    persona_overrides = context.get("persona_overrides")
+    if isinstance(persona_overrides, Mapping):
+        personality_id = _normalize_personality_id(persona_overrides.get("personality_id"))
+        if personality_id:
+            return personality_id
+
+    return _normalize_personality_id(context.get("personality_id"))
+
+
 def resolve_coach_persona(
     base: CoachPersonaConfig,
     context: Mapping[str, Any] | None,
@@ -119,4 +152,17 @@ def resolve_coach_persona(
     ignored: dict[str, list[str]] = {"session": [], "task": []}
     resolved, ignored["session"] = merge_coach_persona(resolved, session_override)
     resolved, ignored["task"] = merge_coach_persona(resolved, task_override)
+    return resolved, ignored
+
+
+def resolve_runtime_coach_persona(
+    context: Mapping[str, Any] | None,
+    *,
+    agent_name: str = "badminton-coach",
+) -> tuple[CoachPersonaConfig, dict[str, list[str]]]:
+    """Resolve the full runtime persona: agent personality defaults + overrides."""
+    personality_id = resolve_coach_personality_id(context)
+    base, personality_ignored = build_agent_coach_persona(agent_name, personality_id=personality_id)
+    resolved, ignored = resolve_coach_persona(base, context)
+    ignored["personality"] = personality_ignored
     return resolved, ignored

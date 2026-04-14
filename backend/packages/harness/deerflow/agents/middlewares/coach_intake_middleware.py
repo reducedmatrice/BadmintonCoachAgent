@@ -13,7 +13,7 @@ from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
 from deerflow.agents.thread_state import CoachIntakeData, ThreadDataState
-from deerflow.domain.coach import build_clarification_request, default_coach_persona, detect_coach_intent, resolve_coach_persona
+from deerflow.domain.coach import CoachIntent, build_clarification_request, detect_coach_intent, resolve_runtime_coach_persona
 from deerflow.domain.coach.recall import build_recall_context
 
 
@@ -59,6 +59,20 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
 
     state_schema = CoachIntakeMiddlewareState
 
+    @staticmethod
+    def _disabled_intent() -> CoachIntent:
+        return CoachIntent(
+            primary_intent="fallback",
+            secondary_intents=[],
+            slots={},
+            missing_slots=[],
+            risk_level="low",
+            confidence=0.0,
+            source="intent_detection_disabled",
+            needs_clarification=False,
+            clarification_reason=None,
+        )
+
     @override
     def before_agent(self, state: CoachIntakeMiddlewareState, runtime: Runtime) -> dict | None:
         messages = state.get("messages", [])
@@ -77,13 +91,15 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
         if not thread_data:
             missing_context.append("thread_data")
 
-        persona, ignored_overrides = resolve_coach_persona(default_coach_persona(), runtime.context)
-        intent = detect_coach_intent(latest_user_input or "")
-        clarification_request = build_clarification_request(intent, persona=persona)
+        agent_name = str(runtime.context.get("agent_name") or "badminton-coach")
+        persona, ignored_overrides = resolve_runtime_coach_persona(runtime.context, agent_name=agent_name)
+        intent_detection_enabled = bool(runtime.context.get("coach_intent_detection_enabled", True))
+        intent = detect_coach_intent(latest_user_input or "") if intent_detection_enabled else self._disabled_intent()
+        clarification_request = build_clarification_request(intent, persona=persona) if intent_detection_enabled else None
         recall_context = build_recall_context(
             latest_user_input=latest_user_input or "",
             primary_intent=intent.primary_intent,
-            agent_name=str(runtime.context.get("agent_name") or "badminton-coach"),
+            agent_name=agent_name,
         )
 
         intake: CoachIntakeData = {
