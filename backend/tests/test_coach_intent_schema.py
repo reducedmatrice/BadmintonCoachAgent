@@ -101,3 +101,20 @@ def test_detect_coach_intent_marks_low_confidence_query_for_clarification():
 
     assert intent.needs_clarification is True
     assert intent.clarification_reason in {"low_intent_confidence", "no_stable_intent_detected"}
+
+
+def test_classify_natural_prematch_training_goal_without_clarification():
+    intent = detect_coach_intent("a 今晚去打球，我准备好好练练我的步伐，因为上次练步伐的时候我绊了一下，然后教练教了我如何去启动")
+
+    assert intent.primary_intent == "prematch"
+    assert intent.slots["session_goal"] is not None
+    assert "步伐" in intent.slots["session_goal"]
+    assert intent.needs_clarification is False
+
+
+def test_classify_natural_postmatch_summary_without_clarification():
+    intent = detect_coach_intent("刚打完球，今天启动还是慢了，帮我复盘一下下次重点")
+
+    assert intent.primary_intent == "postmatch"
+    assert intent.slots["review_text"] is not None
+    assert intent.needs_clarification is False

@@ -185,11 +185,11 @@ def test_composable_router_renders_persona_aware_response_text():
     health_text = result.steps[0].payload["response_text"]
     prematch_text = result.steps[1].payload["response_text"]
 
-    assert "先别硬顶强度" in health_text
-    assert "直接回答我" in health_text
-    assert "别偷量，也别逞强" in health_text
-    assert "先按计划执行" in prematch_text
-    assert "今天重点" in prematch_text
+    assert "按现在这些信号看" in health_text
+    assert "你先直接回我一句" in health_text
+    assert "下一次强度先压在" in health_text
+    assert "你今天别一上来就乱加内容" in prematch_text
+    assert "今天重点" not in prematch_text
 
 
 def test_composable_router_renders_recall_line_for_health_and_prematch():
@@ -221,5 +221,5 @@ def test_composable_router_renders_recall_line_for_health_and_prematch():
 
     health_text = result.steps[0].payload["response_text"]
     prematch_text = result.steps[1].payload["response_text"]
-    assert "我回忆到你最近一次相关记录" in health_text
-    assert "我回忆到你最近一次相关记录" in prematch_text
+    assert "我翻了下你最近一次相关记录" in health_text
+    assert "我翻了下你最近一次相关记录" in prematch_text

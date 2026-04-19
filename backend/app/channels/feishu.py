@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 import threading
 from pathlib import Path
 from typing import Any
@@ -372,77 +373,29 @@ class FeishuChannel(Channel):
 
     @staticmethod
     def _build_card_content(text: str) -> str:
-        """Build a Feishu interactive card with stable coach-oriented sections."""
-        title, sections = FeishuChannel._split_card_sections(text)
+        """Build a Feishu interactive card while preserving the original wording."""
+        title = "Badminton Coach"
+        blocks = FeishuChannel._extract_card_blocks(text)
         card = {
             "config": {"wide_screen_mode": True, "update_multi": True},
             "header": {"title": {"tag": "plain_text", "content": title}},
-            "elements": [{"tag": "markdown", "content": content} for content in sections],
+            "elements": [{"tag": "markdown", "content": content} for content in blocks],
         }
         return json.dumps(card, ensure_ascii=False)
 
     @staticmethod
-    def _split_card_sections(text: str) -> tuple[str, list[str]]:
-        title = "Badminton Coach"
-        lines = [line.strip() for line in text.splitlines() if line.strip()]
-        if lines and lines[0].startswith("#"):
-            title = lines.pop(0).lstrip("# ").strip() or title
+    def _extract_card_blocks(text: str) -> list[str]:
+        normalized_text = text.strip()
+        if not normalized_text:
+            return ["Working on it..."]
 
-        buckets: dict[str, list[str]] = {
-            "建议摘要": [],
-            "重点项": [],
-            "热身建议": [],
-            "风险提示": [],
-            "下次建议": [],
-        }
-        current_section = "建议摘要"
+        normalized_text = re.sub(r"^\s*#{1,6}\s+.+?(?:\n+|$)", "", normalized_text, count=1)
 
-        for line in lines:
-            normalized = line.lstrip("-* ").strip()
-            section, content = FeishuChannel._match_card_section(normalized)
-            if section:
-                current_section = section
-                if content:
-                    buckets[current_section].append(content)
-                continue
-            buckets[current_section].append(normalized)
+        if not normalized_text:
+            return ["Working on it..."]
 
-        if not any(buckets.values()):
-            buckets["建议摘要"].append(text.strip() or "Working on it...")
-
-        ordered_sections = []
-        for section_name in ("建议摘要", "重点项", "热身建议", "风险提示", "下次建议"):
-            items = [item for item in buckets[section_name] if item]
-            if not items:
-                continue
-            ordered_sections.append(FeishuChannel._render_card_section(section_name, items))
-        return title, ordered_sections
-
-    @staticmethod
-    def _match_card_section(line: str) -> tuple[str | None, str]:
-        normalized = line.strip().lstrip("# ").strip()
-        mappings = {
-            "重点项": ("重点项", "训练重点", "今日重点", "重点"),
-            "热身建议": ("热身建议", "热身"),
-            "风险提示": ("风险提示", "风险", "提醒"),
-            "下次建议": ("下次建议", "下一步", "下次重点", "后续建议"),
-        }
-        for section, prefixes in mappings.items():
-            for prefix in prefixes:
-                if normalized == prefix:
-                    return section, ""
-                for separator in ("：", ":"):
-                    marker = f"{prefix}{separator}"
-                    if normalized.startswith(marker):
-                        return section, normalized[len(marker) :].strip()
-        return None, ""
-
-    @staticmethod
-    def _render_card_section(section_name: str, items: list[str]) -> str:
-        if section_name == "建议摘要" and len(items) == 1:
-            return f"**{section_name}**\n{items[0]}"
-        bullet_lines = "\n".join(f"- {item}" for item in items)
-        return f"**{section_name}**\n{bullet_lines}"
+        blocks = [block.strip() for block in re.split(r"\n\s*\n", normalized_text) if block.strip()]
+        return blocks or ["Working on it..."]
 
     # -- reaction helpers --------------------------------------------------
 
@@ -545,13 +498,14 @@ class FeishuChannel(Channel):
 
     async def _send_card_message(self, msg: OutboundMessage) -> None:
         """Send or update the Feishu card tied to the current request."""
-        source_message_id = msg.thread_ts
-        if source_message_id:
-            running_card_id = self._running_card_ids.get(source_message_id)
+        reply_target = msg.thread_ts
+        reaction_target = str(msg.metadata.get("reaction_target_message_id") or reply_target or "").strip()
+        if reply_target:
+            running_card_id = self._running_card_ids.get(reply_target)
             awaited_running_card_task = False
 
             if not running_card_id:
-                running_card_task = self._running_card_tasks.get(source_message_id)
+                running_card_task = self._running_card_tasks.get(reply_target)
                 if running_card_task:
                     awaited_running_card_task = True
                     running_card_id = await running_card_task
@@ -566,22 +520,23 @@ class FeishuChannel(Channel):
                         "[Feishu] failed to patch running card %s, falling back to final reply",
                         running_card_id,
                     )
-                    await self._reply_card(source_message_id, msg.text)
+                    await self._reply_card(reply_target, msg.text)
                 else:
-                    logger.info("[Feishu] running card updated: source=%s card=%s", source_message_id, running_card_id)
+                    logger.info("[Feishu] running card updated: source=%s card=%s", reply_target, running_card_id)
             elif msg.is_final:
-                await self._reply_card(source_message_id, msg.text)
+                await self._reply_card(reply_target, msg.text)
             elif awaited_running_card_task:
                 logger.warning(
                     "[Feishu] running card task finished without message_id for source=%s, skipping duplicate non-final creation",
-                    source_message_id,
+                    reply_target,
                 )
             else:
-                await self._ensure_running_card(source_message_id, msg.text)
+                await self._ensure_running_card(reply_target, msg.text)
 
             if msg.is_final:
-                self._running_card_ids.pop(source_message_id, None)
-                await self._add_reaction(source_message_id, "DONE")
+                self._running_card_ids.pop(reply_target, None)
+                if reaction_target:
+                    await self._add_reaction(reaction_target, "DONE")
             return
 
         await self._create_card(msg.chat_id, msg.text)
@@ -614,7 +569,8 @@ class FeishuChannel(Channel):
         """Kick off Feishu side effects without delaying inbound dispatch."""
         reaction_task = asyncio.create_task(self._add_reaction(msg_id, "OK"))
         self._track_background_task(reaction_task, name="add_reaction", msg_id=msg_id)
-        self._ensure_running_card_started(msg_id)
+        running_card_target = inbound.thread_ts or msg_id
+        self._ensure_running_card_started(running_card_target)
         await self.bus.publish_inbound(inbound)
 
     @staticmethod

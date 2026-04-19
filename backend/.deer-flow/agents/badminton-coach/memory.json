@@ -1,32 +1,60 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-04-05T11:42:17.920897Z",
+  "lastUpdated": "2026-04-16T14:37:15.566971Z",
   "user": {
     "workContext": {
       "summary": "",
-      "updatedAt": ""
+      "updatedAt": "",
+      "sources": [],
+      "thread_ids": []
     },
     "personalContext": {
-      "summary": "User plays badminton doubles, preferring a tactical approach with 'clever touch' (巧劲) for net play over constant fast flat exchanges. They experience pre-match nervousness but actively use mental reframing techniques to convert anxiety into focus.",
-      "updatedAt": "2026-04-05T11:34:19.764456Z"
+      "summary": "User is a 10-year experienced badminton doubles player who favors a tactical 'clever touch' (巧劲) play style over brute force. They prefer casual, humorous communication and enjoy lighthearted jokes during interactions.",
+      "updatedAt": "2026-04-16T14:37:15.540400Z",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
     },
     "topOfMind": {
-      "summary": "The user has fully recovered from recent shoulder soreness caused by technical adjustments and is now competing in a match tonight. Their immediate focus has shifted entirely to competition strategy, specifically managing pre-match nervousness by reframing it as excitement/energy. They are executing a 'smoothness over power' game plan, aiming for 70-80% power output to maintain consistency while stabilizing their new larger backswing technique under pressure. Key tactical priorities include the 'third shot' connection after serving and utilizing soft blocks to disrupt opponent rhythm, avoiding high-intensity flat exchanges that previously led to fatigue.",
-      "updatedAt": "2026-04-05T11:42:17.915055Z"
+      "summary": "1. Recently completed a weekend badminton match using 27lb string tension on his Yonex Astrox 100ZZ racket, currently focusing on solidifying optimized swing mechanics: extending backswing to leverage 蹬转 (drive turn) force to drive racket movement, avoiding arm-only发力 to protect his recovered shoulder. 2. Refining a suite of doubles tactical techniques: realistic fake kill drop shots, maintaining low center of gravity for faster starts, optimized net play (upright elbow for short controlled pushes, prioritizing cuts and light taps over frequent deep backcourt lifts to avoid being countered). 3. Continuing to follow proven post-training recovery routines: foam rolling for glute and upper back soreness, targeted stretching, and prioritizing pre-match warmups for injury-prone areas (shoulders, ankles, glutes) before play, controlling match intensity to ~70% to avoid re-injury. 4. Has finalized Victor 9200 as his preferred badminton shoe model (preferred over Li-Ning for better grip, sufficient cushioning for his light/medium weight) with a 500 RMB budget, currently evaluating color options for purchase.",
+      "updatedAt": "2026-04-16T14:37:15.540400Z",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
     }
   },
   "history": {
     "recentMonths": {
-      "summary": "In recent sessions, the user experimented with enlarging their backswing (引拍) to generate more serve power, which initially led to shoulder soreness. They engaged in detailed discussions about recovery strategies, including cold/hot therapy distinctions and load management. Most recently, the user confirmed full recovery from this shoulder issue on April 5, 2026, and transitioned focus to mental preparation for competitive play. The latest interaction involved finalizing a competition strategy for a match tonight, addressing pre-match anxiety and confirming the successful integration of the new technical adjustments without pain.",
-      "updatedAt": "2026-04-05T11:42:17.915055Z"
+      "summary": "Over the past 2 months, the user has recovered from two acute badminton-related injuries: a shoulder strain and right ankle sprain, following RICE recovery protocols including icing and controlled rest periods. After a 2-week break for ankle recovery, he successfully returned to training, first mastering then fully consolidating the 'light step slow return' (轻踩慢回) footwork start-up technique which reduces tripping risk, as well as early racket frame preparation (架拍) for net and backhand shot stability, integrating both skills fully into regular training. He has upgraded his equipment: purchased a highly satisfying Yonex Astrox 100ZZ racket, adjusted string tension from his usual 28lb to 27lb to protect his recently recovered shoulder, and confirmed Victor 9200 as his preferred badminton shoe (better grip than Li-Ning, sufficient cushioning for his light/medium weight) with a 500 RMB budget, currently evaluating color options. He has recently refined multiple high-value doubles tactical insights: extending backswing to solidify蹬转-driven swing mechanics, deceptive fake kill drop shot technique, low center of gravity for faster reaction, and optimized net play tactics to avoid giving opponents offensive opportunities. He follows consistent post-training recovery routines including pre-training glute activation, post-training stretching and foam rolling, which effectively reduce soreness in shoulders, wrists and glutes, and adheres to safety protocols including full pre-match warmups for injury-prone areas and controlling match intensity to 70% to avoid re-injury.",
+      "updatedAt": "2026-04-16T14:37:15.540400Z",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
     },
     "earlierContext": {
       "summary": "",
-      "updatedAt": ""
+      "updatedAt": "",
+      "sources": [],
+      "thread_ids": []
     },
     "longTermBackground": {
-      "summary": "The user is a regular badminton player who participates in doubles matches and values technical precision and tactical awareness. They have a longstanding interest in understanding the mechanics of their strokes, particularly the balance between power and control.",
-      "updatedAt": "2026-04-05T11:19:08.608736Z"
+      "summary": "User is an experienced badminton player with 10 years of play history, who regularly participates in doubles matches and values technical precision and tactical awareness. They have a longstanding preference for a 'clever touch' (巧劲) play style over brute force, prioritizing consistency and smart tactical choices over maximum power output during matches.",
+      "updatedAt": "2026-04-16T14:37:15.540400Z",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
     }
   },
   "facts": [
@@ -36,7 +64,11 @@
       "category": "context",
       "confidence": 1.0,
       "createdAt": "2026-04-05T11:19:08.608736Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_e411f653",
@@ -44,7 +76,11 @@
       "category": "goal",
       "confidence": 1.0,
       "createdAt": "2026-04-05T11:19:08.608736Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_64e6f05a",
@@ -52,7 +88,11 @@
       "category": "preference",
       "confidence": 0.9,
       "createdAt": "2026-04-05T11:19:08.608736Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_bf4d4a6c",
@@ -60,7 +100,11 @@
       "category": "context",
       "confidence": 1.0,
       "createdAt": "2026-04-05T11:19:08.608736Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_bcff79c6",
@@ -68,7 +112,11 @@
       "category": "knowledge",
       "confidence": 0.9,
       "createdAt": "2026-04-05T11:19:08.608736Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_93a95c24",
@@ -76,7 +124,11 @@
       "category": "preference",
       "confidence": 0.8,
       "createdAt": "2026-04-05T11:19:08.608736Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_d5b14155",
@@ -84,7 +136,11 @@
       "category": "context",
       "confidence": 1.0,
       "createdAt": "2026-04-05T11:36:24.363995Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_0ce2a962",
@@ -92,7 +148,11 @@
       "category": "preference",
       "confidence": 0.9,
       "createdAt": "2026-04-05T11:36:24.363995Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_e22ee968",
@@ -100,23 +160,11 @@
       "category": "behavior",
       "confidence": 0.9,
       "createdAt": "2026-04-05T11:36:24.363995Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
-    },
-    {
-      "id": "fact_c23a19d7",
-      "content": "User has fully recovered from recent shoulder soreness caused by increasing backswing amplitude.",
-      "category": "context",
-      "confidence": 1.0,
-      "createdAt": "2026-04-05T11:36:24.363995Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
-    },
-    {
-      "id": "fact_0b8d3b21",
-      "content": "User has fully recovered from shoulder soreness as of April 5, 2026, and is cleared to compete in a match tonight.",
-      "category": "context",
-      "confidence": 1.0,
-      "createdAt": "2026-04-05T11:42:17.915055Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_7b8dfe61",
@@ -124,7 +172,11 @@
       "category": "behavior",
       "confidence": 1.0,
       "createdAt": "2026-04-05T11:42:17.915055Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_2b7560cc",
@@ -132,7 +184,11 @@
       "category": "behavior",
       "confidence": 0.9,
       "createdAt": "2026-04-05T11:42:17.915055Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
     },
     {
       "id": "fact_a6ab1732",
@@ -140,7 +196,697 @@
       "category": "behavior",
       "confidence": 0.9,
       "createdAt": "2026-04-05T11:42:17.915055Z",
-      "source": "123c1567-95e5-4dde-8d92-a558f0360168"
+      "source": "123c1567-95e5-4dde-8d92-a558f0360168",
+      "sources": [],
+      "thread_ids": [
+        "123c1567-95e5-4dde-8d92-a558f0360168"
+      ]
+    },
+    {
+      "id": "fact_f79fcabf",
+      "content": "User tripped during a recent footwork training session.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:15:02.620679Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T161502Z_7642d31d"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_5391d498",
+      "content": "Coach taught the user specific techniques for start-up (启动) to address the tripping issue.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:15:02.620679Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T161502Z_7642d31d"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_2defd43b",
+      "content": "User identified 'light step slow return' (轻踩慢回) as the key technical insight for effective footwork start-up.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:16:49.255409Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T161649Z_1d10dc26"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_dec5a75e",
+      "content": "User sustained an acute shoulder injury during the latest badminton session.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:16:49.255409Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T161649Z_1d10dc26"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_0e5213ae",
+      "content": "User applied ice to the acute shoulder injury and reported immediate relief.",
+      "category": "behavior",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:20:11.899373Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162011Z_4f13d738"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_884fb98f",
+      "content": "User returned to play badminton again shortly after sustaining an acute shoulder injury.",
+      "category": "behavior",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:22:12.815457Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162212Z_9b222d72"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_4f1f65f1",
+      "content": "User is actively seeking advice on monitoring shoulder status and safety precautions after playing with a recent injury.",
+      "category": "behavior",
+      "confidence": 0.9,
+      "createdAt": "2026-04-12T16:22:12.815457Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162212Z_9b222d72"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_a8634e30",
+      "content": "User reports shoulder feels comfortable and has no discomfort swinging after icing the acute injury.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:25:51.919360Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162551Z_31bede65"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_3a29cf57",
+      "content": "User played for 3 hours in the latest badminton session.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:29:17.550925Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162917Z_ab65ff7c"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_d17f9d3b",
+      "content": "User has mastered the 'light step slow return' (轻踩慢回) footwork start-up technique.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:29:17.550925Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162917Z_ab65ff7c"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_68709156",
+      "content": "User discovered that setting up the racket frame early (架拍) is crucial for stability in net shots.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:29:17.550925Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162917Z_ab65ff7c"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_9cc81118",
+      "content": "User discovered that setting up the racket frame early is crucial for stability in backhand shots.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:29:17.550925Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162917Z_ab65ff7c"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_aaa4b119",
+      "content": "User believes that having a formed racket frame (框架成型) makes subsequent actions smoother and more stable.",
+      "category": "preference",
+      "confidence": 0.9,
+      "createdAt": "2026-04-12T16:29:17.550925Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T162917Z_ab65ff7c"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_504559b6",
+      "content": "User sprained their right ankle during a badminton session.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:31:56.222674Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T163156Z_286ec1bf"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_9d17fb89",
+      "content": "User is considering buying new badminton shoes to improve support and prevent injuries.",
+      "category": "goal",
+      "confidence": 0.9,
+      "createdAt": "2026-04-12T16:31:56.222674Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T163156Z_286ec1bf"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_93022117",
+      "content": "User reports the right ankle feels better after the two-week rest period.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:34:00.356034Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T163400Z_d3f7292a"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_2929b874",
+      "content": "User confirms right ankle is fully recovered after the two-week rest period.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T16:59:56.223510Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T165956Z_f2947fec"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_6df7d33b",
+      "content": "User has a budget of around 500 RMB for purchasing new badminton shoes.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T17:01:53.612178Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T170153Z_5fcf12ee"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_5a0e73ec",
+      "content": "User is seeking recommendations for badminton shoes, specifically considering brands like Li-Ning, Yonex, and Victor.",
+      "category": "goal",
+      "confidence": 0.9,
+      "createdAt": "2026-04-12T17:01:53.612178Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T170153Z_5fcf12ee"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_4a03d73f",
+      "content": "User prefers Victor 9200 badminton shoes and has purchased multiple pairs in the past.",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T17:14:23.451122Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T171423Z_76186ca6"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_d74be40b",
+      "content": "User is currently considering purchasing the Victor 9200 model for their new badminton shoes.",
+      "category": "goal",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T17:14:23.451122Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T171423Z_76186ca6"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_e8a1c859",
+      "content": "User finds Li-Ning badminton shoes slippery compared to Victor 9200.",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T17:22:40.806797Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T172240Z_e88c3a56"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_d3285fd4",
+      "content": "User considers their weight to be light/medium, making the cushioning of Victor 9200 sufficient.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T17:22:40.806797Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T172240Z_e88c3a56"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_17fc98ba",
+      "content": "User recently purchased a Yonex Astrox 100ZZ (100Zz) badminton racket.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T17:28:49.973309Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T172849Z_dc560d7c"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_991560d1",
+      "content": "User finds the Yonex Astrox 100ZZ racket effective and good to play with.",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-12T17:28:49.973309Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260412T172849Z_dc560d7c"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_c3e45682",
+      "content": "User experienced glute soreness after a long badminton session, caused by correct activation of glute muscles when using the 'light step slow return' footwork technique.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:11:23.622507Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171123Z_ec792f01"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_56251fbf",
+      "content": "User reaffirms their Yonex Astrox 100ZZ racket is effective and well-suited to their play style.",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:11:23.622507Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171123Z_ec792f01"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_ebf1a01e",
+      "content": "User is evaluating color options for the Victor 9200 badminton shoes they intend to purchase.",
+      "category": "goal",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:11:23.622507Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171123Z_ec792f01"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_dadb2f32",
+      "content": "User follows recommended recovery guidance for badminton-related soreness and injuries, including icing, stretching, and controlled rest.",
+      "category": "behavior",
+      "confidence": 0.9,
+      "createdAt": "2026-04-14T17:11:23.622507Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171123Z_ec792f01"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_dba8a4c4",
+      "content": "User has fully recovered from their previous acute shoulder injury, with no discomfort reported during or after recent badminton training sessions.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:16:26.815654Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171626Z_99cf7aea"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_6612a565",
+      "content": "User has fully consolidated the 'light step slow return' footwork technique and early racket frame preparation technique for both net and backhand shots, applying them consistently in training.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:16:26.815654Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171626Z_99cf7aea"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_b0b534fc",
+      "content": "User reports that following recommended post-training muscle relaxation techniques (including stretching) effectively reduces their shoulder and wrist soreness.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:16:26.815654Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171626Z_99cf7aea"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_708b7ef3",
+      "content": "User follows pre-training glute activation and post-training glute stretching guidance to reduce post-training glute soreness caused by correct glute activation during footwork practice.",
+      "category": "behavior",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:16:26.815654Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171626Z_99cf7aea"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_4e5a55cb",
+      "content": "User prefers a casual, humorous communication style when interacting, and requested a joke during conversation.",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:16:26.815654Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171626Z_99cf7aea"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_4802ce2b",
+      "content": "User knows that regularly replacing badminton racket hand grips prevents the racket from slipping out of the hand during play.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:18:53.959315Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171853Z_a4ad66fe"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_3247db94",
+      "content": "User believes using new badminton strings provides a better playing feel.",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:18:53.959315Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T171853Z_a4ad66fe"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_83d8c8c0",
+      "content": "User has 10 years of badminton playing experience.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:20:50.999621Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T172050Z_82b910e7"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_676389df",
+      "content": "User normally prefers 28 pound string tension for his badminton rackets, but is currently using 27 pound tension for his Yonex Astrox 100ZZ to protect his recently recovered shoulder.",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:20:50.999621Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T172050Z_82b910e7"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_2315e913",
+      "content": "User has an upcoming badminton match scheduled for the weekend.",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:20:50.999621Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T172050Z_82b910e7"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_06cd8fc7",
+      "content": "User plans to keep match intensity at 70% during the upcoming weekend badminton match to avoid re-injury.",
+      "category": "behavior",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:20:50.999621Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T172050Z_82b910e7"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_1a8971ab",
+      "content": "User confirms that foam rolling after training effectively reduces glute soreness resulting from correct glute activation during footwork practice.",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-14T17:20:50.999621Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260414T172050Z_82b910e7"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_5dd5861f",
+      "content": "User aims to solidify 蹬转 (drive turn)-driven swing mechanics by extending backswing (placing racket behind body before swinging) for smoother, more efficient strokes that reduce shoulder strain",
+      "category": "goal",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_4f102f36",
+      "content": "User has mastered the fake kill drop shot (假杀真吊) technique: uses exaggerated weight transfer and locked wrist execution to create realistic deception that catches opponents off guard",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_0a7ea16f",
+      "content": "User follows the practice of completing full, deliberate movements during initial warmup games before increasing intensity in competitive matches",
+      "category": "behavior",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_592320c9",
+      "content": "User maintains a low body center of gravity during competitive doubles matches to improve start speed and reaction time",
+      "category": "behavior",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_03aba609",
+      "content": "User's optimized net push shot technique: keeps elbow upright to execute short, controlled pushes for better accuracy and power control",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_e9fd7738",
+      "content": "User prefers net play tactics using cuts, soft taps and light flicks over frequent deep backcourt lifts to avoid being countered by opponents' rear court players",
+      "category": "preference",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_8b7c6bac",
+      "content": "User confirms that post-training soreness in glutes and upper back (latissimus dorsi) after long sessions is a normal, expected result of correct, efficient muscle activation rather than a sign of injury",
+      "category": "knowledge",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
+    },
+    {
+      "id": "fact_387e0af0",
+      "content": "User successfully used 27lb string tension on his Yonex Astrox 100ZZ racket during the recent weekend match, finding it well-suited to his play style and shoulder protection needs",
+      "category": "context",
+      "confidence": 1.0,
+      "createdAt": "2026-04-16T14:37:15.540400Z",
+      "source": "69648d98-319d-4628-91fa-14ec3712b545",
+      "sources": [
+        "mem_20260416T143715Z_ec33b40b"
+      ],
+      "thread_ids": [
+        "69648d98-319d-4628-91fa-14ec3712b545"
+      ]
     }
   ]
 }

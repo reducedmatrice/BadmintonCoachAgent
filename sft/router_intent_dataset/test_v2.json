@@ -1,0 +1,302 @@
+[
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"第一步慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"后场回位慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"启动总慢半拍\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"网前容易顶住\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"反手准备不够快\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近脚下容易乱。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"脚下容易乱\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近后场高远球衔接差。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"后场高远球衔接差\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近接发后衔接慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"接发后衔接慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近上来容易发紧。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"上来容易发紧\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下发接发，我最近节奏一快就散。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"发接发\",\"technical_focus\":\"节奏一快就散\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"第一步慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"后场回位慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"启动总慢半拍\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"网前容易顶住\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"反手准备不够快\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近脚下容易乱。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"脚下容易乱\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近后场高远球衔接差。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"后场高远球衔接差\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近接发后衔接慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"接发后衔接慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近上来容易发紧。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"上来容易发紧\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚单打前帮我安排一下前后场转换，我最近节奏一快就散。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"前后场转换\",\"technical_focus\":\"节奏一快就散\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"第一步慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"后场回位慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"启动总慢半拍\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"网前容易顶住\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"反手准备不够快\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近脚下容易乱。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"脚下容易乱\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近后场高远球衔接差。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"后场高远球衔接差\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近接发后衔接慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"接发后衔接慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近上来容易发紧。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"上来容易发紧\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下热身，我最近节奏一快就散。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"节奏一快就散\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"第一步慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"后场回位慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"启动总慢半拍\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"网前容易顶住\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"反手准备不够快\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近脚下容易乱。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"脚下容易乱\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近后场高远球衔接差。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"后场高远球衔接差\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近接发后衔接慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"接发后衔接慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近上来容易发紧。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"上来容易发紧\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下接发，我最近节奏一快就散。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"节奏一快就散\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"第一步慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"后场回位慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"启动总慢半拍\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"网前容易顶住\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"反手准备不够快\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近脚下容易乱。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"脚下容易乱\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近后场高远球衔接差。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"后场高远球衔接差\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近接发后衔接慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"接发后衔接慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近上来容易发紧。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"上来容易发紧\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下步伐，我最近节奏一快就散。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"步伐\",\"technical_focus\":\"节奏一快就散\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"第一步慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"后场回位慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"启动总慢半拍\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"网前容易顶住\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"反手准备不够快\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近脚下容易乱。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"脚下容易乱\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近后场高远球衔接差。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"后场高远球衔接差\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的路由分类器。只允许输出一个 JSON object，禁止输出 markdown 代码块，禁止输出额外字段。字段名必须严格为 primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近接发后衔接慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"接发后衔接慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是严格的结构化分类任务。请仅返回合法 JSON，不要解释，不要添加 intent、task、request、sub_intent 等自创字段，必须只使用以下字段：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近上来容易发紧。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"上来容易发紧\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请按固定 schema 返回结果，只能输出一个 JSON 对象。不得使用代码块，不得增加额外键。允许的键只有：primary_intent、secondary_intents、slots、missing_slots、risk_level、confidence、needs_clarification、clarification_reason。",
+    "input": "今晚对抗前帮我安排一下启动，我最近节奏一快就散。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"启动\",\"technical_focus\":\"节奏一快就散\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  }
+]

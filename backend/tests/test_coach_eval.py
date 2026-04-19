@@ -55,8 +55,8 @@ def test_evaluate_cases_supports_mixed_persona_and_writeback_dimensions():
                     "encouragement_style": "calm",
                 },
                 "persona_expectations": {
-                    "required_markers": ["先别着急", "如果你愿意，我们再补一句"],
-                    "forbidden_markers": ["直接回答我", "别偷量，也别逞强"],
+                    "required_markers": ["你今天上来先别铺太开", "你再补我一句"],
+                    "forbidden_markers": ["你先直接回我一句", "今天重点"],
                 },
             },
             {

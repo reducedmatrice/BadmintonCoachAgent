@@ -1,0 +1,302 @@
+[
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今晚单打前帮我安排一下热身，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"第一步慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今晚单打前帮我安排一下热身，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"后场回位慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今晚单打前帮我安排一下热身，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"启动总慢半拍\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今晚单打前帮我安排一下热身，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"网前容易顶住\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今晚单打前帮我安排一下热身，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"反手准备不够快\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今晚单打前帮我安排一下热身，我最近脚下容易乱。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"脚下容易乱\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今晚单打前帮我安排一下热身，我最近后场高远球衔接差。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"后场高远球衔接差\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今晚单打前帮我安排一下热身，我最近接发后衔接慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"接发后衔接慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今晚单打前帮我安排一下热身，我最近上来容易发紧。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"上来容易发紧\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今晚单打前帮我安排一下热身，我最近节奏一快就散。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"热身\",\"technical_focus\":\"节奏一快就散\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今晚单打前帮我安排一下接发，我最近第一步慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"第一步慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今晚单打前帮我安排一下接发，我最近后场回位慢。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"后场回位慢\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今晚单打前帮我安排一下接发，我最近启动总慢半拍。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"启动总慢半拍\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今晚单打前帮我安排一下接发，我最近网前容易顶住。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"网前容易顶住\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今晚单打前帮我安排一下接发，我最近反手准备不够快。",
+    "output": "{\"primary_intent\":\"prematch\",\"secondary_intents\":[],\"slots\":{\"session_goal\":\"接发\",\"technical_focus\":\"反手准备不够快\",\"match_format\":\"singles\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "我今天打完的感觉是反手稳了一点，不过后场回位还是慢，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但后场回位还是慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "我今天打完的感觉是反手稳了一点，不过第一步还是慢，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但第一步还是慢\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "我今天打完的感觉是反手稳了一点，不过后半段脚下乱了，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但后半段脚下乱了\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "我今天打完的感觉是反手稳了一点，不过最后两局明显掉速，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但最后两局明显掉速\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "我今天打完的感觉是反手稳了一点，不过高远球不到位，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但高远球不到位\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "我今天打完的感觉是反手稳了一点，不过被压后场时顶不住，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但被压后场时顶不住\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "我今天打完的感觉是反手稳了一点，不过启动衔接还是断，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但启动衔接还是断\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "我今天打完的感觉是反手稳了一点，不过接发后容易站死，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但接发后容易站死\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "我今天打完的感觉是反手稳了一点，不过网前起球质量一般，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但网前起球质量一般\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "我今天打完的感觉是反手稳了一点，不过体能后程掉得快，给我总结下次重点。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[],\"slots\":{\"review_text\":\"反手稳了一点，但体能后程掉得快\"},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "帮我看下，我现在肩膀酸，明天还能上强度吗？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"肩膀酸\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "帮我看下，我现在肩膀酸，今天还适合打吗？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"肩膀酸\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "帮我看下，我现在肩膀酸，这种情况是不是该收一点？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"肩膀酸\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "帮我看下，我现在肩膀酸，我还要不要练？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"肩膀酸\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "帮我看下，我现在肩膀酸，今晚能不能正常打？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"肩膀酸\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.92,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "帮我看下，我现在小腿发紧，明天还能上强度吗？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"小腿发紧\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.93,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "帮我看下，我现在小腿发紧，今天还适合打吗？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"小腿发紧\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "帮我看下，我现在小腿发紧，这种情况是不是该收一点？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"小腿发紧\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "帮我看下，我现在小腿发紧，我还要不要练？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"小腿发紧\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.87,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "帮我看下，我现在小腿发紧，今晚能不能正常打？",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[],\"slots\":{\"health_signal\":\"小腿发紧\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今天打完第一步还是慢，而且我现在昨晚恢复差，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"第一步还是慢\",\"health_signal\":\"昨晚恢复差\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今天打完第一步还是慢，而且我现在小腿紧，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"第一步还是慢\",\"health_signal\":\"小腿紧\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今天打完第一步还是慢，而且我现在心率有点高，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"第一步还是慢\",\"health_signal\":\"心率有点高\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今天打完第一步还是慢，而且我现在睡眠不够，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"第一步还是慢\",\"health_signal\":\"睡眠不够\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今天打完脚下乱了，而且我现在肩膀酸，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"脚下乱了\",\"health_signal\":\"肩膀酸\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.86,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今天打完脚下乱了，而且我现在膝盖不舒服，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"脚下乱了\",\"health_signal\":\"膝盖不舒服\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.87,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今天打完脚下乱了，而且我现在昨晚恢复差，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"脚下乱了\",\"health_signal\":\"昨晚恢复差\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.88,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "今天打完脚下乱了，而且我现在小腿紧，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"脚下乱了\",\"health_signal\":\"小腿紧\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.89,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "今天打完脚下乱了，而且我现在心率有点高，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"脚下乱了\",\"health_signal\":\"心率有点高\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.9,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "今天打完脚下乱了，而且我现在睡眠不够，帮我先看恢复再顺便复盘。",
+    "output": "{\"primary_intent\":\"postmatch\",\"secondary_intents\":[\"health\"],\"slots\":{\"review_text\":\"脚下乱了\",\"health_signal\":\"睡眠不够\"},\"missing_slots\":[],\"risk_level\":\"medium\",\"confidence\":0.91,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "本来想加强后场，但我现在肩膀刺痛。",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[\"prematch\"],\"slots\":{\"session_goal\":\"本来想加强后场\",\"health_signal\":\"肩膀刺痛\"},\"missing_slots\":[],\"risk_level\":\"high\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "本来想加强后场，但我现在刚扭到脚踝。",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[\"prematch\"],\"slots\":{\"session_goal\":\"本来想加强后场\",\"health_signal\":\"刚扭到脚踝\"},\"missing_slots\":[],\"risk_level\":\"high\",\"confidence\":0.96,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "本来想加强后场，但我现在突然头晕。",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[\"prematch\"],\"slots\":{\"session_goal\":\"本来想加强后场\",\"health_signal\":\"突然头晕\"},\"missing_slots\":[],\"risk_level\":\"high\",\"confidence\":0.97,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "本来想加强后场，但我现在小腿像拉伤了一样。",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[\"prematch\"],\"slots\":{\"session_goal\":\"本来想加强后场\",\"health_signal\":\"小腿像拉伤了一样\"},\"missing_slots\":[],\"risk_level\":\"high\",\"confidence\":0.94,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "本来想加强后场，但我现在腰突然崩了一下。",
+    "output": "{\"primary_intent\":\"health\",\"secondary_intents\":[\"prematch\"],\"slots\":{\"session_goal\":\"本来想加强后场\",\"health_signal\":\"腰突然崩了一下\"},\"missing_slots\":[],\"risk_level\":\"high\",\"confidence\":0.95,\"needs_clarification\":false,\"clarification_reason\":null}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "那个，今天有点怪，帮我看看。呢",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.14,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "那个，今天有点怪，帮我看看。呀",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.15,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "那个，今天有点怪，帮我看看。呗",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.16,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "那个，今天有点怪，帮我看看。哈",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.17,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "就是 今天有点怪，帮我看看。。",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.18,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "就是 今天有点怪，帮我看看。啊",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.19,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "就是 今天有点怪，帮我看看。呢",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.2,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "请根据用户输入输出标准 JSON，只返回 JSON，不要解释。",
+    "input": "就是 今天有点怪，帮我看看。呀",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.21,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "你是羽毛球教练 Agent 的结构化意图分类器。请识别意图并返回 JSON。",
+    "input": "就是 今天有点怪，帮我看看。呗",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.22,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  },
+  {
+    "instruction": "这是一个路由分类任务。请基于用户输入返回结构化 JSON 结果。",
+    "input": "就是 今天有点怪，帮我看看。哈",
+    "output": "{\"primary_intent\":\"fallback\",\"secondary_intents\":[],\"slots\":{},\"missing_slots\":[],\"risk_level\":\"low\",\"confidence\":0.23,\"needs_clarification\":true,\"clarification_reason\":\"no_stable_intent_detected\"}"
+  }
+]

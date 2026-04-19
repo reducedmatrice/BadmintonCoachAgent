@@ -394,7 +394,7 @@ class TestExtractResponseText:
         result = {
             "messages": [
                 {"type": "human", "content": "今晚打球前提醒我"},
-                {"type": "ai", "content": "先别着急，今天按这个节奏来。"},
+                {"type": "ai", "content": "今天先盯后场回位，热身把肩打开。"},
             ],
             "coach_intake": {
                 "clarification_request": {
@@ -403,7 +403,7 @@ class TestExtractResponseText:
             },
         }
 
-        assert _extract_response_text(result) == "先别着急，今天按这个节奏来。"
+        assert _extract_response_text(result) == "今天先盯后场回位，热身把肩打开。"
 
 
 # ---------------------------------------------------------------------------
@@ -819,6 +819,53 @@ class TestChannelManager:
             final_msgs = [m for m in outbound_received if m.is_final]
             assert len(final_msgs) == 1
             assert final_msgs[0].thread_ts == "om-source-1"
+
+        _run(go())
+
+    def test_handle_feishu_empty_stream_result_returns_error_message(self, monkeypatch):
+        """When stream completes without values or text, return an explicit error instead of a fake no-response success."""
+        from app.channels.manager import ChannelManager
+
+        monkeypatch.setattr("app.channels.manager.STREAM_UPDATE_MIN_INTERVAL_SECONDS", 0.0)
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            async def _empty_stream():
+                if False:
+                    yield None
+
+            mock_client = _make_mock_langgraph_client()
+            mock_client.runs.stream = MagicMock(return_value=_empty_stream())
+            manager._client = mock_client
+
+            await manager.start()
+
+            inbound = InboundMessage(
+                channel_name="feishu",
+                chat_id="chat1",
+                user_id="user1",
+                text="hi",
+                thread_ts="om-source-empty",
+            )
+            await bus.publish_inbound(inbound)
+            await _wait_for(lambda: any(m.is_final for m in outbound_received))
+            await manager.stop()
+
+            final_msgs = [m for m in outbound_received if m.is_final]
+            assert len(final_msgs) == 1
+            assert final_msgs[0].text == "An error occurred while processing your request. Please try again."
+            assert final_msgs[0].text != "(No response from agent)"
+            assert final_msgs[0].thread_ts == "om-source-empty"
 
         _run(go())
 
@@ -1417,7 +1464,7 @@ class TestFeishuChannel:
 
         _run(go())
 
-    def test_build_card_content_creates_structured_sections(self):
+    def test_build_card_content_preserves_natural_paragraphs(self):
         from app.channels.feishu import FeishuChannel
 
         card = json.loads(
@@ -1425,19 +1472,20 @@ class TestFeishuChannel:
                 "\n".join(
                     [
                         "# 今晚训练建议",
-                        "重点项：先盯后场回位和反手准备。",
-                        "风险提示：前半段把强度控制在七成。",
-                        "下次建议：打完后补一句今天最大的失误点。",
+                        "今晚不用想太满，先把后场回位和反手准备做扎实。",
+                        "",
+                        "前半段强度先放在七成，肩一紧就别继续往上顶。",
                     ]
                 )
             )
         )
 
-        assert card["header"]["title"]["content"] == "今晚训练建议"
+        assert card["header"]["title"]["content"] == "Badminton Coach"
         markdown_blocks = [element["content"] for element in card["elements"]]
-        assert any("重点项" in block and "后场回位" in block for block in markdown_blocks)
-        assert any("风险提示" in block and "七成" in block for block in markdown_blocks)
-        assert any("下次建议" in block and "失误点" in block for block in markdown_blocks)
+        assert markdown_blocks == [
+            "今晚不用想太满，先把后场回位和反手准备做扎实。",
+            "前半段强度先放在七成，肩一紧就别继续往上顶。",
+        ]
 
     def test_prepare_inbound_publishes_without_waiting_for_running_card(self):
         from app.channels.feishu import FeishuChannel
@@ -1574,6 +1622,52 @@ class TestFeishuChannel:
             assert channel._reply_card.await_count == 1
             channel._update_card.assert_awaited_once_with("om-running-card", "Hello")
             assert "om-source-msg" not in channel._running_card_tasks
+
+        _run(go())
+
+    def test_reply_in_thread_reuses_root_running_card_and_reacts_to_reply_message(self):
+        from app.channels.feishu import FeishuChannel
+
+        async def go():
+            bus = MessageBus()
+            bus.publish_inbound = AsyncMock()
+            channel = FeishuChannel(bus, config={})
+            channel._api_client = MagicMock()
+
+            channel._add_reaction = AsyncMock()
+            channel._reply_card = AsyncMock(return_value="om-running-card")
+            channel._update_card = AsyncMock()
+
+            inbound = InboundMessage(
+                channel_name="feishu",
+                chat_id="chat-1",
+                user_id="user-1",
+                text="hello",
+                thread_ts="om-root-msg",
+                metadata={"message_id": "om-reply-msg", "root_id": "om-root-msg"},
+            )
+
+            await channel._prepare_inbound("om-reply-msg", inbound)
+            await _wait_for(lambda: channel._running_card_ids.get("om-root-msg") == "om-running-card")
+
+            channel._reply_card.assert_awaited_once_with("om-root-msg", "Working on it...")
+            channel._add_reaction.assert_awaited_once_with("om-reply-msg", "OK")
+
+            await channel.send(
+                OutboundMessage(
+                    channel_name="feishu",
+                    chat_id="chat-1",
+                    thread_id="thread-1",
+                    text="Hello world",
+                    is_final=True,
+                    thread_ts="om-root-msg",
+                    metadata={"reaction_target_message_id": "om-reply-msg"},
+                )
+            )
+
+            channel._update_card.assert_awaited_once_with("om-running-card", "Hello world")
+            assert channel._add_reaction.await_args_list[-1].args == ("om-reply-msg", "DONE")
+            assert "om-root-msg" not in channel._running_card_ids
 
         _run(go())
 

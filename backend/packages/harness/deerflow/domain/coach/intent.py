@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 from typing import Any, Literal, Mapping, Protocol
 
 CoachIntentName = Literal["prematch", "postmatch", "health", "fallback"]
@@ -11,12 +12,34 @@ CoachRiskLevel = Literal["low", "medium", "high"]
 _INTENT_ORDER: tuple[CoachIntentName, ...] = ("prematch", "postmatch", "health", "fallback")
 _RISK_ORDER: tuple[CoachRiskLevel, ...] = ("low", "medium", "high")
 
-_PREMATCH_HINTS = ("赛前", "上场前", "今晚打", "打球注意", "热身", "怎么打", "策略", "双打", "单打")
-_POSTMATCH_HINTS = ("复盘", "赛后", "刚打完", "今天打完", "总结", "下次重点", "失误", "回顾")
+_PREMATCH_HINTS = (
+    "赛前",
+    "上场前",
+    "今晚打",
+    "今晚去打球",
+    "准备打球",
+    "准备去打球",
+    "准备练",
+    "打球注意",
+    "热身",
+    "怎么打",
+    "策略",
+    "双打",
+    "单打",
+    "练步伐",
+    "练脚步",
+    "练启动",
+    "步伐",
+    "脚步",
+    "启动",
+)
+_POSTMATCH_HINTS = ("复盘", "赛后", "刚打完", "今天打完", "打完球", "打完了", "刚打完球", "总结", "下次重点", "失误", "回顾")
 _HEALTH_HINTS = ("膝盖", "疼", "拉伤", "疲劳", "恢复", "睡眠", "心率", "hrv", "酸痛", "伤")
 _HIGH_RISK_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "崩", "头晕", "高烧", "180", "184", "185")
 _PRE_RULE_HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "头晕")
 _CLARIFICATION_HINTS = ("怎么办", "怎么弄", "看看", "帮我看", "你好", "在吗")
+_EXPLICIT_TRAINING_GOAL_HINTS = ("步伐", "脚步", "启动", "热身", "发球", "接发", "网前", "后场", "杀球", "步法", "移动")
+_FILLER_PREFIX_RE = re.compile(r"^(?:@[_a-zA-Z0-9]+\s+|[a-zA-Z]\s+)+")
 
 
 @dataclass
@@ -53,7 +76,7 @@ def detect_coach_intent(
     3. Normalize/guard: validate payload, fill defaults, protect schema
     4. Clarification decision: low-confidence or underspecified requests ask back
     """
-    text = (message or "").strip()
+    text = _normalize_message_text(message)
     pre_rule = _pre_rule_detect(text)
 
     if llm_classifier is not None:
@@ -70,7 +93,7 @@ def detect_coach_intent(
 
 def classify_coach_intent(message: str) -> CoachIntent:
     """Rule-based fallback classifier for coach intent schema."""
-    text = (message or "").strip()
+    text = _normalize_message_text(message)
     lowered = text.lower()
 
     matched: list[CoachIntentName] = []
@@ -82,6 +105,9 @@ def classify_coach_intent(message: str) -> CoachIntent:
         matched.append("health")
     if not matched:
         matched.append("fallback")
+
+    if "prematch" in matched and "postmatch" in matched and _looks_like_postmatch_summary(text, lowered):
+        matched = ["postmatch", *[intent for intent in matched if intent != "postmatch"]]
 
     primary, secondary = _split_primary_secondary(matched)
     slots = _extract_slots(text, primary=primary, secondary=secondary)
@@ -222,19 +248,46 @@ def _finalize_intent(intent: CoachIntent, *, message: str) -> CoachIntent:
 
 
 def _should_clarify(intent: CoachIntent, message: str) -> tuple[bool, str | None]:
-    lowered = message.lower()
+    normalized_message = _normalize_message_text(message)
+    lowered = normalized_message.lower()
     if intent.needs_clarification:
         return True, intent.clarification_reason or "classifier_requested_clarification"
     if intent.primary_intent == "fallback":
+        if _looks_like_prematch_training_goal(normalized_message, lowered):
+            return False, None
+        if _looks_like_postmatch_summary(normalized_message, lowered):
+            return False, None
         return True, "no_stable_intent_detected"
     if intent.confidence < 0.45:
         return True, "low_intent_confidence"
     if len(intent.missing_slots) >= 2:
         return True, "too_many_missing_slots"
-    if intent.primary_intent == "fallback" or any(hint in message for hint in _CLARIFICATION_HINTS):
-        if intent.confidence < 0.65 and not _contains_any(message, lowered, _PREMATCH_HINTS + _POSTMATCH_HINTS + _HEALTH_HINTS):
+    if any(hint in normalized_message for hint in _CLARIFICATION_HINTS):
+        if intent.confidence < 0.65 and not _contains_any(normalized_message, lowered, _PREMATCH_HINTS + _POSTMATCH_HINTS + _HEALTH_HINTS):
             return True, "underspecified_request"
     return False, None
+
+
+def _normalize_message_text(message: str) -> str:
+    text = (message or "").strip()
+    if not text:
+        return ""
+    # Feishu messages often include mention remnants or accidental single-letter prefixes
+    # like "a 今晚去打球". Strip those before intent detection.
+    text = _FILLER_PREFIX_RE.sub("", text).strip()
+    return text
+
+
+def _looks_like_prematch_training_goal(text: str, lowered: str) -> bool:
+    return (
+        _contains_any(text, lowered, _PREMATCH_HINTS)
+        or ("打球" in text and _contains_any(text, lowered, _EXPLICIT_TRAINING_GOAL_HINTS))
+        or ("训练" in text and _contains_any(text, lowered, _EXPLICIT_TRAINING_GOAL_HINTS))
+    )
+
+
+def _looks_like_postmatch_summary(text: str, lowered: str) -> bool:
+    return _contains_any(text, lowered, _POSTMATCH_HINTS) or ("打完" in text and any(word in text for word in ("复盘", "总结", "回顾", "表现")))
 
 
 def _contains_any(text: str, lowered: str, keywords: tuple[str, ...]) -> bool:
@@ -249,7 +302,7 @@ def _contains_any(text: str, lowered: str, keywords: tuple[str, ...]) -> bool:
 
 def _split_primary_secondary(matched: list[CoachIntentName]) -> tuple[CoachIntentName, list[CoachIntentName]]:
     unique: list[CoachIntentName] = []
-    for intent in _INTENT_ORDER:
+    for intent in matched:
         if intent in matched and intent not in unique:
             unique.append(intent)
     primary = unique[0] if unique else "fallback"

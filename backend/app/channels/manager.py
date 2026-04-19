@@ -53,6 +53,12 @@ def _build_input_message(msg: InboundMessage) -> dict[str, Any]:
     return message
 
 
+def _build_outbound_metadata(msg: InboundMessage) -> dict[str, Any]:
+    """Preserve channel-specific delivery hints for outbound handling."""
+    reaction_target = str(msg.metadata.get("message_id") or msg.thread_ts or "").strip()
+    return {"reaction_target_message_id": reaction_target} if reaction_target else {}
+
+
 def _extract_response_text(result: dict | list) -> str:
     """Extract the last AI message text from a LangGraph runs.wait result.
 
@@ -601,6 +607,7 @@ class ChannelManager:
             artifacts=artifacts,
             attachments=attachments,
             thread_ts=msg.thread_ts,
+            metadata=_build_outbound_metadata(msg),
         )
         logger.info("[Manager] publishing outbound message to bus: channel=%s, chat_id=%s", msg.channel_name, msg.chat_id)
         await self.bus.publish_outbound(outbound)
@@ -662,6 +669,7 @@ class ChannelManager:
                         text=latest_text,
                         is_final=False,
                         thread_ts=msg.thread_ts,
+                        metadata=_build_outbound_metadata(msg),
                     )
                 )
                 last_published_text = latest_text
@@ -674,6 +682,10 @@ class ChannelManager:
             response_text = _extract_response_text(result)
             artifacts = _extract_artifacts(result)
             response_text, attachments = _prepare_artifact_delivery(thread_id, response_text, artifacts)
+            empty_stream_result = last_values is None and not latest_text and not attachments
+
+            if empty_stream_result and stream_error is None:
+                stream_error = RuntimeError("stream completed without values or response text")
 
             if not response_text:
                 if attachments:
@@ -718,6 +730,7 @@ class ChannelManager:
                     attachments=attachments,
                     is_final=True,
                     thread_ts=msg.thread_ts,
+                    metadata=_build_outbound_metadata(msg),
                 )
             )
 
@@ -759,6 +772,7 @@ class ChannelManager:
             thread_id=self.store.get_thread_id(msg.channel_name, msg.chat_id) or "",
             text=reply,
             thread_ts=msg.thread_ts,
+            metadata=_build_outbound_metadata(msg),
         )
         await self.bus.publish_outbound(outbound)
 
@@ -792,5 +806,6 @@ class ChannelManager:
             thread_id=self.store.get_thread_id(msg.channel_name, msg.chat_id) or "",
             text=error_text,
             thread_ts=msg.thread_ts,
+            metadata=_build_outbound_metadata(msg),
         )
         await self.bus.publish_outbound(outbound)

@@ -102,4 +102,4 @@ def test_exercise_writeback_feeds_next_prematch_recall(tmp_path: Path):
         )
 
     assert result.route == "prematch"
-    assert "我回忆到你最近一次相关记录" in result.payload["response_text"]
+    assert "我翻了下你最近一次相关记录" in result.payload["response_text"]
