@@ -15,8 +15,8 @@ def test_analytics_router_exposes_summary_and_lists(tmp_path, monkeypatch):
     import_manager_structured_log_text(
         "\n".join(
             [
-                '2026-04-05T10:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":100.0,"error":false,"token_usage":{"total_tokens":100},"clarification":{"requested":true,"reason":"underspecified_request","missing_slots":["session_goal"],"question":"先补一条信息"}}',
-                '2026-04-05T10:15:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":3000.0,"error":true,"error_type":"timeout","token_usage":{"total_tokens":200},"clarification":{"requested":false,"reason":"","missing_slots":[],"question":""}}',
+                '2026-04-05T10:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach","coach_primary_route":"fallback"},"latency_ms":100.0,"error":false,"token_usage":{"total_tokens":100},"cost_breakdown":{"router_tokens":10,"memory_context_tokens":25,"generation_tokens":30},"fallback":{"triggered":true,"reason":"underspecified_request","source":"clarification_request"},"clarification":{"requested":true,"reason":"underspecified_request","missing_slots":["session_goal"],"question":"先补一条信息"}}',
+                '2026-04-05T10:15:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach","coach_primary_route":"prematch"},"latency_ms":3000.0,"error":true,"error_type":"timeout","token_usage":{"total_tokens":200,"output_tokens":80},"cost_breakdown":{"router_tokens":20,"memory_context_tokens":50},"fallback":{"triggered":false,"reason":"","source":"coach_route"},"clarification":{"requested":false,"reason":"","missing_slots":[],"question":""}}',
             ]
         ),
         source_file="logs/gateway.log",
@@ -34,10 +34,12 @@ def test_analytics_router_exposes_summary_and_lists(tmp_path, monkeypatch):
     assert summary_response.status_code == 200
     assert summary_response.json()["total_requests"] == 2
     assert summary_response.json()["error_rate"] == 0.5
+    assert summary_response.json()["fallback_count"] == 1
+    assert summary_response.json()["fallback_rate"] == 0.5
     assert summary_response.json()["clarification_requested_count"] == 1
     assert summary_response.json()["clarification_reasons"] == [{"reason": "underspecified_request", "count": 1}]
     assert by_route_response.status_code == 200
-    assert by_route_response.json()["routes"][0]["route"] == "badminton-coach"
+    assert by_route_response.json()["routes"][0]["route"] == "fallback"
     assert by_route_response.json()["routes"][0]["clarification_requested_count"] == 1
     assert errors_response.status_code == 200
     assert errors_response.json()["error_types"][0]["error_type"] == "timeout"

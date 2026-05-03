@@ -3,6 +3,8 @@ ARG PYTHON_BASE_IMAGE=docker.m.daocloud.io/library/python:3.12-slim
 FROM ${PYTHON_BASE_IMAGE}
 
 ARG NODE_MAJOR=22
+ARG PYPI_PRIMARY_INDEX=https://mirrors.aliyun.com/pypi/simple/
+ARG PYPI_FALLBACK_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple
 
 # Use a mainland mirror for Debian packages to reduce build latency on CN servers.
 RUN if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
@@ -24,8 +26,11 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv from a mainland PyPI mirror to reduce server-side build latency.
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple uv
+# Install uv with mainland mirrors first and a secondary fallback to reduce
+# build stalls on servers with unstable external connectivity.
+RUN set -eux; \
+    python -m pip install --no-cache-dir --disable-pip-version-check --retries 8 --timeout 120 -i "${PYPI_PRIMARY_INDEX}" uv \
+    || python -m pip install --no-cache-dir --disable-pip-version-check --retries 8 --timeout 120 -i "${PYPI_FALLBACK_INDEX}" uv
 
 # Set working directory
 WORKDIR /app
@@ -35,7 +40,7 @@ COPY backend ./backend
 
 # Install dependencies with cache mount and a mainland package index.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    sh -c "cd backend && uv sync --default-index https://pypi.tuna.tsinghua.edu.cn/simple"
+    sh -c "cd backend && uv sync --default-index ${PYPI_PRIMARY_INDEX} --index ${PYPI_FALLBACK_INDEX}"
 
 # Expose ports (gateway: 8001, langgraph: 2024)
 EXPOSE 8001 2024

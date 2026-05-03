@@ -33,7 +33,9 @@ class ChannelService:
         # Keep an eager map so ChannelManager can resolve channel-specific helpers.
         self._channels: dict[str, Any] = {}  # name -> Channel instance
         config = dict(channels_config or {})
-        langgraph_url = config.pop("langgraph_url", None) or "http://localhost:2024"
+        # In Docker, the gateway container must reach the LangGraph container
+        # over the compose network, not via its own loopback interface.
+        langgraph_url = config.pop("langgraph_url", None) or "http://langgraph:2024"
         gateway_url = config.pop("gateway_url", None) or "http://localhost:8001"
         default_session = config.pop("session", None)
         channel_sessions = {name: channel_config.get("session") for name, channel_config in config.items() if isinstance(channel_config, dict)}

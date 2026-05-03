@@ -51,7 +51,9 @@ def parse_manager_structured_log_line(
 
     route = _normalize_route(payload.get("route"))
     token_usage = _normalize_token_usage(payload.get("token_usage"))
+    cost_breakdown = _normalize_cost_breakdown(payload.get("cost_breakdown"), token_usage=token_usage)
     memory_hits = _normalize_memory_hits(payload.get("memory_hits"))
+    fallback = _normalize_fallback(payload.get("fallback"))
     dedupe_keys = build_structured_log_dedupe_keys(payload, source_file=source_file, line_number=line_number)
     created_at = _normalize_created_at(payload, line)
     raw_json = canonicalize_structured_log_payload(payload)
@@ -74,6 +76,11 @@ def parse_manager_structured_log_line(
         "input_tokens": token_usage["input_tokens"],
         "output_tokens": token_usage["output_tokens"],
         "total_tokens": token_usage["total_tokens"],
+        "router_tokens": cost_breakdown["router_tokens"],
+        "memory_context_tokens": cost_breakdown["memory_context_tokens"],
+        "generation_tokens": cost_breakdown["generation_tokens"],
+        "fallback_triggered": fallback["triggered"],
+        "fallback_reason": fallback["reason"],
         "memory_hits_json": json.dumps(memory_hits, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
         "route_json": json.dumps(route, ensure_ascii=False, sort_keys=True, separators=(",", ":")),
         "raw_json": raw_json,
@@ -105,6 +112,9 @@ def _normalize_route(value: Any) -> dict[str, Any]:
             "thinking_enabled": False,
             "is_plan_mode": False,
             "streaming": False,
+            "coach_primary_route": "unknown",
+            "coach_secondary_routes": [],
+            "coach_route_source": "unknown",
         }
 
     return {
@@ -113,6 +123,9 @@ def _normalize_route(value: Any) -> dict[str, Any]:
         "thinking_enabled": _normalize_bool(value.get("thinking_enabled")),
         "is_plan_mode": _normalize_bool(value.get("is_plan_mode")),
         "streaming": _normalize_bool(value.get("streaming")),
+        "coach_primary_route": _normalize_string(value.get("coach_primary_route")) or "unknown",
+        "coach_secondary_routes": _normalize_string_list(value.get("coach_secondary_routes")),
+        "coach_route_source": _normalize_string(value.get("coach_route_source")) or "unknown",
     }
 
 
@@ -154,6 +167,36 @@ def _normalize_token_usage(value: Any) -> dict[str, int | None]:
     }
 
 
+def _normalize_cost_breakdown(value: Any, *, token_usage: dict[str, int | None]) -> dict[str, int | None]:
+    if not isinstance(value, dict):
+        return {
+            "router_tokens": None,
+            "memory_context_tokens": None,
+            "generation_tokens": token_usage["output_tokens"],
+        }
+
+    generation_tokens = _read_first_int(value, "generation_tokens", "final_generation_tokens")
+    if generation_tokens is None:
+        generation_tokens = token_usage["output_tokens"]
+
+    return {
+        "router_tokens": _read_first_int(value, "router_tokens"),
+        "memory_context_tokens": _read_first_int(value, "memory_context_tokens", "memory_tokens"),
+        "generation_tokens": generation_tokens,
+    }
+
+
+def _normalize_fallback(value: Any) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {"triggered": False, "reason": "", "source": "unknown"}
+
+    return {
+        "triggered": _normalize_bool(value.get("triggered")),
+        "reason": _normalize_string(value.get("reason")),
+        "source": _normalize_string(value.get("source")) or "unknown",
+    }
+
+
 def _read_first_int(value: dict[str, Any], *keys: str) -> int | None:
     for key in keys:
         candidate = value.get(key)
@@ -168,6 +211,12 @@ def _read_first_int(value: dict[str, Any], *keys: str) -> int | None:
 
 def _normalize_string(value: Any) -> str:
     return value.strip() if isinstance(value, str) else ""
+
+
+def _normalize_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item.strip() for item in value if isinstance(item, str) and item.strip()]
 
 
 def _normalize_bool(value: Any) -> bool:

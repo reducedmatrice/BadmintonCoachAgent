@@ -1,0 +1,55 @@
+{
+  "total_requests": 3,
+  "error_rate": 0.3333,
+  "fallback_rate": 0.0,
+  "overall": {
+    "requests": 3,
+    "avg_latency_ms": 1300.0,
+    "p50_latency_ms": 800.0,
+    "p95_latency_ms": 2780.0,
+    "avg_input_tokens": 70.0,
+    "avg_output_tokens": 36.67,
+    "avg_total_tokens": 106.67,
+    "avg_router_tokens": 0.0,
+    "avg_memory_context_tokens": 0.0,
+    "avg_generation_tokens": 36.67,
+    "fallback_count": 0,
+    "fallback_rate": 0.0,
+    "fallback_reason_breakdown": [],
+    "error_rate": 0.3333
+  },
+  "by_route": {
+    "badminton-coach": {
+      "requests": 2,
+      "avg_latency_ms": 1550.0,
+      "p50_latency_ms": 1550.0,
+      "p95_latency_ms": 2855.0,
+      "avg_input_tokens": 80.0,
+      "avg_output_tokens": 50.0,
+      "avg_total_tokens": 130.0,
+      "avg_router_tokens": 0.0,
+      "avg_memory_context_tokens": 0.0,
+      "avg_generation_tokens": 50.0,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "fallback_reason_breakdown": [],
+      "error_rate": 0.5
+    },
+    "recovery-coach": {
+      "requests": 1,
+      "avg_latency_ms": 800.0,
+      "p50_latency_ms": 800.0,
+      "p95_latency_ms": 800.0,
+      "avg_input_tokens": 50.0,
+      "avg_output_tokens": 10.0,
+      "avg_total_tokens": 60.0,
+      "avg_router_tokens": 0.0,
+      "avg_memory_context_tokens": 0.0,
+      "avg_generation_tokens": 10.0,
+      "fallback_count": 0,
+      "fallback_rate": 0.0,
+      "fallback_reason_breakdown": [],
+      "error_rate": 0.0
+    }
+  }
+}

@@ -1,5 +1,13 @@
 # Agents Architecture
 
+## Shared Agent Entry
+
+- Shared instruction source: `../AGENT.md`
+- Skill discovery priority:
+  1. `../.trae/skills/`
+  2. `../skills/custom/`
+  3. `../skills/public/`
+
 ## Overview
 
 DeerFlow is built on a sophisticated agent-based architecture using the [LangGraph SDK](https://github.com/langchain-ai/langgraph) to enable intelligent, stateful AI interactions. This document outlines the agent system architecture, patterns, and best practices for working with agents in the frontend application.

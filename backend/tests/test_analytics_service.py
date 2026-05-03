@@ -14,9 +14,9 @@ def test_analytics_service_queries_support_filters_and_aggregations(tmp_path, mo
     monkeypatch.setattr(path_config, "_paths", path_config.Paths(tmp_path))
     text = "\n".join(
         [
-            '2026-04-05T10:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":100.0,"error":false,"token_usage":{"total_tokens":100},"clarification":{"requested":true,"reason":"underspecified_request","missing_slots":["session_goal"],"question":"先补一条信息"}}',
-            '2026-04-05T10:15:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach"},"latency_ms":3000.0,"error":true,"error_type":"timeout","token_usage":{"total_tokens":200},"clarification":{"requested":false,"reason":"","missing_slots":[],"question":""}}',
-            '2026-04-05T11:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"slack","route":{"assistant_id":"coach_agent","agent_name":"recovery-coach"},"latency_ms":800.0,"error":false,"token_usage":{"total_tokens":120}}',
+            '2026-04-05T10:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach","coach_primary_route":"fallback","coach_route_source":"clarification_request"},"latency_ms":100.0,"error":false,"token_usage":{"total_tokens":100},"cost_breakdown":{"router_tokens":10,"memory_context_tokens":25,"generation_tokens":30},"fallback":{"triggered":true,"reason":"underspecified_request","source":"clarification_request"},"clarification":{"requested":true,"reason":"underspecified_request","missing_slots":["session_goal"],"question":"先补一条信息"}}',
+            '2026-04-05T10:15:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"feishu","route":{"assistant_id":"lead_agent","agent_name":"badminton-coach","coach_primary_route":"prematch","coach_route_source":"coach_intake.intent"},"latency_ms":3000.0,"error":true,"error_type":"timeout","token_usage":{"total_tokens":200,"output_tokens":80},"cost_breakdown":{"router_tokens":20,"memory_context_tokens":50},"fallback":{"triggered":false,"reason":"","source":"coach_route"},"clarification":{"requested":false,"reason":"","missing_slots":[],"question":""}}',
+            '2026-04-05T11:00:00Z INFO [ManagerStructured] {"event":"channel_run_completed","channel":"slack","route":{"assistant_id":"coach_agent","agent_name":"recovery-coach","coach_primary_route":"health","coach_route_source":"coach_intake.intent"},"latency_ms":800.0,"error":false,"token_usage":{"total_tokens":120,"output_tokens":18},"cost_breakdown":{"router_tokens":8,"memory_context_tokens":16},"fallback":{"triggered":false,"reason":"","source":"coach_route"}}',
         ]
     )
 
@@ -34,12 +34,20 @@ def test_analytics_service_queries_support_filters_and_aggregations(tmp_path, mo
 
     assert summary["total_requests"] == 2
     assert summary["error_rate"] == 0.5
+    assert summary["avg_latency_ms"] == 1550.0
     assert summary["avg_total_tokens"] == 150.0
+    assert summary["fallback_count"] == 1
+    assert summary["fallback_rate"] == 0.5
+    assert summary["fallback_reason_breakdown"] == [{"reason": "underspecified_request", "count": 1}]
+    assert summary["avg_router_tokens"] == 15.0
+    assert summary["avg_memory_context_tokens"] == 37.5
+    assert summary["avg_generation_tokens"] == 55.0
     assert summary["clarification_requested_count"] == 1
     assert summary["clarification_request_rate"] == 0.5
     assert summary["clarification_reasons"] == [{"reason": "underspecified_request", "count": 1}]
-    assert by_route["routes"][0]["route"] == "badminton-coach"
-    assert by_route["routes"][0]["total_requests"] == 2
+    assert [item["route"] for item in by_route["routes"]] == ["fallback", "prematch"]
+    assert by_route["routes"][0]["total_requests"] == 1
+    assert by_route["routes"][0]["fallback_rate"] == 1.0
     assert by_route["routes"][0]["clarification_requested_count"] == 1
     assert errors["total_errors"] == 1
     assert errors["error_types"][0] == {"error_type": "timeout", "count": 1}

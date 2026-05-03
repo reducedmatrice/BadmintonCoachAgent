@@ -22,9 +22,16 @@ class AnalyticsFiltersResponse(BaseModel):
 class SummaryResponse(BaseModel):
     total_requests: int
     error_rate: float
+    avg_latency_ms: float
     p50_latency_ms: float
     p95_latency_ms: float
     avg_total_tokens: float
+    fallback_count: int
+    fallback_rate: float
+    fallback_reason_breakdown: list[dict[str, int | str]]
+    avg_router_tokens: float
+    avg_memory_context_tokens: float
+    avg_generation_tokens: float
     clarification_requested_count: int
     clarification_request_rate: float
     clarification_reasons: list[dict[str, int | str]]
@@ -35,9 +42,19 @@ class TimeseriesPointResponse(BaseModel):
     bucket_start: str
     total_requests: int
     error_rate: float
+    avg_latency_ms: float
     p50_latency_ms: float
     p95_latency_ms: float
     avg_total_tokens: float
+    fallback_count: int
+    fallback_rate: float
+    avg_router_tokens: float
+    avg_memory_context_tokens: float
+    avg_generation_tokens: float
+    clarification_requested_count: int
+    clarification_request_rate: float
+    clarification_reasons: list[dict[str, int | str]]
+    fallback_reason_breakdown: list[dict[str, int | str]]
 
 
 class TimeseriesResponse(BaseModel):
@@ -52,9 +69,16 @@ class RouteMetricsResponse(BaseModel):
     channels: list[str]
     total_requests: int
     error_rate: float
+    avg_latency_ms: float
     p50_latency_ms: float
     p95_latency_ms: float
     avg_total_tokens: float
+    fallback_count: int
+    fallback_rate: float
+    fallback_reason_breakdown: list[dict[str, int | str]]
+    avg_router_tokens: float
+    avg_memory_context_tokens: float
+    avg_generation_tokens: float
     clarification_requested_count: int
     clarification_request_rate: float
     clarification_reasons: list[dict[str, int | str]]

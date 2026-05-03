@@ -15,9 +15,11 @@ def test_parse_manager_structured_log_line_normalizes_fields():
     line = (
         '2026-04-05 12:30:45,123 INFO [ManagerStructured] '
         '{"event":"channel_run_completed","channel":"feishu","thread_id":"thread-1",'
-        '"route":{"assistant_id":"lead_agent","agent_name":"badminton-coach","streaming":1},'
+        '"route":{"assistant_id":"lead_agent","agent_name":"badminton-coach","streaming":1,"coach_primary_route":"prematch","coach_secondary_routes":["health"],"coach_route_source":"coach_intake.intent"},'
         '"latency_ms":842.7,"response_length":12,"artifact_count":1,"error":"false","error_type":"",'
         '"token_usage":{"prompt_tokens":120,"completion_tokens":48},'
+        '"cost_breakdown":{"router_tokens":18,"memory_context_tokens":42},'
+        '"fallback":{"triggered":true,"reason":"underspecified_request","source":"clarification_request"},'
         '"memory_hits":{"coach_profile":true,"review_log":false,"memory_json":true,"weather":false}}'
     )
 
@@ -37,11 +39,18 @@ def test_parse_manager_structured_log_line_normalizes_fields():
     assert parsed["input_tokens"] == 120
     assert parsed["output_tokens"] == 48
     assert parsed["total_tokens"] == 168
+    assert parsed["router_tokens"] == 18
+    assert parsed["memory_context_tokens"] == 42
+    assert parsed["generation_tokens"] == 48
+    assert parsed["fallback_triggered"] is True
+    assert parsed["fallback_reason"] == "underspecified_request"
 
     route = json.loads(parsed["route_json"])
     memory_hits = json.loads(parsed["memory_hits_json"])
 
     assert route["streaming"] is True
+    assert route["coach_primary_route"] == "prematch"
+    assert route["coach_secondary_routes"] == ["health"]
     assert memory_hits["status"] == "hit"
     assert parsed["raw_json"].startswith('{"artifact_count":1')
 
@@ -60,6 +69,7 @@ def test_parse_manager_structured_log_text_skips_invalid_json_and_non_structured
     assert len(parsed_records) == 1
     assert parsed_records[0]["assistant_id"] == "lead_agent"
     assert parsed_records[0]["input_tokens"] is None
+    assert parsed_records[0]["generation_tokens"] is None
     assert parsed_records[0]["error"] is False
 
 

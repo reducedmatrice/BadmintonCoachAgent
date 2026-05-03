@@ -144,7 +144,13 @@ class FeishuChannel(Channel):
             # thread's uvloop.
             _ws_client_mod.loop = loop
 
-            event_handler = lark.EventDispatcherHandler.builder("", "").register_p2_im_message_receive_v1(self._on_message).build()
+            event_handler = (
+                lark.EventDispatcherHandler.builder("", "")
+                .register_p2_im_message_receive_v1(self._on_message)
+                .register_p2_im_message_message_read_v1(self._ignore_event)
+                .register_p2_im_message_reaction_created_v1(self._ignore_event)
+                .build()
+            )
             ws_client = lark.ws.Client(
                 app_id=app_id,
                 app_secret=app_secret,
@@ -572,6 +578,11 @@ class FeishuChannel(Channel):
         running_card_target = inbound.thread_ts or msg_id
         self._ensure_running_card_started(running_card_target)
         await self.bus.publish_inbound(inbound)
+
+    def _ignore_event(self, event) -> None:
+        """Accept Feishu events that are expected but not actionable."""
+        event_type = type(event).__name__
+        logger.debug("[Feishu] ignored event: %s", event_type)
 
     @staticmethod
     def _parse_inbound_message(

@@ -82,6 +82,7 @@ pkill -f "uvicorn app.gateway.app:app" 2>/dev/null || true
 sleep 1
 
 echo "Starting LangGraph server..."
+./scripts/archive-log.sh "${ROOT_DIR}/logs/langgraph.log"
 nohup sh -c 'cd backend && NO_COLOR=1 uv run langgraph dev --no-browser --allow-blocking --no-reload > ../logs/langgraph.log 2>&1' &
 "${ROOT_DIR}/scripts/wait-for-port.sh" 2024 60 "LangGraph" || {
   echo "✗ LangGraph failed to start. Last log output:"
@@ -91,6 +92,7 @@ nohup sh -c 'cd backend && NO_COLOR=1 uv run langgraph dev --no-browser --allow-
 echo "✓ LangGraph server started on localhost:2024"
 
 echo "Starting Gateway API..."
+./scripts/archive-log.sh "${ROOT_DIR}/logs/gateway.log"
 nohup sh -c 'cd backend && PYTHONPATH=. uv run uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 > ../logs/gateway.log 2>&1' &
 "${ROOT_DIR}/scripts/wait-for-port.sh" 8001 30 "Gateway API" || {
   echo "✗ Gateway API failed to start. Last log output:"
