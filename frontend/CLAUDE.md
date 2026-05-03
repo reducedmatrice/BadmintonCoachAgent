@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Shared Agent Entry
+
+- Shared instruction source: `../AGENT.md`
+- Skill discovery priority:
+  1. `../.trae/skills/`
+  2. `../skills/custom/`
+  3. `../skills/public/`
+
 ## Project Overview
 
 DeerFlow Frontend is a Next.js 16 web interface for an AI agent system. It communicates with a LangGraph-based backend to provide thread-based AI conversations with streaming responses, artifacts, and a skills/tools system.

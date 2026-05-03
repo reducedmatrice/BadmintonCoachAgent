@@ -2,6 +2,14 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Shared Agent Entry
+
+- Shared instruction source: `../AGENT.md`
+- Skill discovery priority:
+  1. `../.trae/skills/`
+  2. `../skills/custom/`
+  3. `../skills/public/`
+
 ## Project Overview
 
 DeerFlow is a LangGraph-based AI super agent system with a full-stack architecture. The backend provides a "super agent" with sandbox execution, persistent memory, subagent delegation, and extensible tool integration - all operating in per-thread isolated environments.

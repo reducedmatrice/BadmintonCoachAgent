@@ -13,6 +13,7 @@ import pytest
 
 from app.channels.base import Channel
 from app.channels.message_bus import InboundMessage, InboundMessageType, MessageBus, OutboundMessage
+from app.channels.service import ChannelService
 from app.channels.store import ChannelStore
 
 
@@ -268,6 +269,13 @@ class TestChannelBase:
             assert len(ch.sent_messages) == 0
 
         _run(go())
+
+
+class TestChannelServiceDefaults:
+    def test_defaults_langgraph_url_for_container_network(self):
+        service = ChannelService(channels_config={})
+
+        assert service.manager._langgraph_url == "http://langgraph:2024"
 
 
 # ---------------------------------------------------------------------------
