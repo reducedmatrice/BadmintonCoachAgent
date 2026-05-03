@@ -10,15 +10,22 @@ from app.channels.structured_logging import build_run_log_record, format_run_log
 
 def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     result = {
+        "cost_breakdown": {
+            "router_tokens": 18,
+            "memory_context_tokens": 42,
+            "generation_tokens": 48,
+        },
         "coach_intake": {
+            "intent": {
+                "primary_intent": "prematch",
+                "secondary_intents": ["health"],
+                "missing_slots": [],
+                "clarification_reason": None,
+            },
             "multimodal": {
                 "status": "success",
                 "model_name": "gpt-4o",
                 "extraction_latency_ms": 321.2,
-            },
-            "intent": {
-                "missing_slots": [],
-                "clarification_reason": None,
             },
             "clarification_request": None,
         },
@@ -52,14 +59,21 @@ def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     assert record["route"]["assistant_id"] == "lead_agent"
     assert record["route"]["agent_name"] == "badminton-coach"
     assert record["route"]["streaming"] is True
+    assert record["route"]["coach_primary_route"] == "prematch"
+    assert record["route"]["coach_secondary_routes"] == ["health"]
     assert record["latency_ms"] == 842.7
     assert record["error"] is False
     assert record["token_usage"] == {"input_tokens": 120, "output_tokens": 48, "total_tokens": 168}
+    assert record["cost_breakdown"]["router_tokens"] == 18
+    assert record["cost_breakdown"]["memory_context_tokens"] == 42
+    assert record["cost_breakdown"]["generation_tokens"] == 48
+    assert record["cost_breakdown"]["unaccounted_tokens"] == 60
     assert record["memory_hits"]["coach_profile"] is True
     assert record["memory_hits"]["review_log"] is True
     assert record["memory_hits"]["weather"] is True
     assert record["memory_hits"]["status"] == "hit"
     assert record["clarification"]["requested"] is False
+    assert record["fallback"]["triggered"] is False
     assert record["multimodal"]["status"] == "success"
     assert record["multimodal"]["model_name"] == "gpt-4o"
 
@@ -92,6 +106,12 @@ def test_build_run_log_record_includes_clarification_decision():
         "reason": "underspecified_request",
         "missing_slots": ["session_goal"],
         "question": "先补一条信息，你这次更偏向哪种场景？",
+    }
+    assert record["route"]["coach_primary_route"] == "fallback"
+    assert record["fallback"] == {
+        "triggered": True,
+        "reason": "underspecified_request",
+        "source": "clarification_request",
     }
 
 
@@ -143,3 +163,36 @@ def test_build_run_log_record_includes_multimodal_failure_type():
 
     assert record["multimodal"]["status"] == "extract_failed"
     assert record["multimodal"]["error_type"] == "ValueError"
+
+
+def test_build_run_log_record_uses_output_tokens_as_generation_fallback():
+    record = build_run_log_record(
+        channel_name="feishu",
+        thread_id="thread-cost-fallback",
+        assistant_id="lead_agent",
+        run_context={"agent_name": "badminton-coach"},
+        result={
+            "coach_intake": {
+                "intent": {
+                    "primary_intent": "health",
+                    "secondary_intents": [],
+                }
+            },
+            "usage": {"input_tokens": 70, "output_tokens": 21, "total_tokens": 91},
+        },
+        latency_ms=120.0,
+        response_text="先暂停高强度，观察恢复。",
+        artifacts=[],
+        streaming=False,
+    )
+
+    assert record["cost_breakdown"] == {
+        "router_tokens": None,
+        "memory_context_tokens": None,
+        "generation_tokens": 21,
+        "input_tokens": 70,
+        "output_tokens": 21,
+        "total_tokens": 91,
+        "unaccounted_tokens": 70,
+        "status": "partial",
+    }

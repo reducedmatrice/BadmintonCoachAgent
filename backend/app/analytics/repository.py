@@ -190,6 +190,16 @@ def _decode_run_row(row: sqlite3.Row) -> dict[str, Any]:
     decoded["route"] = _loads_json(decoded.pop("route_json", "{}"), default={})
     decoded["memory_hits"] = _loads_json(decoded.pop("memory_hits_json", "{}"), default={})
     decoded["raw"] = _loads_json(decoded.pop("raw_json", "{}"), default={})
+    cost_breakdown = decoded["raw"].get("cost_breakdown", {}) if isinstance(decoded["raw"], dict) else {}
+    fallback = decoded["raw"].get("fallback", {}) if isinstance(decoded["raw"], dict) else {}
+    decoded["router_tokens"] = _coerce_int_or_none(cost_breakdown.get("router_tokens"))
+    decoded["memory_context_tokens"] = _coerce_int_or_none(cost_breakdown.get("memory_context_tokens"))
+    generation_tokens = _coerce_int_or_none(cost_breakdown.get("generation_tokens"))
+    if generation_tokens is None:
+        generation_tokens = _coerce_int_or_none(decoded.get("output_tokens"))
+    decoded["generation_tokens"] = generation_tokens
+    decoded["fallback_triggered"] = bool(fallback.get("triggered")) if isinstance(fallback, dict) else False
+    decoded["fallback_reason"] = fallback.get("reason", "") if isinstance(fallback, dict) else ""
     return decoded
 
 
@@ -205,3 +215,13 @@ def _loads_json(raw: str, *, default: dict[str, Any]) -> dict[str, Any]:
     except json.JSONDecodeError:
         return default
     return value if isinstance(value, dict) else default
+
+
+def _coerce_int_or_none(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return None

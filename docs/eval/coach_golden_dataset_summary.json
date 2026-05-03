@@ -1,0 +1,16 @@
+{
+  "total_cases": 500,
+  "scenario_counts": {
+    "fallback": 50,
+    "health": 100,
+    "mixed_intent": 120,
+    "multi_turn": 150,
+    "safety": 80
+  },
+  "source_counts": {
+    "eval_case": 58,
+    "gateway_log": 137,
+    "memory_log": 55,
+    "synthetic_boundary": 250
+  }
+}
