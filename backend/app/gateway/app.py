@@ -20,12 +20,39 @@ from app.gateway.routers import (
 )
 from deerflow.config.app_config import get_app_config
 
+
+class LarkNoiseFilter(logging.Filter):
+    """Suppress noisy Feishu events that the bot intentionally ignores."""
+
+    _IGNORED_PROCESSOR_EVENTS = (
+        "type: im.message.message_read_v1",
+        "type: im.message.reaction.created_v1",
+    )
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        if "err: processor not found" not in message:
+            return True
+        return not any(event_type in message for event_type in self._IGNORED_PROCESSOR_EVENTS)
+
+
+def configure_lark_logging() -> None:
+    """Keep Lark SDK logs useful without duplicating expected event noise."""
+
+    lark_logger = logging.getLogger("Lark")
+    if not any(isinstance(filter_, LarkNoiseFilter) for filter_ in lark_logger.filters):
+        lark_logger.addFilter(LarkNoiseFilter())
+    # The SDK already attaches its own handler; propagation doubles each line.
+    lark_logger.propagate = False
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+configure_lark_logging()
 
 logger = logging.getLogger(__name__)
 
