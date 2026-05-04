@@ -255,6 +255,104 @@ def _accumulate_stream_text(
     return buffers[message_id], message_id
 
 
+def _read_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return None
+
+
+def _normalize_stream_usage(candidate: Any) -> dict[str, int | None]:
+    if not isinstance(candidate, Mapping):
+        return {"input_tokens": None, "output_tokens": None, "total_tokens": None}
+
+    input_tokens = _read_int(candidate.get("input_tokens"))
+    if input_tokens is None:
+        input_tokens = _read_int(candidate.get("prompt_tokens"))
+
+    output_tokens = _read_int(candidate.get("output_tokens"))
+    if output_tokens is None:
+        output_tokens = _read_int(candidate.get("completion_tokens"))
+
+    total_tokens = _read_int(candidate.get("total_tokens"))
+    if total_tokens is None:
+        total_tokens = _read_int(candidate.get("total"))
+    if total_tokens is None and input_tokens is not None and output_tokens is not None:
+        total_tokens = input_tokens + output_tokens
+
+    return {
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "total_tokens": total_tokens,
+    }
+
+
+def _extract_stream_usage(event_data: Any) -> dict[str, int | None]:
+    payload = event_data
+    metadata: Any = None
+    if isinstance(event_data, (list, tuple)):
+        if event_data:
+            payload = event_data[0]
+        if len(event_data) > 1:
+            metadata = event_data[1]
+
+    candidates: list[Any] = []
+    for item in (payload, metadata):
+        if not isinstance(item, Mapping):
+            continue
+        candidates.extend(
+            [
+                item.get("usage"),
+                item.get("token_usage"),
+                item.get("usage_metadata"),
+                item.get("response_metadata"),
+            ]
+        )
+        kwargs = item.get("kwargs")
+        if isinstance(kwargs, Mapping):
+            candidates.extend(
+                [
+                    kwargs.get("usage"),
+                    kwargs.get("token_usage"),
+                    kwargs.get("usage_metadata"),
+                    kwargs.get("response_metadata"),
+                ]
+            )
+
+    for candidate in candidates:
+        usage = _normalize_stream_usage(candidate)
+        if usage["total_tokens"] is not None:
+            return usage
+
+    return {"input_tokens": None, "output_tokens": None, "total_tokens": None}
+
+
+def _merge_token_usage(
+    current: dict[str, int | None],
+    update: dict[str, int | None],
+) -> dict[str, int | None]:
+    if update.get("total_tokens") is None:
+        return current
+    return {
+        "input_tokens": update.get("input_tokens"),
+        "output_tokens": update.get("output_tokens"),
+        "total_tokens": update.get("total_tokens"),
+    }
+
+
+def _inject_token_usage(result: dict[str, Any] | list | None, token_usage: dict[str, int | None]) -> dict[str, Any] | list | None:
+    if token_usage.get("total_tokens") is None:
+        return result
+    if isinstance(result, dict):
+        return {**result, "token_usage": token_usage}
+    if isinstance(result, list):
+        return {"messages": result, "token_usage": token_usage}
+    return {"token_usage": token_usage}
+
+
 def _extract_artifacts(result: dict | list) -> list[str]:
     """Extract artifact paths from the last AI response cycle only.
 
@@ -671,6 +769,7 @@ class ChannelManager:
         last_published_text = ""
         last_publish_at = 0.0
         stream_error: BaseException | None = None
+        stream_token_usage: dict[str, int | None] = {"input_tokens": None, "output_tokens": None, "total_tokens": None}
 
         try:
             async for chunk in client.runs.stream(
@@ -685,6 +784,7 @@ class ChannelManager:
                 data = getattr(chunk, "data", None)
 
                 if event == "messages-tuple":
+                    stream_token_usage = _merge_token_usage(stream_token_usage, _extract_stream_usage(data))
                     accumulated_text, current_message_id = _accumulate_stream_text(streamed_buffers, current_message_id, data)
                     if accumulated_text:
                         latest_text = accumulated_text
@@ -719,6 +819,7 @@ class ChannelManager:
             logger.exception("[Manager] streaming error: thread_id=%s", thread_id)
         finally:
             result = last_values if last_values is not None else {"messages": [{"type": "ai", "content": latest_text}]}
+            result = _inject_token_usage(result, stream_token_usage)
             response_text = _extract_response_text(result)
             artifacts = _extract_artifacts(result)
             response_text, attachments = _prepare_artifact_delivery(thread_id, response_text, artifacts)

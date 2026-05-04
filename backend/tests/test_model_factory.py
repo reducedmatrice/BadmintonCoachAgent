@@ -451,6 +451,38 @@ def test_openai_compatible_provider_passes_base_url(monkeypatch):
     assert captured.get("api_key") == "test-key"
     assert captured.get("temperature") == 1.0
     assert captured.get("max_tokens") == 4096
+    assert captured.get("stream_usage") is True
+
+
+def test_openai_compatible_provider_preserves_explicit_stream_usage(monkeypatch):
+    """Model config/caller choices must override DeerFlow's usage default."""
+    model = ModelConfig(
+        name="openai-no-stream-usage",
+        display_name="OpenAI Compatible",
+        description=None,
+        use="langchain_openai:ChatOpenAI",
+        model="compatible-model",
+        base_url="https://example.com/v1",
+        api_key="test-key",
+        stream_usage=False,
+        supports_vision=False,
+        supports_thinking=False,
+    )
+    cfg = _make_app_config([model])
+    _patch_factory(monkeypatch, cfg)
+
+    captured: dict = {}
+
+    class CapturingModel(FakeChatModel):
+        def __init__(self, **kwargs):
+            captured.update(kwargs)
+            BaseChatModel.__init__(self, **kwargs)
+
+    monkeypatch.setattr(factory_module, "resolve_class", lambda path, base: CapturingModel)
+
+    factory_module.create_chat_model(name="openai-no-stream-usage")
+
+    assert captured.get("stream_usage") is False
 
 
 def test_openai_compatible_provider_multiple_models(monkeypatch):

@@ -61,6 +61,15 @@ def create_chat_model(name: str | None = None, thinking_enabled: bool = False, *
     if not model_config.supports_reasoning_effort and "reasoning_effort" in kwargs:
         del kwargs["reasoning_effort"]
 
+    if _is_openai_chat_model(model_config.use):
+        # LangChain only enables streaming usage automatically for the default
+        # OpenAI endpoint. DeerFlow commonly uses OpenAI-compatible gateways, so
+        # opt in explicitly unless the model config/caller already made a choice.
+        model_kwargs = model_settings_from_config.get("model_kwargs")
+        has_stream_option = isinstance(model_kwargs, dict) and isinstance(model_kwargs.get("stream_options"), dict)
+        if "stream_usage" not in kwargs and "stream_usage" not in model_settings_from_config and not has_stream_option:
+            kwargs["stream_usage"] = True
+
     model_instance = model_class(**kwargs, **model_settings_from_config)
 
     if is_tracing_enabled():
@@ -77,3 +86,11 @@ def create_chat_model(name: str | None = None, thinking_enabled: bool = False, *
         except Exception as e:
             logger.warning(f"Failed to attach LangSmith tracing to model '{name}': {e}")
     return model_instance
+
+
+def _is_openai_chat_model(use_path: str) -> bool:
+    return use_path in {
+        "langchain_openai:ChatOpenAI",
+        "langchain_openai.chat_models:ChatOpenAI",
+        "langchain_openai.chat_models.base:ChatOpenAI",
+    }

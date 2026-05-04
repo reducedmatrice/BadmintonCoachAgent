@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import tempfile
 from pathlib import Path
 from types import SimpleNamespace
@@ -775,6 +776,80 @@ class TestChannelManager:
             assert outbound_received[-1].text == "今天先把后场启动和热身做扎实。"
             assert outbound_received[-1].thread_ts == "om-source-2"
             assert outbound_received[-1].is_final is True
+
+        _run(go())
+
+    def test_handle_feishu_stream_logs_token_usage_from_message_tuple(self, monkeypatch, caplog):
+        from app.channels.manager import ChannelManager
+
+        monkeypatch.setattr("app.channels.manager.STREAM_UPDATE_MIN_INTERVAL_SECONDS", 0.0)
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            stream_events = [
+                _make_stream_part(
+                    "messages-tuple",
+                    [
+                        {
+                            "id": "ai-usage",
+                            "content": "Token aware reply",
+                            "type": "AIMessageChunk",
+                            "usage_metadata": {
+                                "input_tokens": 123,
+                                "output_tokens": 45,
+                                "total_tokens": 168,
+                            },
+                        },
+                        {"langgraph_node": "agent"},
+                    ],
+                ),
+                _make_stream_part(
+                    "values",
+                    {
+                        "messages": [
+                            {"type": "human", "content": "hi"},
+                            {"type": "ai", "content": "Token aware reply"},
+                        ],
+                        "artifacts": [],
+                    },
+                ),
+            ]
+
+            mock_client = _make_mock_langgraph_client()
+            mock_client.runs.stream = MagicMock(return_value=_make_async_iterator(stream_events))
+            manager._client = mock_client
+
+            with caplog.at_level(logging.INFO, logger="app.channels.manager"):
+                await manager.start()
+                inbound = InboundMessage(
+                    channel_name="feishu",
+                    chat_id="chat1",
+                    user_id="user1",
+                    text="hi",
+                    thread_ts="om-source-usage",
+                )
+                await bus.publish_inbound(inbound)
+                await _wait_for(lambda: any(msg.is_final for msg in outbound_received))
+                await manager.stop()
+
+            structured_messages = [record.message for record in caplog.records if "[ManagerStructured]" in record.message]
+            assert structured_messages
+            payload = json.loads(structured_messages[-1].split("[ManagerStructured] ", 1)[1])
+            assert payload["token_usage"] == {
+                "input_tokens": 123,
+                "output_tokens": 45,
+                "total_tokens": 168,
+            }
 
         _run(go())
 
