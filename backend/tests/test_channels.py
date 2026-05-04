@@ -871,9 +871,85 @@ class TestChannelManager:
 
             final_msgs = [m for m in outbound_received if m.is_final]
             assert len(final_msgs) == 1
-            assert final_msgs[0].text == "An error occurred while processing your request. Please try again."
+            assert final_msgs[0].text == "An internal error occurred. Please try again."
             assert final_msgs[0].text != "(No response from agent)"
             assert final_msgs[0].thread_ts == "om-source-empty"
+
+        _run(go())
+
+    def test_handle_chat_insufficient_quota_returns_token_exhausted_message(self):
+        from app.channels.manager import ChannelManager
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            mock_client = _make_mock_langgraph_client()
+            mock_client.runs.wait = AsyncMock(side_effect=RuntimeError("insufficient_quota: exceeded your current quota"))
+            manager._client = mock_client
+
+            await manager.start()
+
+            inbound = InboundMessage(channel_name="test", chat_id="chat1", user_id="user1", text="hi")
+            await bus.publish_inbound(inbound)
+            await _wait_for(lambda: len(outbound_received) >= 1)
+            await manager.stop()
+
+            assert "额度已用尽" in outbound_received[0].text
+
+        _run(go())
+
+    def test_handle_feishu_stream_quota_error_returns_token_exhausted_message(self, monkeypatch):
+        from app.channels.manager import ChannelManager
+
+        monkeypatch.setattr("app.channels.manager.STREAM_UPDATE_MIN_INTERVAL_SECONDS", 0.0)
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            class _QuotaErrorStream:
+                def __aiter__(self):
+                    return self
+
+                async def __anext__(self):
+                    raise RuntimeError("insufficient_quota: token exhausted")
+
+            mock_client = _make_mock_langgraph_client()
+            mock_client.runs.stream = MagicMock(return_value=_QuotaErrorStream())
+            manager._client = mock_client
+
+            await manager.start()
+            inbound = InboundMessage(
+                channel_name="feishu",
+                chat_id="chat1",
+                user_id="user1",
+                text="hi",
+                thread_ts="om-source-quota",
+            )
+            await bus.publish_inbound(inbound)
+            await _wait_for(lambda: any(m.is_final for m in outbound_received))
+            await manager.stop()
+
+            final_msgs = [m for m in outbound_received if m.is_final]
+            assert len(final_msgs) == 1
+            assert "额度已用尽" in final_msgs[0].text
 
         _run(go())
 

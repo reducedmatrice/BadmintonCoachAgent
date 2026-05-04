@@ -40,6 +40,46 @@ def _merge_dicts(*layers: Any) -> dict[str, Any]:
     return merged
 
 
+def _classify_user_facing_error(exc: BaseException | None) -> str:
+    """Map low-level runtime/provider errors to stable user-facing messages."""
+    if exc is None:
+        return "An internal error occurred. Please try again."
+
+    message = f"{exc.__class__.__name__}: {exc}".lower()
+
+    token_exhausted_markers = (
+        "insufficient_quota",
+        "quota",
+        "credit",
+        "billing",
+        "余额",
+        "额度",
+        "配额",
+        "token is exhausted",
+        "out of token",
+        "exceeded your current quota",
+    )
+    if any(marker in message for marker in token_exhausted_markers):
+        return "当前模型额度已用尽（Token/配额不足），请稍后重试或联系管理员补充额度。"
+
+    context_too_long_markers = (
+        "context_length_exceeded",
+        "maximum context length",
+        "context window",
+        "too many tokens",
+        "max tokens",
+        "request too large",
+        "prompt is too long",
+        "上下文过长",
+        "超过上下文",
+        "超出最大长度",
+    )
+    if any(marker in message for marker in context_too_long_markers):
+        return "当前会话上下文过长，已超出模型可处理的 Token 上限。请发送 /new 开启新会话后重试。"
+
+    return "An internal error occurred. Please try again."
+
+
 def _build_input_message(msg: InboundMessage) -> dict[str, Any]:
     """Build a LangGraph-compatible human message payload from inbound data."""
     message: dict[str, Any] = {"role": "human", "content": msg.text}
@@ -473,13 +513,13 @@ class ChannelManager:
                     await self._handle_command(msg)
                 else:
                     await self._handle_chat(msg)
-            except Exception:
+            except Exception as exc:
                 logger.exception(
                     "Error handling message from %s (chat=%s)",
                     msg.channel_name,
                     msg.chat_id,
                 )
-                await self._send_error(msg, "An internal error occurred. Please try again.")
+                await self._send_error(msg, _classify_user_facing_error(exc))
 
     # -- chat handling -----------------------------------------------------
 
@@ -691,7 +731,7 @@ class ChannelManager:
                 if attachments:
                     response_text = _format_artifact_text([attachment.virtual_path for attachment in attachments])
                 elif stream_error:
-                    response_text = "An error occurred while processing your request. Please try again."
+                    response_text = _classify_user_facing_error(stream_error)
                 else:
                     response_text = latest_text or "(No response from agent)"
 
