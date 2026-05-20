@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from unittest.mock import patch
 
@@ -49,6 +50,28 @@ def test_route_single_intent_hits_fallback_chain():
     assert result.route == "fallback"
     assert result.payload["chain"] == "fallback"
     assert "follow_up_question" in result.payload
+
+
+def test_route_single_intent_hits_check_memory_chain(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        result = route_single_intent(
+            "你现在记得我什么？把我的语言偏好改成中文简洁一点，以后主动提醒我热身。",
+            memory_data={
+                "user": {
+                    "personalContext": {
+                        "summary": "用户偏双打，偏巧劲控制。",
+                    }
+                },
+                "facts": [],
+            },
+        )
+
+    assert result.route == "check_memory"
+    assert result.payload["chain"] == "check_memory"
+    assert result.payload["persisted"] is True
+    assert result.payload["updates"]["preferred_language"] == "zh-CN"
+    assert result.payload["updates"]["wants_proactive_reminder"] is True
+    assert "长期记忆摘要" in "\n".join(result.payload["summary_lines"])
 
 
 def test_route_single_intent_applies_health_strong_rule_override():
@@ -109,3 +132,56 @@ def test_route_single_intent_persist_prematch_writes_only_when_signal_is_stable(
     assert "recent_goals" in result.payload["writeback"]
     profile_path = Path(result.payload["profile_path"])
     assert profile_path.exists()
+
+
+def _write_profile(base_dir: Path, profile: dict) -> None:
+    agent_dir = base_dir / "agents" / "badminton-coach"
+    agent_dir.mkdir(parents=True, exist_ok=True)
+    (agent_dir / "coach_profile.json").write_text(
+        json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+
+
+def _read_profile(base_dir: Path) -> dict:
+    profile_path = base_dir / "agents" / "badminton-coach" / "coach_profile.json"
+    return json.loads(profile_path.read_text(encoding="utf-8"))
+
+
+def test_route_prematch_injects_training_data(tmp_path: Path):
+    profile = {
+        "training_log": [
+            {"date": "2026-05-19", "session_type": "match", "summary": "双打", "focus_areas": ["反手"], "issues": [], "improvements": []},
+            {"date": "2026-05-21", "session_type": "training", "summary": "步法", "focus_areas": ["步法"], "issues": [], "improvements": []},
+        ],
+        "body_metrics": [
+            {"date": "2026-05-19", "avg_heart_rate": 140, "fatigue_level": "low"},
+            {"date": "2026-05-21", "avg_heart_rate": 150, "fatigue_level": "medium"},
+        ],
+    }
+    _write_profile(tmp_path, profile)
+
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        result = route_single_intent("今晚打双打，赛前怎么热身？", memory_data={"facts": []})
+
+    assert result.route == "prematch"
+    assert "recent_training" in result.payload
+    assert "body_trend" in result.payload
+
+
+def test_route_prematch_degrades_gracefully(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        result = route_single_intent("今晚打双打，赛前怎么热身？", memory_data={"facts": []})
+
+    assert result.route == "prematch"
+    assert result.payload.get("recent_training_degraded") is True
+
+
+def test_route_postmatch_writes_training_log(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        result = route_single_intent("今天打完后场步法还是慢，回位跟不上。", persist_postmatch=True)
+
+    assert result.route == "postmatch"
+    assert result.payload["training_log_persisted"] is True
+
+    profile = _read_profile(tmp_path)
+    assert len(profile.get("training_log", [])) >= 1

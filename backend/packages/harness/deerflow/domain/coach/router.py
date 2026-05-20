@@ -2,16 +2,22 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Any, Callable
 
 from .health_image import analyze_health_image_text, build_health_recovery_advice
 from .intent import CoachIntent, CoachIntentClassifier, CoachIntentName, detect_coach_intent
+from .memory_profile import handle_check_memory
 from .persona import build_agent_coach_persona
 from .postmatch import extract_postmatch_review
 from .prematch import build_prematch_advice
 from .profile_store import persist_health_observation, persist_prematch_signal, process_postmatch_message
 from .response_renderer import render_coach_route_payload
+from .training_data import get_body_metrics_trend, get_recent_training_log
+
+logger = logging.getLogger(__name__)
 
 _HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "头晕", "膝盖", "肩痛", "腰痛")
 
@@ -153,6 +159,13 @@ def _run_route_chain(
         resolved_persona = base_persona.model_dump()
 
     if route == "prematch":
+        recent_training_ctx = get_recent_training_log(5, agent_name=agent_name)
+        body_trend_ctx = get_body_metrics_trend(7, agent_name=agent_name)
+        logger.info(
+            "[coach] prematch route: recent_training degraded=%s body_trend degraded=%s",
+            recent_training_ctx.degraded,
+            body_trend_ctx.degraded,
+        )
         advice = build_prematch_advice(
             message,
             agent_name=agent_name,
@@ -172,6 +185,10 @@ def _run_route_chain(
                 "persisted": persisted.persisted,
                 "profile_path": str(persisted.profile_path),
                 "writeback": persisted.extracted,
+                "recent_training": recent_training_ctx.entries if not recent_training_ctx.degraded else [],
+                "recent_training_degraded": recent_training_ctx.degraded,
+                "body_trend": body_trend_ctx.trend_summary if not body_trend_ctx.degraded else {},
+                "body_trend_degraded": body_trend_ctx.degraded,
             }
             payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
@@ -184,6 +201,10 @@ def _run_route_chain(
             "follow_up_questions": advice.follow_up_questions,
             "recall_context": recall_context,
             "persisted": False,
+            "recent_training": recent_training_ctx.entries if not recent_training_ctx.degraded else [],
+            "recent_training_degraded": recent_training_ctx.degraded,
+            "body_trend": body_trend_ctx.trend_summary if not body_trend_ctx.degraded else {},
+            "body_trend_degraded": body_trend_ctx.degraded,
         }
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
@@ -200,6 +221,24 @@ def _run_route_chain(
                 "review_log_path": str(persisted.review_log_path),
                 "persisted": True,
             }
+            # Write training log entry
+            try:
+                from .profile_store import append_training_log
+
+                log_entry = {
+                    "date": datetime.now(UTC).date().isoformat(),
+                    "session_type": "match" if any(w in message for w in ("打", "比赛", "对抗")) else "training",
+                    "summary": persisted.review.summary,
+                    "focus_areas": persisted.review.next_focus,
+                    "improvements": [imp.topic for imp in persisted.review.improvements],
+                    "issues": [obs.topic for obs in persisted.review.technical_observations],
+                    "source": "postmatch",
+                }
+                append_training_log(log_entry, agent_name=agent_name)
+                payload["training_log_persisted"] = True
+            except Exception as exc:
+                logger.error("[coach] postmatch: training_log write failed — %s", exc, exc_info=True)
+                payload["training_log_persisted"] = False
             payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         review = extract_postmatch_review(message)
@@ -210,6 +249,7 @@ def _run_route_chain(
             "improvements": [item.__dict__ for item in review.improvements],
             "next_focus": review.next_focus,
             "persisted": False,
+            "training_log_persisted": False,
         }
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
@@ -247,10 +287,28 @@ def _run_route_chain(
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
+    if route == "check_memory":
+        result = handle_check_memory(
+            message,
+            agent_name=agent_name,
+            memory_data=memory_data,
+        )
+        payload = {
+            "chain": "check_memory",
+            "action": result.action,
+            "summary_lines": result.summary_lines,
+            "editable_sections": result.editable_sections,
+            "updates": result.updates,
+            "persisted": result.persisted,
+            "profile_path": result.profile_path,
+        }
+        payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
+        return payload
+
     payload = {
         "chain": "fallback",
-        "guidance": "请先说清你现在是赛前准备、赛后复盘，还是身体恢复问题，我再给你对应方案。",
-        "follow_up_question": "你现在更希望我先帮你做赛前计划、赛后复盘，还是恢复建议？",
+        "guidance": "请先说清你现在是赛前准备、赛后复盘、身体恢复，还是想查看/修改记忆，我再给你对应方案。",
+        "follow_up_question": "你现在更希望我先帮你做赛前计划、赛后复盘、恢复建议，还是查看/修改记忆？",
     }
     payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
     return payload
@@ -324,7 +382,7 @@ def _apply_safety_gate(
 
     filtered: list[CoachIntentName] = []
     for route in decision.allowed_routes:
-        if route not in {"prematch", "postmatch", "health", "fallback"}:
+        if route not in {"prematch", "postmatch", "health", "check_memory", "fallback"}:
             continue
         if route not in filtered:
             filtered.append(route)
