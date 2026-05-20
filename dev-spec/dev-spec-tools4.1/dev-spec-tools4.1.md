@@ -98,8 +98,35 @@ Coach domain（prematch / postmatch / health / check_memory）目前全部通过
 
 ### Degradation
 
-- 写入失败 → 记日志，不阻断回复（和现有 postmatch 写入行为一致）
+- 写入失败 → `logger.error` 记录异常详情，不阻断回复
 - 数据超限 → 滚动删除最旧条目
+
+---
+
+## Part 1.5: Logging & Observability
+
+Coach 域目前**零日志**，本次同步补齐。所有新增模块统一使用 `logging.getLogger(__name__)`。
+
+### 日志规范
+
+每个 coach 子模块新增 `logger = logging.getLogger(__name__)`。
+
+| 事件 | 级别 | 格式示例 |
+|---|---|---|
+| 数据读取成功 | `INFO` | `[coach] get_recent_training_log: loaded 5 entries (degraded=False)` |
+| 数据读取降级 | `WARNING` | `[coach] get_recent_training_log: degraded reason=profile_not_found` |
+| 数据写入成功 | `INFO` | `[coach] append_training_log: persisted entry date=2026-05-21 source=postmatch` |
+| 数据写入失败 | `ERROR` | `[coach] append_training_log: failed — {exc}` (含 traceback) |
+| Fact 提取命中 | `INFO` | `[coach] extract_training_facts: generated 2 facts from training_log` |
+| Fact 提取失败 | `WARNING` | `[coach] extract_training_facts: skipped — memory unavailable` |
+| BaseTool 调用 | `INFO` | `[coach] query_training_log tool invoked: query="反手表现" n=5` |
+| 路由数据注入 | `INFO` | `[coach] prematch route: recent_training degraded=False body_trend degraded=True` |
+
+### 涉及模块
+
+- `training_data.py` — 读取工具（新文件，自带 logger）
+- `profile_store.py` — 写入函数和 facts 提取（补 logger）
+- `router.py` — 路由数据注入（补 logger）
 
 ---
 
@@ -215,8 +242,8 @@ class BodyMetricsContext:
 | File | Action |
 |---|---|
 | `backend/packages/harness/deerflow/domain/coach/training_data.py` | **新建** — 读取工具 + context dataclass |
-| `backend/packages/harness/deerflow/domain/coach/profile_store.py` | **修改** — 新增 append_training_log, append_body_metric, extract_training_facts, extract_body_facts |
-| `backend/packages/harness/deerflow/domain/coach/router.py` | **修改** — prematch/health 路由注入数据，postmatch/health 路由写入数据 |
+| `backend/packages/harness/deerflow/domain/coach/profile_store.py` | **修改** — 新增 append_training_log, append_body_metric, extract_training_facts, extract_body_facts + logger |
+| `backend/packages/harness/deerflow/domain/coach/router.py` | **修改** — prematch/health 路由注入数据，postmatch/health 路由写入数据 + logger |
 | `backend/packages/harness/deerflow/domain/coach/response_renderer.py` | **修改** — 渲染层处理 degraded 状态 |
 | `backend/packages/harness/deerflow/tools/tools.py` | **修改** — 注册新的 BaseTool |
 | `backend/tests/test_training_data.py` | **新建** — 工具层单测 |
