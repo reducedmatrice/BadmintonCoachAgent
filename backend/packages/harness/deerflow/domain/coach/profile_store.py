@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from deerflow.config.paths import get_paths
+
+logger = logging.getLogger(__name__)
+
+_MAX_TRAINING_LOG = 200
+_MAX_BODY_METRICS = 200
 
 from .health_image import HealthImageObservation, HealthRecoveryAdvice
 from .multimodal_schema import ExerciseScreenshotRecord
@@ -96,6 +102,52 @@ def save_coach_profile(profile: dict[str, Any], agent_name: str = "badminton-coa
     profile_path.parent.mkdir(parents=True, exist_ok=True)
     profile_path.write_text(json.dumps(profile, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return profile_path
+
+
+def append_training_log(
+    entry: dict[str, Any],
+    *,
+    agent_name: str = "badminton-coach",
+) -> Path:
+    try:
+        profile = load_coach_profile(agent_name)
+        log = list(profile.get("training_log", []))
+        log.append(entry)
+        profile["training_log"] = log[-_MAX_TRAINING_LOG:]
+        profile["last_updated_at"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        path = save_coach_profile(profile, agent_name)
+        logger.info(
+            "[coach] append_training_log: persisted entry date=%s source=%s",
+            entry.get("date", ""),
+            entry.get("source", ""),
+        )
+        return path
+    except Exception as exc:
+        logger.error("[coach] append_training_log: failed — %s", exc, exc_info=True)
+        raise
+
+
+def append_body_metric(
+    entry: dict[str, Any],
+    *,
+    agent_name: str = "badminton-coach",
+) -> Path:
+    try:
+        profile = load_coach_profile(agent_name)
+        metrics = list(profile.get("body_metrics", []))
+        metrics.append(entry)
+        profile["body_metrics"] = metrics[-_MAX_BODY_METRICS:]
+        profile["last_updated_at"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        path = save_coach_profile(profile, agent_name)
+        logger.info(
+            "[coach] append_body_metric: persisted entry date=%s source=%s",
+            entry.get("date", ""),
+            entry.get("source", ""),
+        )
+        return path
+    except Exception as exc:
+        logger.error("[coach] append_body_metric: failed — %s", exc, exc_info=True)
+        raise
 
 
 def append_review_log(
