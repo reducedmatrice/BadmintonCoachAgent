@@ -40,13 +40,13 @@ def get_recent_training_log(
     """Return the most recent *n* training log entries, optionally filtered by session_type."""
     profile = load_coach_profile(agent_name)
     if not profile:
-        ctx = TrainingLogContext(degraded=True, degrade_reason="profile_missing")
+        ctx = TrainingLogContext(degraded=True, degrade_reason="profile_not_found")
         logger.warning("training_log degrade: %s", ctx.degrade_reason)
         return ctx
 
     raw_log = profile.get("training_log")
     if not isinstance(raw_log, list) or len(raw_log) == 0:
-        ctx = TrainingLogContext(degraded=True, degrade_reason="training_log_empty")
+        ctx = TrainingLogContext(degraded=True, degrade_reason="no_training_log_entries")
         logger.warning("training_log degrade: %s", ctx.degrade_reason)
         return ctx
 
@@ -74,19 +74,19 @@ def get_body_metrics_trend(
     """Compute trend summary over body metrics from the last *days* days."""
     profile = load_coach_profile(agent_name)
     if not profile:
-        ctx = BodyMetricsContext(degraded=True, degrade_reason="profile_missing")
+        ctx = BodyMetricsContext(degraded=True, degrade_reason="profile_not_found")
         logger.warning("body_metrics degrade: %s", ctx.degrade_reason)
         return ctx
 
     raw_metrics = profile.get("body_metrics")
     if not isinstance(raw_metrics, list) or len(raw_metrics) < 2:
-        ctx = BodyMetricsContext(degraded=True, degrade_reason="insufficient_total_data")
+        ctx = BodyMetricsContext(degraded=True, degrade_reason="insufficient_data")
         logger.warning("body_metrics degrade: %s", ctx.degrade_reason)
         return ctx
 
     all_entries = [e for e in raw_metrics if isinstance(e, dict)]
     if len(all_entries) < 2:
-        ctx = BodyMetricsContext(degraded=True, degrade_reason="insufficient_total_data")
+        ctx = BodyMetricsContext(degraded=True, degrade_reason="insufficient_data")
         logger.warning("body_metrics degrade: %s", ctx.degrade_reason)
         return ctx
 
