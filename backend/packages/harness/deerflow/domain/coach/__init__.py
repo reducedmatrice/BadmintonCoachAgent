@@ -16,6 +16,7 @@ from .intent import (
     detect_coach_intent,
     normalize_intent_payload,
 )
+from .memory_profile import CoachMemoryResult, handle_check_memory
 from .persona import (
     CoachEncouragementStyle,
     CoachPersonaConfig,
@@ -60,6 +61,7 @@ from .router import (
     route_single_intent,
 )
 from .upload_cache import cleanup_multimodal_upload_cache, write_multimodal_upload_manifest
+from .training_data import BodyMetricsContext, TrainingLogContext, get_body_metrics_trend, get_recent_training_log
 from .weather import WeatherContext, degrade_weather_context, fetch_weather_context, normalize_weather_payload
 
 __all__ = [
@@ -67,6 +69,7 @@ __all__ = [
     "HealthRecoveryAdvice",
     "build_clarification_request",
     "HealthPersistenceResult",
+    "CoachMemoryResult",
     "PrematchPersistenceResult",
     "Improvement",
     "CoachIntent",
@@ -88,10 +91,13 @@ __all__ = [
     "PostmatchPersistenceResult",
     "PostmatchReview",
     "TechnicalObservation",
+    "TrainingLogContext",
+    "BodyMetricsContext",
     "WeatherContext",
     "analyze_health_image_text",
     "append_review_log",
     "build_health_recovery_advice",
+    "handle_check_memory",
     "build_prematch_advice",
     "classify_coach_intent",
     "create_default_coach_profile",
@@ -101,6 +107,8 @@ __all__ = [
     "degrade_weather_context",
     "extract_postmatch_review",
     "fetch_weather_context",
+    "get_body_metrics_trend",
+    "get_recent_training_log",
     "load_coach_profile",
     "persist_health_observation",
     "persist_prematch_signal",
