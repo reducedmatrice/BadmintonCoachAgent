@@ -672,3 +672,123 @@ def _prematch_goal_priority(goal: Any) -> int:
     if "稳定性" in goal or "回合衔接" in goal:
         return 2
     return 1
+
+
+def extract_training_facts(training_log: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Extract memory facts from training log entries using rule-based patterns."""
+    if len(training_log) < 2:
+        return []
+    facts: list[dict[str, Any]] = []
+    now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+    # Rule 1: focus_areas repeated 3+ times in last 5 entries
+    focus_counts: dict[str, int] = {}
+    for entry in training_log[-5:]:
+        for area in entry.get("focus_areas", []):
+            if isinstance(area, str):
+                focus_counts[area] = focus_counts.get(area, 0) + 1
+    for area, count in focus_counts.items():
+        if count >= 3:
+            facts.append({
+                "id": f"training_focus_{area}",
+                "content": f"近期反复训练{area}",
+                "category": "behavior",
+                "confidence": 0.85,
+                "createdAt": now_iso,
+                "source": "training_log",
+            })
+
+    # Rule 2: issues repeated 3+ times in last 5 entries
+    issue_counts: dict[str, int] = {}
+    for entry in training_log[-5:]:
+        for issue in entry.get("issues", []):
+            if isinstance(issue, str):
+                issue_counts[issue] = issue_counts.get(issue, 0) + 1
+    for issue, count in issue_counts.items():
+        if count >= 3:
+            facts.append({
+                "id": f"training_issue_{issue}",
+                "content": f"{issue}问题近期持续存在",
+                "category": "knowledge",
+                "confidence": 0.80,
+                "createdAt": now_iso,
+                "source": "training_log",
+            })
+
+    # Rule 3: improvements repeated 2+ times in last 3 entries
+    improvement_counts: dict[str, int] = {}
+    for entry in training_log[-3:]:
+        for imp in entry.get("improvements", []):
+            if isinstance(imp, str):
+                improvement_counts[imp] = improvement_counts.get(imp, 0) + 1
+    for imp, count in improvement_counts.items():
+        if count >= 2:
+            facts.append({
+                "id": f"training_improvement_{imp}",
+                "content": f"{imp}方面有持续进步",
+                "category": "knowledge",
+                "confidence": 0.75,
+                "createdAt": now_iso,
+                "source": "training_log",
+            })
+
+    logger.info("[coach] extract_training_facts: generated %d facts from training_log", len(facts))
+    return facts
+
+
+def extract_body_facts(body_metrics: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Extract memory facts from body metrics using rule-based patterns."""
+    if not body_metrics:
+        return []
+    facts: list[dict[str, Any]] = []
+    now_iso = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+    # Rule 1: consecutive 3 high fatigue
+    recent_fatigue = [e.get("fatigue_level", "") for e in body_metrics[-5:]]
+    if len(recent_fatigue) >= 3 and all(f == "high" for f in recent_fatigue[-3:]):
+        facts.append({
+            "id": "body_fatigue_high",
+            "content": "近期身体疲劳度偏高，需注意恢复",
+            "category": "context",
+            "confidence": 0.90,
+            "createdAt": now_iso,
+            "source": "body_metrics",
+        })
+
+    # Rule 2: avg_heart_rate rising trend (second half mean > first half mean * 1.03)
+    hr_values = [
+        e["avg_heart_rate"]
+        for e in body_metrics[-5:]
+        if isinstance(e.get("avg_heart_rate"), (int, float))
+    ]
+    if len(hr_values) >= 4:
+        mid = len(hr_values) // 2
+        first_half = hr_values[:mid]
+        second_half = hr_values[mid:]
+        first_mean = sum(first_half) / len(first_half)
+        second_mean = sum(second_half) / len(second_half)
+        if second_mean > first_mean * 1.03:
+            facts.append({
+                "id": "body_hr_rising",
+                "content": "近期训练强度有上升趋势",
+                "category": "context",
+                "confidence": 0.80,
+                "createdAt": now_iso,
+                "source": "body_metrics",
+            })
+
+    # Rule 3: single high calorie entry (>800)
+    for entry in body_metrics[-1:]:
+        cal = entry.get("calories_kcal")
+        if isinstance(cal, (int, float)) and cal > 800:
+            facts.append({
+                "id": f"body_calories_{entry.get('date', 'unknown')}",
+                "content": f"单次训练消耗较大（{int(cal)}kcal）",
+                "category": "behavior",
+                "confidence": 0.70,
+                "createdAt": now_iso,
+                "source": "body_metrics",
+            })
+
+    logger.info("[coach] extract_body_facts: generated %d facts from body_metrics", len(facts))
+    return facts
