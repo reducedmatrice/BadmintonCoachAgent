@@ -185,3 +185,17 @@ def test_route_postmatch_writes_training_log(tmp_path: Path):
 
     profile = _read_profile(tmp_path)
     assert len(profile.get("training_log", [])) >= 1
+
+
+def test_route_health_writes_body_metric(tmp_path: Path):
+    with patch("deerflow.domain.coach.profile_store.get_paths", return_value=_make_paths(tmp_path)):
+        result = route_single_intent(
+            "昨晚睡眠 5小时18分钟 HRV 28，今天怎么恢复？",
+            persist_postmatch=True,
+        )
+
+    assert result.route == "health"
+    assert result.payload["body_metric_persisted"] is True
+
+    profile = _read_profile(tmp_path)
+    assert len(profile.get("body_metrics", [])) >= 1

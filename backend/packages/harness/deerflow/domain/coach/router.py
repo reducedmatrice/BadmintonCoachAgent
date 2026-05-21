@@ -13,7 +13,7 @@ from .memory_profile import handle_check_memory
 from .persona import build_agent_coach_persona
 from .postmatch import extract_postmatch_review
 from .prematch import build_prematch_advice
-from .profile_store import persist_health_observation, persist_prematch_signal, process_postmatch_message
+from .profile_store import append_body_metric, persist_health_observation, persist_prematch_signal, process_postmatch_message
 from .response_renderer import render_coach_route_payload
 from .training_data import get_body_metrics_trend, get_recent_training_log
 
@@ -271,6 +271,40 @@ def _run_route_chain(
                 "profile_path": str(persisted.profile_path),
                 "persisted": True,
             }
+
+            # Write body metric entry
+            try:
+                metric_entry: dict[str, Any] = {
+                    "date": datetime.now(UTC).date().isoformat(),
+                    "fatigue_level": persisted.advice.risk_level if persisted.advice.risk_level in {"low", "medium", "high"} else "medium",
+                    "source": "health_report",
+                }
+                obs_metrics = persisted.observation.observed_metrics
+                if isinstance(obs_metrics, dict):
+                    if "avg_hr" in obs_metrics:
+                        metric_entry["avg_heart_rate"] = obs_metrics["avg_hr"]
+                    if "max_hr" in obs_metrics:
+                        metric_entry["max_heart_rate"] = obs_metrics["max_hr"]
+                    if "training_load" in obs_metrics:
+                        metric_entry["training_load"] = obs_metrics["training_load"]
+                    if "recovery_hours" in obs_metrics:
+                        metric_entry["recovery_hours"] = obs_metrics["recovery_hours"]
+                    if "calories" in obs_metrics:
+                        metric_entry["calories_kcal"] = obs_metrics["calories"]
+                    if "duration_min" in obs_metrics:
+                        metric_entry["duration_min"] = obs_metrics["duration_min"]
+
+                append_body_metric(metric_entry, agent_name=agent_name)
+                payload["body_metric_persisted"] = True
+            except Exception as exc:
+                logger.error("[coach] health: body_metric write failed — %s", exc, exc_info=True)
+                payload["body_metric_persisted"] = False
+
+            # Add body trend
+            body_trend_ctx = get_body_metrics_trend(14, agent_name=agent_name)
+            payload["body_trend"] = body_trend_ctx.trend_summary if not body_trend_ctx.degraded else {}
+            payload["body_trend_degraded"] = body_trend_ctx.degraded
+
             payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         payload = {
@@ -283,6 +317,9 @@ def _run_route_chain(
             "missing_data": observation.missing_data,
             "recall_context": recall_context,
             "persisted": False,
+            "body_metric_persisted": False,
+            "body_trend": {},
+            "body_trend_degraded": True,
         }
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
