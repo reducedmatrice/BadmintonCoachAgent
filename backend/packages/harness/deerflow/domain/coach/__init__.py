@@ -1,12 +1,12 @@
 """Badminton coach domain helpers."""
 
+from .clarification_policy import build_clarification_request
 from .health_image import (
     HealthImageObservation,
     HealthRecoveryAdvice,
     analyze_health_image_text,
     build_health_recovery_advice,
 )
-from .clarification_policy import build_clarification_request
 from .intent import (
     CoachIntent,
     CoachIntentClassifier,
@@ -29,16 +29,16 @@ from .persona import (
     default_coach_persona,
     merge_coach_persona,
     resolve_coach_persona,
-    resolve_coach_personality_id,
     resolve_coach_persona_overrides,
+    resolve_coach_personality_id,
     resolve_runtime_coach_persona,
 )
 from .postmatch import Improvement, PostmatchReview, TechnicalObservation, extract_postmatch_review
 from .prematch import PrematchAdvice, build_prematch_advice, load_recent_review_logs
 from .profile_store import (
     HealthPersistenceResult,
-    PrematchPersistenceResult,
     PostmatchPersistenceResult,
+    PrematchPersistenceResult,
     append_body_metric,
     append_review_log,
     append_training_log,
@@ -47,14 +47,14 @@ from .profile_store import (
     extract_training_facts,
     load_coach_profile,
     persist_health_observation,
-    persist_prematch_signal,
     persist_postmatch_review,
+    persist_prematch_signal,
     process_postmatch_message,
     save_coach_profile,
     update_profile_from_postmatch,
 )
-from .response_renderer import render_coach_route_payload, resolve_persona_config
 from .recall import build_recall_context
+from .response_renderer import render_coach_route_payload, resolve_persona_config
 from .router import (
     CoachComposableRouteResult,
     CoachSafetyGateDecision,
@@ -64,8 +64,8 @@ from .router import (
     route_composable_intent,
     route_single_intent,
 )
-from .upload_cache import cleanup_multimodal_upload_cache, write_multimodal_upload_manifest
 from .training_data import BodyMetricsContext, TrainingLogContext, get_body_metrics_trend, get_recent_training_log
+from .upload_cache import cleanup_multimodal_upload_cache, write_multimodal_upload_manifest
 from .weather import WeatherContext, degrade_weather_context, fetch_weather_context, normalize_weather_payload
 
 __all__ = [

@@ -118,3 +118,11 @@ def test_classify_natural_postmatch_summary_without_clarification():
     assert intent.primary_intent == "postmatch"
     assert intent.slots["review_text"] is not None
     assert intent.needs_clarification is False
+
+
+def test_classify_check_memory_request_without_clarification():
+    intent = detect_coach_intent("你现在记得我什么？顺便把语言偏好改成中文简洁一点")
+
+    assert intent.primary_intent == "check_memory"
+    assert intent.slots["memory_request"] is not None
+    assert intent.needs_clarification is False

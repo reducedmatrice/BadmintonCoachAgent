@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Callable
+from typing import Any
 
 from .health_image import analyze_health_image_text, build_health_recovery_advice
 from .intent import CoachIntent, CoachIntentClassifier, CoachIntentName, detect_coach_intent

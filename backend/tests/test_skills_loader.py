@@ -76,6 +76,7 @@ def test_load_skills_includes_badminton_coach_custom_skills():
         "coach-prematch",
         "coach-postmatch",
         "coach-health",
+        "check-memory",
     } <= names
 
 

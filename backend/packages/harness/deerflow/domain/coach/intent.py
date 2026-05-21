@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
-from typing import Any, Literal, Mapping, Protocol
+from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import Any, Literal, Protocol
 
-CoachIntentName = Literal["prematch", "postmatch", "health", "fallback"]
+CoachIntentName = Literal["prematch", "postmatch", "health", "check_memory", "fallback"]
 CoachRiskLevel = Literal["low", "medium", "high"]
 
-_INTENT_ORDER: tuple[CoachIntentName, ...] = ("prematch", "postmatch", "health", "fallback")
+_INTENT_ORDER: tuple[CoachIntentName, ...] = ("prematch", "postmatch", "health", "check_memory", "fallback")
 _RISK_ORDER: tuple[CoachRiskLevel, ...] = ("low", "medium", "high")
 
 _PREMATCH_HINTS = (
@@ -35,6 +36,21 @@ _PREMATCH_HINTS = (
 )
 _POSTMATCH_HINTS = ("复盘", "赛后", "刚打完", "今天打完", "打完球", "打完了", "刚打完球", "总结", "下次重点", "失误", "回顾")
 _HEALTH_HINTS = ("膝盖", "疼", "拉伤", "疲劳", "恢复", "睡眠", "心率", "hrv", "酸痛", "伤")
+_CHECK_MEMORY_HINTS = (
+    "记忆",
+    "memory",
+    "记得我什么",
+    "你记住了什么",
+    "教练档案",
+    "coach profile",
+    "profile",
+    "语言偏好",
+    "训练偏好",
+    "主动提醒",
+    "帮我改",
+    "帮我更新",
+    "改成",
+)
 _HIGH_RISK_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "崩", "头晕", "高烧", "180", "184", "185")
 _PRE_RULE_HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "头晕")
 _CLARIFICATION_HINTS = ("怎么办", "怎么弄", "看看", "帮我看", "你好", "在吗")
@@ -103,8 +119,15 @@ def classify_coach_intent(message: str) -> CoachIntent:
         matched.append("postmatch")
     if _contains_any(text, lowered, _HEALTH_HINTS):
         matched.append("health")
+    if _contains_any(text, lowered, _CHECK_MEMORY_HINTS):
+        matched.append("check_memory")
     if not matched:
         matched.append("fallback")
+
+    if "check_memory" in matched and any(
+        hint in text for hint in ("记得我什么", "你记住了什么", "教练档案", "语言偏好", "训练偏好", "主动提醒", "帮我改", "帮我更新", "改成")
+    ):
+        matched = ["check_memory", *[intent for intent in matched if intent != "check_memory"]]
 
     if "prematch" in matched and "postmatch" in matched and _looks_like_postmatch_summary(text, lowered):
         matched = ["postmatch", *[intent for intent in matched if intent != "postmatch"]]
@@ -311,7 +334,7 @@ def _split_primary_secondary(matched: list[CoachIntentName]) -> tuple[CoachInten
 
 
 def _normalize_intent_name(raw: str) -> CoachIntentName:
-    if raw in {"prematch", "postmatch", "health", "fallback"}:
+    if raw in {"prematch", "postmatch", "health", "check_memory", "fallback"}:
         return raw  # type: ignore[return-value]
     return "fallback"
 
@@ -345,6 +368,8 @@ def _extract_slots(text: str, *, primary: CoachIntentName, secondary: list[Coach
         slots["review_text"] = text if text else None
     if "health" in intents:
         slots["health_signal"] = text if text else None
+    if "check_memory" in intents:
+        slots["memory_request"] = text if text else None
     return slots
 
 
@@ -353,6 +378,7 @@ def _infer_missing_slots(slots: Mapping[str, Any], *, primary: CoachIntentName) 
         "prematch": ("session_goal",),
         "postmatch": ("review_text",),
         "health": ("health_signal",),
+        "check_memory": ("memory_request",),
         "fallback": tuple(),
     }
     missing: list[str] = []

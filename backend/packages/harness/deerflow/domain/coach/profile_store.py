@@ -13,12 +13,12 @@ from deerflow.config.paths import get_paths
 
 logger = logging.getLogger(__name__)
 
-_MAX_TRAINING_LOG = 200
-_MAX_BODY_METRICS = 200
-
 from .health_image import HealthImageObservation, HealthRecoveryAdvice
 from .multimodal_schema import ExerciseScreenshotRecord
 from .postmatch import PostmatchReview, extract_postmatch_review
+
+_MAX_TRAINING_LOG = 200
+_MAX_BODY_METRICS = 200
 
 
 @dataclass

@@ -1,6 +1,6 @@
 ---
 name: coach-router
-description: Route badminton coaching requests into prematch, postmatch, health, or fallback flows. Trigger when the user asks what kind of badminton guidance they need, mixes multiple goals, or the next skill choice is unclear.
+description: Route badminton coaching requests into prematch, postmatch, health, check-memory, or fallback flows. Trigger when the user asks what kind of badminton guidance they need, mixes multiple goals, or the next skill choice is unclear.
 ---
 
 # Coach Router
@@ -12,6 +12,7 @@ Use this skill first when the intent is ambiguous or mixed.
 - `prematch`: before training or playing, asking what to focus on today
 - `postmatch`: after playing, summarizing what went well or badly
 - `health`: fatigue, soreness, recovery, heart rate, pain, or training load adjustment
+- `check_memory`: inspect or update long-term editable memory like preferences, profile, and current status
 - `fallback`: general planning, broad badminton advice, or incomplete context
 
 ## Decision Rules

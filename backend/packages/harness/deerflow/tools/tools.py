@@ -5,8 +5,8 @@ from langchain.tools import BaseTool
 from deerflow.config import get_app_config
 from deerflow.reflection import resolve_variable
 from deerflow.tools.builtins import ask_clarification_tool, present_file_tool, task_tool, view_image_tool
-from deerflow.tools.builtins.training_tools import get_body_metrics_trend_tool, query_training_log
 from deerflow.tools.builtins.tool_search import reset_deferred_registry
+from deerflow.tools.builtins.training_tools import get_body_metrics_trend_tool, query_training_log
 
 logger = logging.getLogger(__name__)
 
