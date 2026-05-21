@@ -30,6 +30,8 @@ def render_coach_route_payload(
         return _render_postmatch(payload, resolved_persona)
     if route == "health":
         return _render_health(payload, resolved_persona)
+    if route == "check_memory":
+        return _render_check_memory(payload, resolved_persona)
     return _render_fallback(payload, resolved_persona)
 
 
@@ -43,6 +45,12 @@ def _render_prematch(payload: Mapping[str, Any], persona: CoachPersonaConfig) ->
     recall_line = _render_recall_line(payload.get("recall_context"))
     if recall_line:
         lines.append(recall_line)
+
+    recent_training = payload.get("recent_training")
+    if isinstance(recent_training, list) and recent_training and not payload.get("recent_training_degraded"):
+        training_line = _render_training_context(recent_training, persona)
+        if training_line:
+            lines.append(training_line)
 
     opening = _render_prematch_opening(focus_points, risk_reminders, persona)
     if opening:
@@ -98,6 +106,45 @@ def _render_fallback(payload: Mapping[str, Any], persona: CoachPersonaConfig) ->
     if question:
         lines.append(question)
     return "\n".join(line for line in lines if line)
+
+
+def _render_check_memory(payload: Mapping[str, Any], persona: CoachPersonaConfig) -> str:
+    summary_lines = _limit_items(payload.get("summary_lines"), "verbose")
+    action = str(payload.get("action", "")).strip()
+    updates = payload.get("updates")
+
+    lines: list[str] = []
+    if action == "update":
+        if isinstance(updates, Mapping) and updates:
+            changed = "、".join(str(key) for key in updates.keys())
+            lines.append(f"我先帮你把这些可编辑状态更新了：{changed}。")
+        else:
+            lines.append("我先帮你把这次可编辑状态更新了。")
+    else:
+        lines.append("我现在能拿出来给你看的长期记忆，大致是这些。")
+
+    if summary_lines:
+        lines.append(_render_bullets(summary_lines))
+    return "\n".join(line for line in lines if line)
+
+
+def _render_training_context(entries: list[dict[str, Any]], persona: CoachPersonaConfig) -> str:
+    """Render recent training context into the prematch response."""
+    if not entries:
+        return ""
+
+    focus_areas: list[str] = []
+    for entry in entries[:3]:
+        for area in entry.get("focus_areas", []):
+            if isinstance(area, str) and area not in focus_areas:
+                focus_areas.append(area)
+
+    if not focus_areas:
+        return ""
+
+    if persona.tone == "strict":
+        return f"看了一下你最近的训练记录，继续盯住：{', '.join(focus_areas[:3])}。"
+    return f"翻了你最近的训练记录，重点还是在：{', '.join(focus_areas[:3])}。"
 
 
 def _render_questions(questions: list[str], persona: CoachPersonaConfig) -> str:
