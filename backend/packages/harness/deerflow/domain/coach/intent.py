@@ -82,6 +82,7 @@ _HIGH_RISK_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "崩", "头晕", 
 _PRE_RULE_HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "头晕")
 _CLARIFICATION_HINTS = ("怎么办", "怎么弄", "看看", "帮我看", "你好", "在吗")
 _EXPLICIT_TRAINING_GOAL_HINTS = ("步伐", "脚步", "启动", "热身", "发球", "接发", "网前", "后场", "杀球", "步法", "移动")
+_ACKNOWLEDGEMENT_HINTS = ("收到", "好的", "好嘞", "ok", "OK", "明白", "懂了", "知道了", "老板")
 _FILLER_PREFIX_RE = re.compile(r"^(?:@[_a-zA-Z0-9]+\s+|[a-zA-Z]\s+)+")
 
 
@@ -310,6 +311,8 @@ def _should_clarify(intent: CoachIntent, message: str) -> tuple[bool, str | None
             return False, None
         if _looks_like_postmatch_summary(normalized_message, lowered):
             return False, None
+        if _looks_like_contextual_followup(normalized_message, lowered):
+            return False, None
         return True, "no_stable_intent_detected"
     if intent.confidence < 0.45:
         return True, "low_intent_confidence"
@@ -341,6 +344,14 @@ def _looks_like_prematch_training_goal(text: str, lowered: str) -> bool:
 
 def _looks_like_postmatch_summary(text: str, lowered: str) -> bool:
     return _contains_any(text, lowered, _POSTMATCH_HINTS) or ("打完" in text and any(word in text for word in ("复盘", "总结", "回顾", "表现")))
+
+
+def _looks_like_contextual_followup(text: str, lowered: str) -> bool:
+    if not text:
+        return False
+    if text.isdigit() and len(text) <= 2:
+        return True
+    return len(text) <= 12 and _contains_any(text, lowered, _ACKNOWLEDGEMENT_HINTS)
 
 
 def _contains_any(text: str, lowered: str, keywords: tuple[str, ...]) -> bool:

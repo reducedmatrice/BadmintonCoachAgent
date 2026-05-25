@@ -152,6 +152,14 @@ def test_classify_recovery_status_update_without_clarification():
     assert intent.needs_clarification is False
 
 
+def test_classify_recovery_limit_plan_without_clarification():
+    intent = detect_coach_intent("肩膀不疼了，今天就少打一小时，别再打太久")
+
+    assert intent.primary_intent == "health"
+    assert intent.slots["health_signal"] == "肩膀不疼了，今天就少打一小时，别再打太久"
+    assert intent.needs_clarification is False
+
+
 def test_classify_postmatch_report_with_blister_and_breathing_without_clarification():
     intent = detect_coach_intent("打完球了，气喘吁吁，左脚大拇指起泡了，有点痛")
 
@@ -167,4 +175,18 @@ def test_classify_check_memory_request_without_clarification():
 
     assert intent.primary_intent == "check_memory"
     assert intent.slots["memory_request"] is not None
+    assert intent.needs_clarification is False
+
+
+def test_contextual_acknowledgement_does_not_request_clarification():
+    intent = detect_coach_intent("收到 老板")
+
+    assert intent.primary_intent == "fallback"
+    assert intent.needs_clarification is False
+
+
+def test_single_numeric_followup_does_not_request_clarification():
+    intent = detect_coach_intent("3")
+
+    assert intent.primary_intent == "fallback"
     assert intent.needs_clarification is False
