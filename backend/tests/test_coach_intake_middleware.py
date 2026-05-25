@@ -141,6 +141,39 @@ def test_before_agent_uses_runtime_llm_intent_classifier_before_clarifying():
     assert intake["clarification_request"] is None
 
 
+def test_before_agent_ignores_spurious_llm_clarification_for_actionable_prematch():
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="最近准备多打打球，最忙碌的结果过去了"),
+        ],
+    }
+
+    runtime = _runtime("thread-spurious-prematch")
+
+    def _classifier(_message: str):
+        return {
+            "primary_intent": "prematch",
+            "secondary_intents": [],
+            "slots": {},
+            "missing_slots": ["session_goal"],
+            "risk_level": "low",
+            "confidence": 0.9,
+            "source": "llm_structured",
+            "needs_clarification": True,
+            "clarification_reason": "session_goal",
+        }
+
+    runtime.context["coach_intent_classifier"] = _classifier
+
+    result = mw.before_agent(state, runtime)
+    intake = result["coach_intake"]
+
+    assert intake["intent"]["primary_intent"] == "prematch"
+    assert intake["intent"]["needs_clarification"] is False
+    assert intake["clarification_request"] is None
+
+
 def test_before_agent_uses_default_model_intent_classifier_when_enabled(monkeypatch):
     class FakeModel:
         def invoke(self, messages):

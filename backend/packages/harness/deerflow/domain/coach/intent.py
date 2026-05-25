@@ -83,6 +83,7 @@ _PRE_RULE_HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "�
 _CLARIFICATION_HINTS = ("怎么办", "怎么弄", "看看", "帮我看", "你好", "在吗")
 _EXPLICIT_TRAINING_GOAL_HINTS = ("步伐", "脚步", "启动", "热身", "发球", "接发", "网前", "后场", "杀球", "步法", "移动")
 _CHITCHAT_HINTS = ("收到", "好的", "好嘞", "ok", "OK", "明白", "懂了", "知道了", "老板", "哈哈", "早啊", "你好", "在吗", "辛苦", "谢谢")
+_FOLLOWUP_ACK_RE = re.compile(r"^(?:第?[一二三四五六七八九十\d]+种?|选第?[一二三四五六七八九十\d]+种?)$")
 _FILLER_PREFIX_RE = re.compile(r"^(?:@[_a-zA-Z0-9]+\s+|[a-zA-Z]\s+)+")
 
 
@@ -306,16 +307,18 @@ def _finalize_intent(intent: CoachIntent, *, message: str) -> CoachIntent:
 def _should_clarify(intent: CoachIntent, message: str) -> tuple[bool, str | None]:
     normalized_message = _normalize_message_text(message)
     lowered = normalized_message.lower()
-    if intent.needs_clarification:
-        return True, intent.clarification_reason or "classifier_requested_clarification"
+    if intent.primary_intent == "chitchat":
+        return False, None
     if intent.primary_intent == "fallback":
         if _looks_like_prematch_training_goal(normalized_message, lowered):
             return False, None
         if _looks_like_postmatch_summary(normalized_message, lowered):
             return False, None
         return True, "no_stable_intent_detected"
-    if intent.primary_intent == "chitchat":
-        return False, None
+    if intent.needs_clarification:
+        if intent.primary_intent == "prematch" and intent.confidence >= 0.85 and _looks_like_prematch_training_goal(normalized_message, lowered):
+            return False, None
+        return True, intent.clarification_reason or "classifier_requested_clarification"
     if intent.confidence < 0.45:
         return True, "low_intent_confidence"
     if len(intent.missing_slots) >= 2:
@@ -341,6 +344,7 @@ def _looks_like_prematch_training_goal(text: str, lowered: str) -> bool:
         _contains_any(text, lowered, _PREMATCH_HINTS)
         or ("打球" in text and _contains_any(text, lowered, _EXPLICIT_TRAINING_GOAL_HINTS))
         or ("训练" in text and _contains_any(text, lowered, _EXPLICIT_TRAINING_GOAL_HINTS))
+        or ("打球" in text and any(hint in text for hint in ("今天", "今晚", "明天", "周末", "最近", "准备", "休闲打", "多打")))
     )
 
 
@@ -352,6 +356,8 @@ def _looks_like_chitchat(text: str, lowered: str) -> bool:
     if not text:
         return False
     if text.isdigit() and len(text) <= 2:
+        return True
+    if _FOLLOWUP_ACK_RE.match(text):
         return True
     return len(text) <= 16 and _contains_any(text, lowered, _CHITCHAT_HINTS)
 

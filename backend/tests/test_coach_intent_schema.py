@@ -127,6 +127,48 @@ def test_detect_coach_intent_marks_low_confidence_query_for_clarification():
     assert intent.clarification_reason in {"low_intent_confidence", "no_stable_intent_detected"}
 
 
+def test_llm_classifier_clarification_flag_does_not_override_chitchat():
+    def _classifier(_message: str):
+        return {
+            "primary_intent": "chitchat",
+            "secondary_intents": [],
+            "slots": {},
+            "missing_slots": ["session_goal"],
+            "risk_level": "low",
+            "confidence": 0.9,
+            "source": "llm_structured",
+            "needs_clarification": True,
+            "clarification_reason": "session_goal",
+        }
+
+    intent = detect_coach_intent("第一种", llm_classifier=_classifier)
+
+    assert intent.primary_intent == "chitchat"
+    assert intent.needs_clarification is False
+    assert intent.clarification_reason is None
+
+
+def test_high_confidence_prematch_with_actionable_context_ignores_classifier_clarification_flag():
+    def _classifier(_message: str):
+        return {
+            "primary_intent": "prematch",
+            "secondary_intents": [],
+            "slots": {},
+            "missing_slots": ["session_goal"],
+            "risk_level": "low",
+            "confidence": 0.98,
+            "source": "llm_structured",
+            "needs_clarification": True,
+            "clarification_reason": "session_goal",
+        }
+
+    intent = detect_coach_intent("明天打球，休闲打", llm_classifier=_classifier)
+
+    assert intent.primary_intent == "prematch"
+    assert intent.needs_clarification is False
+    assert intent.clarification_reason is None
+
+
 def test_classify_natural_prematch_training_goal_without_clarification():
     intent = detect_coach_intent("a 今晚去打球，我准备好好练练我的步伐，因为上次练步伐的时候我绊了一下，然后教练教了我如何去启动")
 
@@ -187,6 +229,13 @@ def test_contextual_acknowledgement_does_not_request_clarification():
 
 def test_single_numeric_followup_does_not_request_clarification():
     intent = detect_coach_intent("3")
+
+    assert intent.primary_intent == "chitchat"
+    assert intent.needs_clarification is False
+
+
+def test_ordinal_followup_does_not_request_clarification():
+    intent = detect_coach_intent("第一种")
 
     assert intent.primary_intent == "chitchat"
     assert intent.needs_clarification is False
