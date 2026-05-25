@@ -164,6 +164,19 @@ done
 curl -s -i http://127.0.0.1:2026/health
 ```
 
+If the gateway remains stuck at `Building deerflow-harness` for more than a minute and CPU is low, inspect the compose command. The backend image already runs `uv sync` at build time, so gateway should start with the built virtualenv instead of doing runtime dependency resolution:
+
+```bash
+grep -n "deer-flow-gateway\\|uvicorn\\|uv run" docker/docker-compose.yaml
+docker top deer-flow-gateway aux
+```
+
+Expected gateway command:
+
+```yaml
+command: sh -c "cd backend && PYTHONPATH=. .venv/bin/uvicorn app.gateway.app:app --host 0.0.0.0 --port 8001 --workers 1"
+```
+
 If gateway is healthy inside the container but `http://127.0.0.1:2026/health` still returns 502, refresh nginx because it may still point at a stale upstream after container recreation:
 
 ```bash
@@ -193,6 +206,7 @@ There should be one gateway container and one Feishu WebSocket connection.
 ## Common Failure Signatures
 
 - `502 Bad Gateway` immediately after `gateway` recreation + gateway logs show `Building deerflow-harness` or `Waiting for application startup`: gateway is still starting. Wait with the health until-loop; do not stack restarts.
+- Gateway stuck at `Building deerflow-harness` for more than a minute: compose is likely using `uv run` at startup, causing runtime dependency resolution/build. Use `.venv/bin/uvicorn` for gateway because dependencies were installed during image build.
 - `502 Bad Gateway` while `docker exec deer-flow-gateway ... /health` returns healthy: nginx has a stale upstream connection/IP after backend recreation. Recreate only `nginx` with `--no-deps`.
 - `httpx.ConnectError: All connection attempts failed`: gateway is probably using `localhost:2024`; use `http://langgraph:2024`.
 - `Agent directory not found: /app/backend/.deer-flow/agents/badminton-coach`: seed `/home/ubuntu/data/deer-flow/agents/badminton-coach`.
