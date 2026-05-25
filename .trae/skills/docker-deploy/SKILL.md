@@ -147,6 +147,29 @@ docker logs --tail=120 deer-flow-gateway
 docker logs --tail=120 deer-flow-langgraph
 ```
 
+After recreating `gateway`, a short-lived `502 Bad Gateway` can be normal while the gateway container finishes its internal startup. Do not immediately redeploy or restart repeatedly. First check whether gateway itself is listening:
+
+```bash
+docker exec deer-flow-gateway sh -lc "curl -fsS http://127.0.0.1:8001/health"
+docker logs --tail=80 deer-flow-gateway
+```
+
+If gateway logs stop at `Building deerflow-harness` or show `Waiting for application startup`, wait for readiness with an until-loop:
+
+```bash
+until docker exec deer-flow-gateway sh -lc "curl -fsS http://127.0.0.1:8001/health >/dev/null"; do
+  docker logs --tail=5 deer-flow-gateway 2>&1
+  sleep 5
+done
+curl -s -i http://127.0.0.1:2026/health
+```
+
+If gateway is healthy inside the container but `http://127.0.0.1:2026/health` still returns 502, refresh nginx because it may still point at a stale upstream after container recreation:
+
+```bash
+docker compose -p deer-flow -f docker/docker-compose.yaml up -d --no-deps --force-recreate nginx
+```
+
 For code-change deploys, verify the running container contains the expected code marker before calling it done, for example:
 
 ```bash
@@ -169,6 +192,8 @@ There should be one gateway container and one Feishu WebSocket connection.
 
 ## Common Failure Signatures
 
+- `502 Bad Gateway` immediately after `gateway` recreation + gateway logs show `Building deerflow-harness` or `Waiting for application startup`: gateway is still starting. Wait with the health until-loop; do not stack restarts.
+- `502 Bad Gateway` while `docker exec deer-flow-gateway ... /health` returns healthy: nginx has a stale upstream connection/IP after backend recreation. Recreate only `nginx` with `--no-deps`.
 - `httpx.ConnectError: All connection attempts failed`: gateway is probably using `localhost:2024`; use `http://langgraph:2024`.
 - `Agent directory not found: /app/backend/.deer-flow/agents/badminton-coach`: seed `/home/ubuntu/data/deer-flow/agents/badminton-coach`.
 - Duplicate Feishu replies or repeated events: check duplicate gateway containers and ensure gateway uses `--workers 1`.

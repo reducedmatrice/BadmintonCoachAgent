@@ -343,6 +343,13 @@ def _run_route_chain(
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
+    if route == "chitchat":
+        payload = {
+            "chain": "chitchat",
+            "response_text": "收到。",
+        }
+        return payload
+
     payload = {
         "chain": "fallback",
         "guidance": "请先说清你现在是赛前准备、赛后复盘、身体恢复，还是想查看/修改记忆，我再给你对应方案。",
@@ -420,7 +427,7 @@ def _apply_safety_gate(
 
     filtered: list[CoachIntentName] = []
     for route in decision.allowed_routes:
-        if route not in {"prematch", "postmatch", "health", "check_memory", "fallback"}:
+        if route not in {"prematch", "postmatch", "health", "check_memory", "chitchat", "fallback"}:
             continue
         if route not in filtered:
             filtered.append(route)

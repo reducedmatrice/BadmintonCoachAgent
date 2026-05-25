@@ -45,11 +45,20 @@ def test_route_single_intent_hits_health_chain():
 
 
 def test_route_single_intent_hits_fallback_chain():
-    result = route_single_intent("你好")
+    result = route_single_intent("帮我看看")
 
     assert result.route == "fallback"
     assert result.payload["chain"] == "fallback"
     assert "follow_up_question" in result.payload
+
+
+def test_route_single_intent_hits_chitchat_chain():
+    result = route_single_intent("收到 老板")
+
+    assert result.route == "chitchat"
+    assert result.payload["chain"] == "chitchat"
+    assert result.payload["response_text"]
+    assert "follow_up_question" not in result.payload
 
 
 def test_route_single_intent_hits_check_memory_chain(tmp_path: Path):

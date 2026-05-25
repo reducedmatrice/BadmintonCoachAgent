@@ -181,12 +181,19 @@ def test_classify_check_memory_request_without_clarification():
 def test_contextual_acknowledgement_does_not_request_clarification():
     intent = detect_coach_intent("收到 老板")
 
-    assert intent.primary_intent == "fallback"
+    assert intent.primary_intent == "chitchat"
     assert intent.needs_clarification is False
 
 
 def test_single_numeric_followup_does_not_request_clarification():
     intent = detect_coach_intent("3")
 
-    assert intent.primary_intent == "fallback"
+    assert intent.primary_intent == "chitchat"
+    assert intent.needs_clarification is False
+
+
+def test_simple_greeting_routes_to_chitchat_without_clarification():
+    intent = detect_coach_intent("你好，哈哈哈，早啊")
+
+    assert intent.primary_intent == "chitchat"
     assert intent.needs_clarification is False

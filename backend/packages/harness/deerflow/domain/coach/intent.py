@@ -7,10 +7,10 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Literal, Protocol
 
-CoachIntentName = Literal["prematch", "postmatch", "health", "check_memory", "fallback"]
+CoachIntentName = Literal["prematch", "postmatch", "health", "check_memory", "chitchat", "fallback"]
 CoachRiskLevel = Literal["low", "medium", "high"]
 
-_INTENT_ORDER: tuple[CoachIntentName, ...] = ("prematch", "postmatch", "health", "check_memory", "fallback")
+_INTENT_ORDER: tuple[CoachIntentName, ...] = ("prematch", "postmatch", "health", "check_memory", "chitchat", "fallback")
 _RISK_ORDER: tuple[CoachRiskLevel, ...] = ("low", "medium", "high")
 
 _PREMATCH_HINTS = (
@@ -82,7 +82,7 @@ _HIGH_RISK_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "崩", "头晕", 
 _PRE_RULE_HEALTH_OVERRIDE_HINTS = ("剧烈疼", "刺痛", "拉伤", "扭伤", "头晕")
 _CLARIFICATION_HINTS = ("怎么办", "怎么弄", "看看", "帮我看", "你好", "在吗")
 _EXPLICIT_TRAINING_GOAL_HINTS = ("步伐", "脚步", "启动", "热身", "发球", "接发", "网前", "后场", "杀球", "步法", "移动")
-_ACKNOWLEDGEMENT_HINTS = ("收到", "好的", "好嘞", "ok", "OK", "明白", "懂了", "知道了", "老板")
+_CHITCHAT_HINTS = ("收到", "好的", "好嘞", "ok", "OK", "明白", "懂了", "知道了", "老板", "哈哈", "早啊", "你好", "在吗", "辛苦", "谢谢")
 _FILLER_PREFIX_RE = re.compile(r"^(?:@[_a-zA-Z0-9]+\s+|[a-zA-Z]\s+)+")
 
 
@@ -152,6 +152,8 @@ def classify_coach_intent(message: str) -> CoachIntent:
         matched.append("health")
     if _contains_any(text, lowered, _CHECK_MEMORY_HINTS):
         matched.append("check_memory")
+    if _looks_like_chitchat(text, lowered):
+        matched.append("chitchat")
     if not matched:
         matched.append("fallback")
 
@@ -263,7 +265,7 @@ def _apply_guardrails(intent: CoachIntent, *, pre_rule: Mapping[str, Any], messa
     forced_primary = pre_rule.get("forced_primary_intent")
     if forced_primary in {"prematch", "postmatch", "health", "fallback"}:
         if primary != forced_primary:
-            if primary != "fallback" and primary not in secondary:
+            if primary not in {"fallback", "chitchat"} and primary not in secondary:
                 secondary.insert(0, primary)
             primary = forced_primary
             source = f"{source}+pre_rule"
@@ -311,9 +313,9 @@ def _should_clarify(intent: CoachIntent, message: str) -> tuple[bool, str | None
             return False, None
         if _looks_like_postmatch_summary(normalized_message, lowered):
             return False, None
-        if _looks_like_contextual_followup(normalized_message, lowered):
-            return False, None
         return True, "no_stable_intent_detected"
+    if intent.primary_intent == "chitchat":
+        return False, None
     if intent.confidence < 0.45:
         return True, "low_intent_confidence"
     if len(intent.missing_slots) >= 2:
@@ -346,12 +348,12 @@ def _looks_like_postmatch_summary(text: str, lowered: str) -> bool:
     return _contains_any(text, lowered, _POSTMATCH_HINTS) or ("打完" in text and any(word in text for word in ("复盘", "总结", "回顾", "表现")))
 
 
-def _looks_like_contextual_followup(text: str, lowered: str) -> bool:
+def _looks_like_chitchat(text: str, lowered: str) -> bool:
     if not text:
         return False
     if text.isdigit() and len(text) <= 2:
         return True
-    return len(text) <= 12 and _contains_any(text, lowered, _ACKNOWLEDGEMENT_HINTS)
+    return len(text) <= 16 and _contains_any(text, lowered, _CHITCHAT_HINTS)
 
 
 def _contains_any(text: str, lowered: str, keywords: tuple[str, ...]) -> bool:
@@ -375,7 +377,7 @@ def _split_primary_secondary(matched: list[CoachIntentName]) -> tuple[CoachInten
 
 
 def _normalize_intent_name(raw: str) -> CoachIntentName:
-    if raw in {"prematch", "postmatch", "health", "check_memory", "fallback"}:
+    if raw in {"prematch", "postmatch", "health", "check_memory", "chitchat", "fallback"}:
         return raw  # type: ignore[return-value]
     return "fallback"
 
@@ -420,6 +422,7 @@ def _infer_missing_slots(slots: Mapping[str, Any], *, primary: CoachIntentName) 
         "postmatch": ("review_text",),
         "health": ("health_signal",),
         "check_memory": ("memory_request",),
+        "chitchat": tuple(),
         "fallback": tuple(),
     }
     missing: list[str] = []
