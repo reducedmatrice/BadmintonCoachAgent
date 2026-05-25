@@ -353,6 +353,16 @@ def _inject_token_usage(result: dict[str, Any] | list | None, token_usage: dict[
     return {"token_usage": token_usage}
 
 
+def _has_clarification_request(result: Any) -> bool:
+    if not isinstance(result, Mapping):
+        return False
+    coach_intake = result.get("coach_intake")
+    if not isinstance(coach_intake, Mapping):
+        return False
+    clarification_request = coach_intake.get("clarification_request")
+    return isinstance(clarification_request, Mapping) and bool(clarification_request.get("question"))
+
+
 def _extract_artifacts(result: dict | list) -> list[str]:
     """Extract artifact paths from the last AI response cycle only.
 
@@ -790,6 +800,8 @@ class ChannelManager:
                         latest_text = accumulated_text
                 elif event == "values" and isinstance(data, (dict, list)):
                     last_values = data
+                    if _has_clarification_request(data):
+                        continue
                     snapshot_text = _extract_response_text(data)
                     if snapshot_text:
                         latest_text = snapshot_text

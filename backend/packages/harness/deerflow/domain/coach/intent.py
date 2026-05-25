@@ -35,7 +35,34 @@ _PREMATCH_HINTS = (
     "启动",
 )
 _POSTMATCH_HINTS = ("复盘", "赛后", "刚打完", "今天打完", "打完球", "打完了", "刚打完球", "总结", "下次重点", "失误", "回顾")
-_HEALTH_HINTS = ("膝盖", "疼", "拉伤", "疲劳", "恢复", "睡眠", "心率", "hrv", "酸痛", "伤")
+_HEALTH_HINTS = (
+    "膝盖",
+    "肩膀",
+    "腰",
+    "脚",
+    "脚趾",
+    "大拇指",
+    "疼",
+    "痛",
+    "拉伤",
+    "疲劳",
+    "恢复",
+    "睡眠",
+    "心率",
+    "hrv",
+    "酸痛",
+    "伤",
+    "起泡",
+    "水泡",
+    "气喘",
+    "喘",
+    "完全好了",
+    "好多了",
+    "好了",
+    "别打太久",
+    "不打这么久",
+    "不打太久",
+)
 _CHECK_MEMORY_HINTS = (
     "记忆",
     "memory",
@@ -96,7 +123,10 @@ def detect_coach_intent(
     pre_rule = _pre_rule_detect(text)
 
     if llm_classifier is not None:
-        raw = llm_classifier(text)
+        try:
+            raw = llm_classifier(text)
+        except Exception:
+            raw = None
         llm_intent = _normalize_classifier_result(raw)
         if llm_intent is not None:
             guarded = _apply_guardrails(llm_intent, pre_rule=pre_rule, message=text)
@@ -401,7 +431,7 @@ def _infer_risk_level(
     if "health" in intents:
         if _contains_any(text, lowered, _HIGH_RISK_HINTS):
             return "high"
-        if any(keyword in lowered for keyword in ("疼", "痛", "疲劳", "恢复")):
+        if any(keyword in lowered for keyword in ("疼", "痛", "疲劳", "恢复", "气喘", "喘", "起泡", "水泡")):
             return "medium"
         return "low"
 

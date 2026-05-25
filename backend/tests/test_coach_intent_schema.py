@@ -66,6 +66,30 @@ def test_detect_coach_intent_prefers_llm_structured_result_when_available():
     assert intent.needs_clarification is False
 
 
+def test_detect_coach_intent_uses_llm_classifier_when_rules_would_clarify():
+    calls: list[str] = []
+
+    def _classifier(message: str):
+        calls.append(message)
+        return {
+            "primary_intent": "health",
+            "secondary_intents": [],
+            "slots": {"health_signal": message},
+            "missing_slots": [],
+            "risk_level": "low",
+            "confidence": 0.73,
+            "source": "llm_structured",
+            "needs_clarification": False,
+        }
+
+    intent = detect_coach_intent("腰和肩膀完全好了，下次不打这么久了", llm_classifier=_classifier)
+
+    assert calls == ["腰和肩膀完全好了，下次不打这么久了"]
+    assert intent.primary_intent == "health"
+    assert intent.slots["health_signal"] == "腰和肩膀完全好了，下次不打这么久了"
+    assert intent.needs_clarification is False
+
+
 def test_detect_coach_intent_applies_pre_rule_health_override_to_llm_result():
     def _classifier(_message: str):
         return {
@@ -117,6 +141,24 @@ def test_classify_natural_postmatch_summary_without_clarification():
 
     assert intent.primary_intent == "postmatch"
     assert intent.slots["review_text"] is not None
+    assert intent.needs_clarification is False
+
+
+def test_classify_recovery_status_update_without_clarification():
+    intent = detect_coach_intent("腰和肩膀完全好了，下次不打这么久了")
+
+    assert intent.primary_intent == "health"
+    assert intent.slots["health_signal"] == "腰和肩膀完全好了，下次不打这么久了"
+    assert intent.needs_clarification is False
+
+
+def test_classify_postmatch_report_with_blister_and_breathing_without_clarification():
+    intent = detect_coach_intent("打完球了，气喘吁吁，左脚大拇指起泡了，有点痛")
+
+    assert intent.primary_intent == "postmatch"
+    assert "health" in intent.secondary_intents
+    assert intent.slots["review_text"] is not None
+    assert intent.slots["health_signal"] is not None
     assert intent.needs_clarification is False
 
 

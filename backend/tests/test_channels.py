@@ -710,6 +710,82 @@ class TestChannelManager:
 
         _run(go())
 
+    def test_handle_feishu_chat_does_not_stream_intermediate_clarification_snapshot(self, monkeypatch):
+        from app.channels.manager import ChannelManager
+
+        monkeypatch.setattr("app.channels.manager.STREAM_UPDATE_MIN_INTERVAL_SECONDS", 0.0)
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            stream_events = [
+                _make_stream_part(
+                    "values",
+                    {
+                        "messages": [
+                            {"type": "human", "content": "帮我看看"},
+                        ],
+                        "coach_intake": {
+                            "clarification_request": {
+                                "question": "直接说，你现在希望我先帮你做哪类判断？",
+                                "options": ["赛前准备", "赛后复盘", "恢复建议"],
+                            }
+                        },
+                    },
+                ),
+                _make_stream_part(
+                    "values",
+                    {
+                        "messages": [
+                            {"type": "human", "content": "帮我看看"},
+                            {
+                                "type": "tool",
+                                "name": "ask_clarification",
+                                "content": "❓ 直接说，你现在希望我先帮你做哪类判断？\n\n  1. 赛前准备\n  2. 赛后复盘\n  3. 恢复建议",
+                            },
+                        ],
+                        "coach_intake": {
+                            "clarification_request": {
+                                "question": "直接说，你现在希望我先帮你做哪类判断？",
+                                "options": ["赛前准备", "赛后复盘", "恢复建议"],
+                            }
+                        },
+                    },
+                ),
+            ]
+
+            mock_client = _make_mock_langgraph_client()
+            mock_client.runs.stream = MagicMock(return_value=_make_async_iterator(stream_events))
+            manager._client = mock_client
+
+            await manager.start()
+
+            inbound = InboundMessage(
+                channel_name="feishu",
+                chat_id="chat1",
+                user_id="user1",
+                text="帮我看看",
+                thread_ts="om-source-clarify",
+            )
+            await bus.publish_inbound(inbound)
+            await _wait_for(lambda: any(msg.is_final for msg in outbound_received))
+            await manager.stop()
+
+            assert len(outbound_received) == 1
+            assert outbound_received[0].is_final is True
+            assert "直接说，你现在希望我先帮你做哪类判断" in outbound_received[0].text
+
+        _run(go())
+
     def test_handle_feishu_chat_uses_channel_agent_name(self, monkeypatch):
         from app.channels.manager import ChannelManager
 

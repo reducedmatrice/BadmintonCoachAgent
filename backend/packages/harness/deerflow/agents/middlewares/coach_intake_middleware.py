@@ -6,15 +6,24 @@ into a single structured object for downstream coach runtime layers.
 
 from __future__ import annotations
 
+import json
+import logging
+from collections.abc import Callable, Mapping
 from typing import Any, NotRequired, override
 
 from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
+from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.runtime import Runtime
 
 from deerflow.agents.thread_state import CoachIntakeData, ThreadDataState
 from deerflow.domain.coach import CoachIntent, build_clarification_request, detect_coach_intent, resolve_runtime_coach_persona
 from deerflow.domain.coach.recall import build_recall_context
+from deerflow.models import create_chat_model
+
+logger = logging.getLogger(__name__)
+
+CoachIntentClassifier = Callable[[str], Mapping[str, Any] | CoachIntent | None]
 
 
 class CoachIntakeMiddlewareState(AgentState):
@@ -54,6 +63,61 @@ def _extract_text(content: Any) -> str | None:
     return None
 
 
+def _extract_json_object(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("{") and stripped.endswith("}"):
+        return stripped
+    start = stripped.find("{")
+    end = stripped.rfind("}")
+    if start >= 0 and end > start:
+        return stripped[start : end + 1]
+    raise ValueError("No JSON object found in model output")
+
+
+def _build_model_intent_classifier(model_name: str | None = None) -> CoachIntentClassifier:
+    def classify(message: str) -> Mapping[str, Any] | None:
+        model = create_chat_model(name=model_name, thinking_enabled=False)
+        system = SystemMessage(
+            content=(
+                "You are an intent classifier for a badminton coach agent. "
+                "Classify the user's latest message into exactly one primary intent: "
+                "prematch, postmatch, health, check_memory, or fallback. "
+                "Use health for injury, pain, recovery status, fatigue, sleep, readiness, blisters, or load-control updates. "
+                "Use prematch for upcoming play, training goals, warmup, tactics, or what to focus on before a session. "
+                "Use postmatch for after-session review, what went well/badly, technique observations, or next-session focus. "
+                "Use check_memory when the user asks what you remember or wants memory/profile changes. "
+                "Only use fallback when the message is genuinely too vague to route. "
+                "Return JSON only with keys: primary_intent, secondary_intents, slots, missing_slots, risk_level, confidence, "
+                "source, needs_clarification, clarification_reason. "
+                "confidence must be 0 to 1. risk_level must be low, medium, or high. source must be llm_structured."
+            )
+        )
+        human = HumanMessage(content=f"User message:\n{message}")
+        response = model.invoke([system, human])
+        content = getattr(response, "content", "")
+        if not isinstance(content, str) or not content.strip():
+            return None
+        return json.loads(_extract_json_object(content))
+
+    return classify
+
+
+def _resolve_intent_classifier(runtime: Runtime) -> CoachIntentClassifier | None:
+    ctx = runtime.context or {}
+    injected = ctx.get("coach_intent_classifier")
+    if callable(injected):
+        return injected
+
+    enabled = ctx.get("coach_llm_intent_classifier_enabled", True)
+    if enabled is False:
+        return None
+
+    model_name = ctx.get("coach_intent_model_name") or ctx.get("model_name") or ctx.get("model")
+    if not isinstance(model_name, str) or not model_name.strip():
+        model_name = None
+    return _build_model_intent_classifier(model_name)
+
+
 class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
     """Build a structured coach intake payload before agent execution."""
 
@@ -72,6 +136,10 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
             needs_clarification=False,
             clarification_reason=None,
         )
+
+    @staticmethod
+    def _rule_intent(message: str) -> CoachIntent:
+        return detect_coach_intent(message, llm_classifier=None)
 
     @override
     def before_agent(self, state: CoachIntakeMiddlewareState, runtime: Runtime) -> dict | None:
@@ -94,7 +162,12 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
         agent_name = str(runtime.context.get("agent_name") or "badminton-coach")
         persona, ignored_overrides = resolve_runtime_coach_persona(runtime.context, agent_name=agent_name)
         intent_detection_enabled = bool(runtime.context.get("coach_intent_detection_enabled", True))
-        intent = detect_coach_intent(latest_user_input or "") if intent_detection_enabled else self._disabled_intent()
+        intent_classifier = _resolve_intent_classifier(runtime) if intent_detection_enabled else None
+        try:
+            intent = detect_coach_intent(latest_user_input or "", llm_classifier=intent_classifier) if intent_detection_enabled else self._disabled_intent()
+        except Exception:
+            logger.exception("[CoachIntake] intent detection failed, falling back to rule classifier")
+            intent = self._rule_intent(latest_user_input or "")
         clarification_request = build_clarification_request(intent, persona=persona) if intent_detection_enabled else None
         recall_context = build_recall_context(
             latest_user_input=latest_user_input or "",

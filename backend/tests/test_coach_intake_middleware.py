@@ -9,7 +9,7 @@ from deerflow.agents.middlewares.coach_intake_middleware import CoachIntakeMiddl
 
 def _runtime(thread_id: str | None = "thread-1") -> MagicMock:
     rt = MagicMock()
-    rt.context = {"thread_id": thread_id}
+    rt.context = {"thread_id": thread_id, "coach_llm_intent_classifier_enabled": False}
     return rt
 
 
@@ -102,6 +102,79 @@ def test_before_agent_builds_clarification_request_for_underspecified_query():
     assert intake["clarification_request"] is not None
     assert intake["clarification_request"]["reason"] in {"low_intent_confidence", "no_stable_intent_detected", "underspecified_request"}
     assert "你现在希望我先帮你做哪类判断" in intake["clarification_request"]["question"]
+
+
+def test_before_agent_uses_runtime_llm_intent_classifier_before_clarifying():
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="腰和肩膀完全好了，下次不打这么久了"),
+        ],
+    }
+
+    runtime = _runtime("thread-llm-intent")
+
+    def _classifier(message: str):
+        return {
+            "primary_intent": "health",
+            "secondary_intents": [],
+            "slots": {"health_signal": message},
+            "missing_slots": [],
+            "risk_level": "low",
+            "confidence": 0.76,
+            "source": "llm_structured",
+            "needs_clarification": False,
+        }
+
+    runtime.context["coach_intent_classifier"] = _classifier
+
+    result = mw.before_agent(state, runtime)
+    intake = result["coach_intake"]
+
+    assert intake["intent"]["primary_intent"] == "health"
+    assert intake["intent"]["source"] == "llm_structured"
+    assert intake["intent"]["needs_clarification"] is False
+    assert intake["clarification_request"] is None
+
+
+def test_before_agent_uses_default_model_intent_classifier_when_enabled(monkeypatch):
+    class FakeModel:
+        def invoke(self, messages):
+            assert "badminton coach agent" in messages[0].content
+            assert "腰和肩膀完全好了" in messages[1].content
+            return AIMessage(
+                content=(
+                    '{"primary_intent":"health","secondary_intents":[],"slots":{"health_signal":"腰和肩膀完全好了，下次不打这么久了"},'
+                    '"missing_slots":[],"risk_level":"low","confidence":0.78,"source":"llm_structured",'
+                    '"needs_clarification":false,"clarification_reason":null}'
+                )
+            )
+
+    calls: list[tuple[str | None, bool]] = []
+
+    def fake_create_chat_model(*, name=None, thinking_enabled=False):
+        calls.append((name, thinking_enabled))
+        return FakeModel()
+
+    monkeypatch.setattr("deerflow.agents.middlewares.coach_intake_middleware.create_chat_model", fake_create_chat_model)
+
+    mw = CoachIntakeMiddleware()
+    state = {
+        "messages": [
+            HumanMessage(content="腰和肩膀完全好了，下次不打这么久了"),
+        ],
+    }
+    runtime = _runtime("thread-default-llm")
+    runtime.context["coach_llm_intent_classifier_enabled"] = True
+    runtime.context["coach_intent_model_name"] = "intent-model"
+
+    result = mw.before_agent(state, runtime)
+    intake = result["coach_intake"]
+
+    assert calls == [("intent-model", False)]
+    assert intake["intent"]["primary_intent"] == "health"
+    assert intake["intent"]["source"] == "llm_structured"
+    assert intake["clarification_request"] is None
 
 
 def test_before_agent_uses_persona_questioning_style_in_clarification_request():
