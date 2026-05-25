@@ -1,6 +1,9 @@
 import logging
+import os
+from logging.handlers import RotatingFileHandler
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,11 +50,30 @@ def configure_lark_logging() -> None:
 
 
 # Configure logging
+LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+LOG_DATEFMT = "%Y-%m-%d %H:%M:%S"
+
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
+    format=LOG_FORMAT,
+    datefmt=LOG_DATEFMT,
 )
+
+# Persist logs to file under DEER_FLOW_HOME so they survive container rebuilds.
+_deer_flow_home = os.environ.get("DEER_FLOW_HOME", "")
+if _deer_flow_home:
+    _log_dir = Path(_deer_flow_home) / "logs"
+    _log_dir.mkdir(parents=True, exist_ok=True)
+    _file_handler = RotatingFileHandler(
+        _log_dir / "gateway.log",
+        maxBytes=50 * 1024 * 1024,  # 50 MB
+        backupCount=3,
+        encoding="utf-8",
+    )
+    _file_handler.setLevel(logging.INFO)
+    _file_handler.setFormatter(logging.Formatter(LOG_FORMAT, datefmt=LOG_DATEFMT))
+    logging.getLogger().addHandler(_file_handler)
+
 configure_lark_logging()
 
 logger = logging.getLogger(__name__)
