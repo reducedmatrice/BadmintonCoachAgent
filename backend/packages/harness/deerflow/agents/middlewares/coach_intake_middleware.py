@@ -19,6 +19,7 @@ from langgraph.runtime import Runtime
 from deerflow.agents.thread_state import CoachIntakeData, ThreadDataState
 from deerflow.domain.coach import CoachIntent, build_clarification_request, detect_coach_intent, resolve_runtime_coach_persona
 from deerflow.domain.coach.recall import build_recall_context
+from deerflow.domain.coach.request_trace import append_trace_step, make_request_trace
 from deerflow.models import create_chat_model
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ class CoachIntakeMiddlewareState(AgentState):
     thread_data: NotRequired[ThreadDataState | None]
     coach_multimodal: NotRequired[dict[str, Any] | None]
     coach_intake: NotRequired[CoachIntakeData | None]
+    request_trace: NotRequired[dict[str, Any] | None]
 
 
 def _extract_text(content: Any) -> str | None:
@@ -204,4 +206,23 @@ class CoachIntakeMiddleware(AgentMiddleware[CoachIntakeMiddlewareState]):
             },
             "clarification_request": clarification_request,
         }
-        return {"coach_intake": intake}
+        trace_id = runtime.context.get("request_trace_id")
+        if not isinstance(trace_id, str) or not trace_id:
+            trace_id = f"rt_{thread_id}" if isinstance(thread_id, str) and thread_id else None
+        trace = state.get("request_trace") or make_request_trace(trace_id)
+        trace = append_trace_step(
+            trace,
+            name="middleware.coach_intake",
+            layer="middleware",
+            summary={
+                "message_count": len(messages),
+                "missing_context": missing_context,
+                "primary_intent": intent.primary_intent,
+                "intent_source": intent.source,
+                "confidence": intent.confidence,
+                "needs_clarification": intent.needs_clarification,
+                "recall_should_mention": bool(recall_context.get("should_mention")) if isinstance(recall_context, Mapping) else False,
+                "persona_tone": persona.tone,
+            },
+        )
+        return {"coach_intake": intake, "request_trace": trace}

@@ -36,6 +36,10 @@ def test_before_agent_collects_latest_user_input_and_thread_context():
     assert intake["message_count"] == 3
     assert intake["thread_data"]["workspace_path"] == "/tmp/workspace"
     assert intake["missing_context"] == []
+    trace = result["request_trace"]
+    assert trace["trace_id"] == "rt_thread-xyz"
+    assert trace["steps"][-1]["name"] == "middleware.coach_intake"
+    assert trace["steps"][-1]["summary"]["primary_intent"] == "prematch"
 
 
 def test_before_agent_handles_list_content_and_missing_context():

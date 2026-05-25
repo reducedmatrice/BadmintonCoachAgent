@@ -456,7 +456,7 @@ def _make_async_iterator(items):
 
 
 class TestChannelManager:
-    def test_handle_chat_creates_thread(self):
+    def test_handle_chat_creates_thread(self, caplog):
         from app.channels.manager import ChannelManager
 
         async def go():
@@ -474,12 +474,13 @@ class TestChannelManager:
             mock_client = _make_mock_langgraph_client()
             manager._client = mock_client
 
-            await manager.start()
+            with caplog.at_level(logging.INFO, logger="app.channels.manager"):
+                await manager.start()
 
-            inbound = InboundMessage(channel_name="test", chat_id="chat1", user_id="user1", text="hi")
-            await bus.publish_inbound(inbound)
-            await _wait_for(lambda: len(outbound_received) >= 1)
-            await manager.stop()
+                inbound = InboundMessage(channel_name="test", chat_id="chat1", user_id="user1", text="hi")
+                await bus.publish_inbound(inbound)
+                await _wait_for(lambda: len(outbound_received) >= 1)
+                await manager.stop()
 
             # Thread should be created on the LangGraph Server
             mock_client.threads.create.assert_called_once()
@@ -494,9 +495,25 @@ class TestChannelManager:
             assert call_args[0][0] == "test-thread-123"  # thread_id
             assert call_args[0][1] == "lead_agent"  # assistant_id
             assert call_args[1]["input"]["messages"][0]["content"] == "hi"
+            assert call_args[1]["context"]["request_trace_id"].startswith("rt_")
 
             assert len(outbound_received) == 1
             assert outbound_received[0].text == "Hello from agent!"
+
+            structured_messages = [record.message for record in caplog.records if "[ManagerStructured]" in record.message]
+            assert structured_messages
+            payload = json.loads(structured_messages[-1].split("[ManagerStructured] ", 1)[1])
+            trace = payload["request_trace"]
+            assert trace["trace_id"] == call_args[1]["context"]["request_trace_id"]
+            step_names = [step["name"] for step in trace["steps"]]
+            assert "channel.inbound" in step_names
+            assert "manager.thread" in step_names
+            assert "manager.run_context" in step_names
+            assert "middleware.multimodal" in step_names
+            assert "router.coach_route" in step_names
+            assert "renderer.coach_response" in step_names
+            assert "manager.outbound" in step_names
+            assert step_names.index("renderer.coach_response") < step_names.index("manager.outbound")
 
         _run(go())
 
@@ -929,7 +946,91 @@ class TestChannelManager:
 
         _run(go())
 
-    def test_handle_feishu_stream_error_still_sends_final(self, monkeypatch):
+    def test_handle_feishu_stream_merges_request_trace_from_values(self, monkeypatch, caplog):
+        from app.channels.manager import ChannelManager
+
+        monkeypatch.setattr("app.channels.manager.STREAM_UPDATE_MIN_INTERVAL_SECONDS", 0.0)
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            stream_events = [
+                _make_stream_part(
+                    "values",
+                    {
+                        "messages": [
+                            {"type": "human", "content": "hi"},
+                            {"type": "ai", "content": "Trace aware reply"},
+                        ],
+                        "request_trace": {
+                            "trace_id": "rt_agent",
+                            "steps": [
+                                {
+                                    "name": "middleware.coach_intake",
+                                    "layer": "middleware",
+                                    "status": "ok",
+                                    "timestamp_ms": 1,
+                                    "summary": {"primary_intent": "prematch"},
+                                },
+                                {
+                                    "name": "router.coach_route",
+                                    "layer": "router",
+                                    "status": "ok",
+                                    "timestamp_ms": 2,
+                                    "summary": {"route": "prematch"},
+                                },
+                                {
+                                    "name": "renderer.coach_response",
+                                    "layer": "renderer",
+                                    "status": "ok",
+                                    "timestamp_ms": 3,
+                                    "summary": {"response_length": 17},
+                                },
+                            ],
+                        },
+                    },
+                ),
+            ]
+
+            mock_client = _make_mock_langgraph_client()
+            mock_client.runs.stream = MagicMock(return_value=_make_async_iterator(stream_events))
+            manager._client = mock_client
+
+            with caplog.at_level(logging.INFO, logger="app.channels.manager"):
+                await manager.start()
+                inbound = InboundMessage(
+                    channel_name="feishu",
+                    chat_id="chat1",
+                    user_id="user1",
+                    text="hi",
+                    thread_ts="om-source-trace",
+                )
+                await bus.publish_inbound(inbound)
+                await _wait_for(lambda: any(msg.is_final for msg in outbound_received))
+                await manager.stop()
+
+            structured_messages = [record.message for record in caplog.records if "[ManagerStructured]" in record.message]
+            payload = json.loads(structured_messages[-1].split("[ManagerStructured] ", 1)[1])
+            trace = payload["request_trace"]
+            assert trace["trace_id"] == mock_client.runs.stream.call_args[1]["context"]["request_trace_id"]
+            step_names = [step["name"] for step in trace["steps"]]
+            assert "middleware.coach_intake" in step_names
+            assert "router.coach_route" in step_names
+            assert "renderer.coach_response" in step_names
+            assert step_names.index("renderer.coach_response") < step_names.index("manager.outbound")
+
+        _run(go())
+
+    def test_handle_feishu_stream_error_still_sends_final(self, monkeypatch, caplog):
         """When the stream raises mid-way, a final outbound with is_final=True must still be published."""
         from app.channels.manager import ChannelManager
 
@@ -961,23 +1062,28 @@ class TestChannelManager:
             mock_client.runs.stream = MagicMock(return_value=_failing_stream())
             manager._client = mock_client
 
-            await manager.start()
+            with caplog.at_level(logging.INFO, logger="app.channels.manager"):
+                await manager.start()
 
-            inbound = InboundMessage(
-                channel_name="feishu",
-                chat_id="chat1",
-                user_id="user1",
-                text="hi",
-                thread_ts="om-source-1",
-            )
-            await bus.publish_inbound(inbound)
-            await _wait_for(lambda: any(m.is_final for m in outbound_received))
-            await manager.stop()
+                inbound = InboundMessage(
+                    channel_name="feishu",
+                    chat_id="chat1",
+                    user_id="user1",
+                    text="hi",
+                    thread_ts="om-source-1",
+                )
+                await bus.publish_inbound(inbound)
+                await _wait_for(lambda: any(m.is_final for m in outbound_received))
+                await manager.stop()
 
             # Should have at least one intermediate and one final message
             final_msgs = [m for m in outbound_received if m.is_final]
             assert len(final_msgs) == 1
             assert final_msgs[0].thread_ts == "om-source-1"
+            structured_messages = [record.message for record in caplog.records if "[ManagerStructured]" in record.message]
+            payload = json.loads(structured_messages[-1].split("[ManagerStructured] ", 1)[1])
+            step_names = [step["name"] for step in payload["request_trace"]["steps"]]
+            assert "manager.error" in step_names
 
         _run(go())
 

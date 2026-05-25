@@ -15,6 +15,7 @@ from .persona import build_agent_coach_persona
 from .postmatch import extract_postmatch_review
 from .prematch import build_prematch_advice
 from .profile_store import append_body_metric, persist_health_observation, persist_prematch_signal, process_postmatch_message
+from .request_trace import append_trace_step, make_request_trace
 from .response_renderer import render_coach_route_payload
 from .training_data import get_body_metrics_trend, get_recent_training_log
 
@@ -71,6 +72,7 @@ def route_single_intent(
     persona: dict[str, Any] | None = None,
     personality_id: str | None = None,
     llm_classifier: CoachIntentClassifier | None = None,
+    request_trace: dict[str, Any] | None = None,
 ) -> CoachSingleIntentRouteResult:
     """Route one message into a single coach chain based on structured intent."""
     resolved_intent = intent or detect_coach_intent(message, llm_classifier=llm_classifier)
@@ -85,6 +87,8 @@ def route_single_intent(
         persist_postmatch=persist_postmatch,
         persona=persona,
         personality_id=personality_id,
+        request_trace=request_trace,
+        intent_source=resolved_intent.source,
     )
     return CoachSingleIntentRouteResult(route=route, intent=resolved_intent, payload=payload)
 
@@ -102,6 +106,7 @@ def route_composable_intent(
     personality_id: str | None = None,
     safety_gate: CoachSafetyGateHook | None = None,
     llm_classifier: CoachIntentClassifier | None = None,
+    request_trace: dict[str, Any] | None = None,
 ) -> CoachComposableRouteResult:
     """Route mixed intents with deterministic chain ordering."""
     resolved_intent = intent or detect_coach_intent(message, llm_classifier=llm_classifier)
@@ -125,6 +130,8 @@ def route_composable_intent(
             persist_postmatch=persist_postmatch,
             persona=persona,
             personality_id=personality_id,
+            request_trace=request_trace,
+            intent_source=resolved_intent.source,
         )
         steps.append(
             CoachSingleIntentRouteResult(
@@ -153,7 +160,10 @@ def _run_route_chain(
     persist_postmatch: bool,
     persona: dict[str, Any] | None,
     personality_id: str | None,
+    request_trace: dict[str, Any] | None = None,
+    intent_source: str | None = None,
 ) -> dict[str, Any]:
+    request_trace = request_trace or make_request_trace()
     resolved_persona = persona
     if resolved_persona is None:
         base_persona, _ = build_agent_coach_persona(agent_name=agent_name, personality_id=personality_id)
@@ -190,7 +200,9 @@ def _run_route_chain(
                 "recent_training_degraded": recent_training_ctx.degraded,
                 "body_trend": body_trend_ctx.trend_summary if not body_trend_ctx.degraded else {},
                 "body_trend_degraded": body_trend_ctx.degraded,
+                "request_trace": request_trace,
             }
+            payload = _append_router_trace(payload, route=route, intent_source=intent_source)
             payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         payload = {
@@ -206,7 +218,9 @@ def _run_route_chain(
             "recent_training_degraded": recent_training_ctx.degraded,
             "body_trend": body_trend_ctx.trend_summary if not body_trend_ctx.degraded else {},
             "body_trend_degraded": body_trend_ctx.degraded,
+            "request_trace": request_trace,
         }
+        payload = _append_router_trace(payload, route=route, intent_source=intent_source)
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
@@ -221,6 +235,7 @@ def _run_route_chain(
                 "next_focus": persisted.review.next_focus,
                 "review_log_path": str(persisted.review_log_path),
                 "persisted": True,
+                "request_trace": request_trace,
             }
             # Write training log entry
             try:
@@ -240,6 +255,7 @@ def _run_route_chain(
             except Exception as exc:
                 logger.error("[coach] postmatch: training_log write failed — %s", exc, exc_info=True)
                 payload["training_log_persisted"] = False
+            payload = _append_router_trace(payload, route=route, intent_source=intent_source)
             payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         review = extract_postmatch_review(message)
@@ -251,7 +267,9 @@ def _run_route_chain(
             "next_focus": review.next_focus,
             "persisted": False,
             "training_log_persisted": False,
+            "request_trace": request_trace,
         }
+        payload = _append_router_trace(payload, route=route, intent_source=intent_source)
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
@@ -271,6 +289,7 @@ def _run_route_chain(
                 "recall_context": recall_context,
                 "profile_path": str(persisted.profile_path),
                 "persisted": True,
+                "request_trace": request_trace,
             }
 
             # Write body metric entry
@@ -306,6 +325,7 @@ def _run_route_chain(
             payload["body_trend"] = body_trend_ctx.trend_summary if not body_trend_ctx.degraded else {}
             payload["body_trend_degraded"] = body_trend_ctx.degraded
 
+            payload = _append_router_trace(payload, route=route, intent_source=intent_source)
             payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
             return payload
         payload = {
@@ -321,7 +341,9 @@ def _run_route_chain(
             "body_metric_persisted": False,
             "body_trend": {},
             "body_trend_degraded": True,
+            "request_trace": request_trace,
         }
+        payload = _append_router_trace(payload, route=route, intent_source=intent_source)
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
@@ -339,7 +361,9 @@ def _run_route_chain(
             "updates": result.updates,
             "persisted": result.persisted,
             "profile_path": result.profile_path,
+            "request_trace": request_trace,
         }
+        payload = _append_router_trace(payload, route=route, intent_source=intent_source)
         payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
         return payload
 
@@ -347,15 +371,36 @@ def _run_route_chain(
         payload = {
             "chain": "chitchat",
             "response_text": "收到。",
+            "request_trace": request_trace,
         }
-        return payload
+        return _append_router_trace(payload, route=route, intent_source=intent_source)
 
     payload = {
         "chain": "fallback",
         "guidance": "请先说清你现在是赛前准备、赛后复盘、身体恢复，还是想查看/修改记忆，我再给你对应方案。",
         "follow_up_question": "你现在更希望我先帮你做赛前计划、赛后复盘、恢复建议，还是查看/修改记忆？",
+        "request_trace": request_trace,
     }
+    payload = _append_router_trace(payload, route=route, intent_source=intent_source)
     payload["response_text"] = render_coach_route_payload(route, payload, persona=resolved_persona)
+    return payload
+
+
+def _append_router_trace(payload: dict[str, Any], *, route: CoachIntentName, intent_source: str | None) -> dict[str, Any]:
+    payload["request_trace"] = append_trace_step(
+        payload.get("request_trace") or make_request_trace(),
+        name="router.coach_route",
+        layer="router",
+        summary={
+            "route": route,
+            "intent_source": intent_source or "",
+            "persisted": bool(payload.get("persisted")),
+            "training_log_persisted": payload.get("training_log_persisted"),
+            "body_metric_persisted": payload.get("body_metric_persisted"),
+            "recent_training_degraded": payload.get("recent_training_degraded"),
+            "body_trend_degraded": payload.get("body_trend_degraded"),
+        },
+    )
     return payload
 
 

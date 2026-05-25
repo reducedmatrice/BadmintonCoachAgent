@@ -29,6 +29,18 @@ def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
             },
             "clarification_request": None,
         },
+        "request_trace": {
+            "trace_id": "rt_structured",
+            "steps": [
+                {
+                    "name": "middleware.coach_intake",
+                    "layer": "middleware",
+                    "status": "ok",
+                    "timestamp_ms": 1,
+                    "summary": {"primary_intent": "prematch"},
+                }
+            ],
+        },
         "messages": [
             {"type": "human", "content": "今晚打球注意什么"},
             {
@@ -76,6 +88,37 @@ def test_build_run_log_record_extracts_route_tokens_and_memory_hits():
     assert record["fallback"]["triggered"] is False
     assert record["multimodal"]["status"] == "success"
     assert record["multimodal"]["model_name"] == "gpt-4o"
+    assert record["request_trace"]["trace_id"] == "rt_structured"
+    assert record["request_trace"]["steps"][0]["name"] == "middleware.coach_intake"
+
+
+def test_build_run_log_record_uses_manager_trace_when_result_has_none():
+    record = build_run_log_record(
+        channel_name="slack",
+        thread_id="thread-trace-fallback",
+        assistant_id="lead_agent",
+        run_context={"agent_name": "badminton-coach"},
+        result={"messages": []},
+        latency_ms=10.0,
+        response_text="ok",
+        artifacts=[],
+        streaming=False,
+        request_trace={
+            "trace_id": "rt_manager",
+            "steps": [
+                {
+                    "name": "channel.inbound",
+                    "layer": "channel",
+                    "status": "ok",
+                    "timestamp_ms": 1,
+                    "summary": {"text_length": 2},
+                }
+            ],
+        },
+    )
+
+    assert record["request_trace"]["trace_id"] == "rt_manager"
+    assert record["request_trace"]["steps"][0]["name"] == "channel.inbound"
 
 
 def test_build_run_log_record_includes_clarification_decision():

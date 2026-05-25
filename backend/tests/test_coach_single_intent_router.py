@@ -23,6 +23,13 @@ def test_route_single_intent_hits_prematch_chain():
     assert result.payload["focus_points"]
     assert result.payload["warmup"]
     assert result.payload["persisted"] is False
+    trace = result.payload["request_trace"]
+    assert [step["name"] for step in trace["steps"]][-2:] == [
+        "router.coach_route",
+        "renderer.coach_response",
+    ]
+    assert trace["steps"][-2]["summary"]["route"] == "prematch"
+    assert trace["steps"][-1]["summary"]["response_length"] == len(result.payload["response_text"])
 
 
 def test_route_single_intent_hits_postmatch_chain_without_persist():

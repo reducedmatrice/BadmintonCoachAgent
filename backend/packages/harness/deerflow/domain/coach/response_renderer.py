@@ -6,6 +6,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from .persona import CoachPersonaConfig, default_coach_persona
+from .request_trace import append_trace_step, make_request_trace
 
 
 def resolve_persona_config(persona: CoachPersonaConfig | Mapping[str, Any] | None) -> CoachPersonaConfig:
@@ -26,14 +27,28 @@ def render_coach_route_payload(
     """Render route payload into a compact persona-aware response."""
     resolved_persona = resolve_persona_config(persona)
     if route == "prematch":
-        return _render_prematch(payload, resolved_persona)
-    if route == "postmatch":
-        return _render_postmatch(payload, resolved_persona)
-    if route == "health":
-        return _render_health(payload, resolved_persona)
-    if route == "check_memory":
-        return _render_check_memory(payload, resolved_persona)
-    return _render_fallback(payload, resolved_persona)
+        response = _render_prematch(payload, resolved_persona)
+    elif route == "postmatch":
+        response = _render_postmatch(payload, resolved_persona)
+    elif route == "health":
+        response = _render_health(payload, resolved_persona)
+    elif route == "check_memory":
+        response = _render_check_memory(payload, resolved_persona)
+    else:
+        response = _render_fallback(payload, resolved_persona)
+
+    if isinstance(payload, dict):
+        payload["request_trace"] = append_trace_step(
+            payload.get("request_trace") or make_request_trace(),
+            name="renderer.coach_response",
+            layer="renderer",
+            summary={
+                "route": route,
+                "response_length": len(response),
+                "has_recall_line": bool(_render_recall_line(payload.get("recall_context"))),
+            },
+        )
+    return response
 
 
 def _render_prematch(payload: Mapping[str, Any], persona: CoachPersonaConfig) -> str:

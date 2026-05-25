@@ -12,6 +12,7 @@ from typing import Any, Callable
 from app.channels.message_bus import InboundMessage, InboundMessageType, MessageBus, OutboundMessage, ResolvedAttachment
 from app.channels.store import ChannelStore
 from app.channels.structured_logging import build_run_log_record, format_run_log
+from deerflow.domain.coach.request_trace import append_trace_step, make_request_trace, merge_request_traces
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +92,46 @@ def _build_input_message(msg: InboundMessage) -> dict[str, Any]:
     if additional_kwargs:
         message["additional_kwargs"] = additional_kwargs
     return message
+
+
+def _start_request_trace(msg: InboundMessage) -> dict[str, Any]:
+    trace = make_request_trace()
+    return append_trace_step(
+        trace,
+        name="channel.inbound",
+        layer="channel",
+        summary={
+            "channel": msg.channel_name,
+            "message_type": msg.msg_type.value,
+            "text_length": len(msg.text or ""),
+            "file_count": len(msg.files or []),
+            "has_topic": bool(msg.topic_id),
+        },
+    )
+
+
+def _inject_request_trace(result: dict[str, Any] | list | None, request_trace: dict[str, Any]) -> dict[str, Any] | list | None:
+    if isinstance(result, dict):
+        return {**result, "request_trace": request_trace}
+    if isinstance(result, list):
+        return {"messages": result, "request_trace": request_trace}
+    return {"request_trace": request_trace}
+
+
+def _ensure_request_trace_steps(trace: dict[str, Any], required_steps: list[tuple[str, str]]) -> dict[str, Any]:
+    """Make missing major phases explicit without inventing business decisions."""
+    step_names = {step.get("name") for step in trace.get("steps", []) if isinstance(step, dict)}
+    for name, layer in required_steps:
+        if name in step_names:
+            continue
+        trace = append_trace_step(
+            trace,
+            name=name,
+            layer=layer,
+            status="unknown",
+            summary={"reason": "missing_from_agent_result"},
+        )
+    return trace
 
 
 def _build_outbound_metadata(msg: InboundMessage) -> dict[str, Any]:
@@ -676,6 +717,7 @@ class ChannelManager:
     async def _handle_chat(self, msg: InboundMessage) -> None:
         client = self._get_client()
         started_at = time.monotonic()
+        request_trace = _start_request_trace(msg)
 
         # Look up existing DeerFlow thread.
         # topic_id may be None (e.g. Telegram private chats) — the store
@@ -683,14 +725,44 @@ class ChannelManager:
         thread_id = self.store.get_thread_id(msg.channel_name, msg.chat_id, topic_id=msg.topic_id)
         if thread_id:
             logger.info("[Manager] reusing thread: thread_id=%s for topic_id=%s", thread_id, msg.topic_id)
+            request_trace = append_trace_step(
+                request_trace,
+                name="manager.thread",
+                layer="manager",
+                summary={"thread_id": thread_id, "created": False, "topic_id": msg.topic_id or ""},
+            )
 
         # No existing thread found — create a new one
         if thread_id is None:
             thread_id = await self._create_thread(client, msg)
+            request_trace = append_trace_step(
+                request_trace,
+                name="manager.thread",
+                layer="manager",
+                summary={"thread_id": thread_id, "created": True, "topic_id": msg.topic_id or ""},
+            )
 
         await self._materialize_inbound_files(msg, thread_id)
+        request_trace = append_trace_step(
+            request_trace,
+            name="manager.upload_materialize",
+            layer="manager",
+            summary={"file_count": len(msg.files or [])},
+        )
 
         assistant_id, run_config, run_context = self._resolve_run_params(msg, thread_id)
+        run_context = {**run_context, "request_trace_id": request_trace["trace_id"]}
+        request_trace = append_trace_step(
+            request_trace,
+            name="manager.run_context",
+            layer="manager",
+            summary={
+                "assistant_id": assistant_id,
+                "agent_name": run_context.get("agent_name", ""),
+                "thinking_enabled": bool(run_context.get("thinking_enabled", False)),
+                "is_plan_mode": bool(run_context.get("is_plan_mode", False)),
+            },
+        )
         if msg.channel_name == "feishu":
             await self._handle_streaming_chat(
                 client,
@@ -699,6 +771,7 @@ class ChannelManager:
                 assistant_id,
                 run_config,
                 run_context,
+                request_trace,
             )
             return
 
@@ -729,6 +802,29 @@ class ChannelManager:
             else:
                 response_text = "(No response from agent)"
 
+        request_trace = merge_request_traces(request_trace, result.get("request_trace") if isinstance(result, dict) else None)
+        request_trace = _ensure_request_trace_steps(
+            request_trace,
+            [
+                ("middleware.multimodal", "middleware"),
+                ("middleware.coach_intake", "middleware"),
+                ("router.coach_route", "router"),
+                ("renderer.coach_response", "renderer"),
+            ],
+        )
+        request_trace = append_trace_step(
+            request_trace,
+            name="manager.outbound",
+            layer="manager",
+            summary={
+                "streaming": False,
+                "response_length": len(response_text),
+                "artifact_count": len(artifacts),
+                "attachment_count": len(attachments),
+            },
+        )
+        result = _inject_request_trace(result, request_trace)
+
         logger.info(
             "[ManagerStructured] %s",
             format_run_log(
@@ -743,6 +839,7 @@ class ChannelManager:
                     artifacts=artifacts,
                     streaming=False,
                     error=False,
+                    request_trace=request_trace,
                 )
             ),
         )
@@ -768,6 +865,7 @@ class ChannelManager:
         assistant_id: str,
         run_config: dict[str, Any],
         run_context: dict[str, Any],
+        request_trace: dict[str, Any],
     ) -> None:
         logger.info("[Manager] invoking runs.stream(thread_id=%s, text=%r)", thread_id, msg.text[:100])
         started_at = time.monotonic()
@@ -828,6 +926,13 @@ class ChannelManager:
                 last_publish_at = now
         except Exception as exc:
             stream_error = exc
+            request_trace = append_trace_step(
+                request_trace,
+                name="manager.error",
+                layer="manager",
+                status="error",
+                summary={"phase": "stream", "error_type": type(exc).__name__},
+            )
             logger.exception("[Manager] streaming error: thread_id=%s", thread_id)
         finally:
             result = last_values if last_values is not None else {"messages": [{"type": "ai", "content": latest_text}]}
@@ -847,6 +952,31 @@ class ChannelManager:
                     response_text = _classify_user_facing_error(stream_error)
                 else:
                     response_text = latest_text or "(No response from agent)"
+
+            request_trace = merge_request_traces(request_trace, result.get("request_trace") if isinstance(result, dict) else None)
+            request_trace = _ensure_request_trace_steps(
+                request_trace,
+                [
+                    ("middleware.multimodal", "middleware"),
+                    ("middleware.coach_intake", "middleware"),
+                    ("router.coach_route", "router"),
+                    ("renderer.coach_response", "renderer"),
+                ],
+            )
+            request_trace = append_trace_step(
+                request_trace,
+                name="manager.outbound",
+                layer="manager",
+                status="error" if stream_error is not None else "ok",
+                summary={
+                    "streaming": True,
+                    "response_length": len(response_text),
+                    "artifact_count": len(artifacts),
+                    "attachment_count": len(attachments),
+                    "error_type": type(stream_error).__name__ if stream_error else "",
+                },
+            )
+            result = _inject_request_trace(result, request_trace)
 
             logger.info(
                 "[Manager] streaming response completed: thread_id=%s, response_len=%d, artifacts=%d, error=%s",
@@ -870,6 +1000,7 @@ class ChannelManager:
                         streaming=True,
                         error=stream_error is not None,
                         error_type=type(stream_error).__name__ if stream_error else "",
+                        request_trace=request_trace,
                     )
                 ),
             )

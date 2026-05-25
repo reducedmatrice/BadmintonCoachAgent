@@ -2,6 +2,8 @@ from typing import Annotated, NotRequired, TypedDict
 
 from langchain.agents import AgentState
 
+from deerflow.domain.coach.request_trace import merge_request_traces
+
 
 class SandboxState(TypedDict):
     sandbox_id: NotRequired[str | None]
@@ -64,6 +66,11 @@ def merge_viewed_images(existing: dict[str, ViewedImageData] | None, new: dict[s
     return {**existing, **new}
 
 
+def merge_request_trace_state(existing: dict | None, new: dict | None) -> dict:
+    """Reducer for request_trace dicts."""
+    return merge_request_traces(existing, new)
+
+
 class ThreadState(AgentState):
     sandbox: NotRequired[SandboxState | None]
     thread_data: NotRequired[ThreadDataState | None]
@@ -74,3 +81,4 @@ class ThreadState(AgentState):
     viewed_images: Annotated[dict[str, ViewedImageData], merge_viewed_images]  # image_path -> {base64, mime_type}
     coach_multimodal: NotRequired[dict | None]
     coach_intake: NotRequired[CoachIntakeData | None]
+    request_trace: Annotated[dict, merge_request_trace_state]

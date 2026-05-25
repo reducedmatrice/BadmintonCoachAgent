@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from deerflow.domain.coach.request_trace import normalize_request_trace
+
 
 def build_run_log_record(
     *,
@@ -19,6 +21,7 @@ def build_run_log_record(
     streaming: bool,
     error: bool = False,
     error_type: str = "",
+    request_trace: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a stable structured log payload for one request."""
     return {
@@ -42,12 +45,20 @@ def build_run_log_record(
         "clarification": extract_clarification(result),
         "fallback": extract_fallback(result),
         "multimodal": extract_multimodal(result),
+        "request_trace": extract_request_trace(result, fallback=request_trace),
     }
 
 
 def format_run_log(record: dict[str, Any]) -> str:
     """Serialize a structured run log as compact JSON."""
     return json.dumps(record, ensure_ascii=False, sort_keys=True)
+
+
+def extract_request_trace(result: dict[str, Any] | list[Any] | None, *, fallback: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Extract request trace from final state or a manager-side fallback."""
+    if isinstance(result, dict) and isinstance(result.get("request_trace"), dict):
+        return normalize_request_trace(result["request_trace"])
+    return normalize_request_trace(fallback)
 
 
 def extract_token_usage(result: dict[str, Any] | list[Any] | None) -> dict[str, int | None]:

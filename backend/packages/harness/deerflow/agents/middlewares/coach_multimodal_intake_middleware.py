@@ -20,6 +20,7 @@ from deerflow.config.app_config import get_app_config
 from deerflow.config.paths import get_paths
 from deerflow.domain.coach.multimodal_extraction import extract_exercise_screenshot_record
 from deerflow.domain.coach.profile_store import persist_exercise_record
+from deerflow.domain.coach.request_trace import append_trace_step, make_request_trace
 from deerflow.domain.coach.upload_cache import write_multimodal_upload_manifest
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class CoachMultimodalIntakeMiddlewareState(AgentState):
     thread_data: NotRequired[dict[str, Any] | None]
     uploaded_files: NotRequired[list[dict] | None]
     coach_multimodal: NotRequired[dict[str, Any] | None]
+    request_trace: NotRequired[dict[str, Any] | None]
 
 
 def _extract_text_content(content: Any) -> str:
@@ -86,6 +88,32 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
 
     state_schema = CoachMultimodalIntakeMiddlewareState
 
+    @staticmethod
+    def _trace_result(
+        state: CoachMultimodalIntakeMiddlewareState,
+        runtime: Runtime,
+        coach_multimodal: dict[str, Any],
+    ) -> dict[str, Any]:
+        trace_id = runtime.context.get("request_trace_id")
+        trace = state.get("request_trace") or make_request_trace(trace_id if isinstance(trace_id, str) else None)
+        status = str(coach_multimodal.get("status") or "unknown")
+        trace_status = "error" if status == "extract_failed" else "ok"
+        return append_trace_step(
+            trace,
+            name="middleware.multimodal",
+            layer="middleware",
+            status=trace_status,
+            summary={
+                "status": status,
+                "model_name": coach_multimodal.get("model_name", ""),
+                "record_type": coach_multimodal.get("record_type", ""),
+                "confidence": coach_multimodal.get("confidence"),
+                "wrote_event_evidence": coach_multimodal.get("wrote_event_evidence"),
+                "updated_profile": coach_multimodal.get("updated_profile"),
+                "error_type": coach_multimodal.get("error_type", ""),
+            },
+        )
+
     @override
     def before_agent(self, state: CoachMultimodalIntakeMiddlewareState, runtime: Runtime) -> dict | None:
         uploaded_files = state.get("uploaded_files") or []
@@ -94,7 +122,8 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
 
         ctx = runtime.context or {}
         if not _as_bool(ctx.get("coach_multimodal_enabled"), True):
-            return {"coach_multimodal": {"status": "disabled", "reason": "feature_flag_off"}}
+            coach_multimodal = {"status": "disabled", "reason": "feature_flag_off"}
+            return {"coach_multimodal": coach_multimodal, "request_trace": self._trace_result(state, runtime, coach_multimodal)}
 
         thread_id = runtime.context.get("thread_id")
         if not isinstance(thread_id, str) or not thread_id:
@@ -127,16 +156,16 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
         model_name = _resolve_vlm_model_name(runtime)
         if model_name is None:
             logger.info("[CoachMultimodal] no vision-capable model configured; skipping extraction")
-            return {"coach_multimodal": {"status": "model_unavailable"}}
+            coach_multimodal = {"status": "model_unavailable"}
+            return {"coach_multimodal": coach_multimodal, "request_trace": self._trace_result(state, runtime, coach_multimodal)}
 
         virtual_path = str(image_file.get("path") or "")
         if not virtual_path.startswith("/mnt/user-data/"):
-            return {
-                "coach_multimodal": {
-                    "status": "skipped",
-                    "reason": "non_sandbox_upload_path",
-                }
+            coach_multimodal = {
+                "status": "skipped",
+                "reason": "non_sandbox_upload_path",
             }
+            return {"coach_multimodal": coach_multimodal, "request_trace": self._trace_result(state, runtime, coach_multimodal)}
 
         started = time.monotonic()
         try:
@@ -244,4 +273,4 @@ class CoachMultimodalIntakeMiddleware(AgentMiddleware[CoachMultimodalIntakeMiddl
             id=last.id,
             additional_kwargs=last.additional_kwargs,
         )
-        return {"messages": messages, "coach_multimodal": coach_multimodal}
+        return {"messages": messages, "coach_multimodal": coach_multimodal, "request_trace": self._trace_result(state, runtime, coach_multimodal)}
