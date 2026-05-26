@@ -9,6 +9,7 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import HumanMessage
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
 from deerflow.config.paths import Paths, get_paths
 
 logger = logging.getLogger(__name__)
@@ -116,6 +117,17 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
             )
         return files if files else None
 
+    def _trace_skipped(self, state: UploadsMiddlewareState, runtime: Runtime, *, reason: str) -> dict:
+        return {
+            "request_trace": append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.uploads",
+                status="skipped",
+                summary={"reason": reason, "new_file_count": 0, "historical_file_count": 0},
+            )
+        }
+
     @override
     def before_agent(self, state: UploadsMiddlewareState, runtime: Runtime) -> dict | None:
         """Inject uploaded files information before agent execution.
@@ -137,13 +149,13 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
         """
         messages = list(state.get("messages", []))
         if not messages:
-            return None
+            return self._trace_skipped(state, runtime, reason="no_messages")
 
         last_message_index = len(messages) - 1
         last_message = messages[last_message_index]
 
         if not isinstance(last_message, HumanMessage):
-            return None
+            return self._trace_skipped(state, runtime, reason="non_human_message")
 
         # Resolve uploads directory for existence checks
         thread_id = runtime.context.get("thread_id")
@@ -169,7 +181,7 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
                     )
 
         if not new_files and not historical_files:
-            return None
+            return self._trace_skipped(state, runtime, reason="no_uploaded_files")
 
         logger.debug(f"New files: {[f['filename'] for f in new_files]}, historical: {[f['filename'] for f in historical_files]}")
 
@@ -198,7 +210,23 @@ class UploadsMiddleware(AgentMiddleware[UploadsMiddlewareState]):
 
         messages[last_message_index] = updated_message
 
+        all_files = [*new_files, *historical_files]
+        trace = append_middleware_trace(
+            state,
+            runtime,
+            name="middleware.uploads",
+            status="ok",
+            summary={
+                "new_file_count": len(new_files),
+                "historical_file_count": len(historical_files),
+                "filenames": [file["filename"] for file in all_files],
+                "extensions": [file["extension"] for file in all_files],
+                "injected_block": True,
+            },
+        )
+
         return {
             "uploaded_files": new_files,
             "messages": messages,
+            "request_trace": trace,
         }

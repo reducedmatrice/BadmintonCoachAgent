@@ -10,6 +10,8 @@ from langgraph.graph import END
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
+
 
 class ClarificationMiddlewareState(AgentState):
     """Compatible with the `ThreadState` schema."""
@@ -100,6 +102,7 @@ class ClarificationMiddleware(AgentMiddleware[ClarificationMiddlewareState]):
         # Extract clarification arguments
         args = request.tool_call.get("args", {})
         question = args.get("question", "")
+        options = args.get("options", [])
 
         print("[ClarificationMiddleware] Intercepted clarification request")
         print(f"[ClarificationMiddleware] Question: {question}")
@@ -123,8 +126,24 @@ class ClarificationMiddleware(AgentMiddleware[ClarificationMiddlewareState]):
         # 2. Interrupts execution by going to __end__
         # Note: We don't add an extra AIMessage here - the frontend will detect
         # and display ask_clarification tool messages directly
+        update = {"messages": [tool_message]}
+        state = request.state if isinstance(request.state, dict) else {}
+        update["request_trace"] = append_middleware_trace(
+            state,
+            request.runtime,
+            name="middleware.clarification",
+            status="ok",
+            summary={
+                "intercepted": True,
+                "question": question,
+                "options_count": len(options) if isinstance(options, list) else 0,
+            },
+        )
+        if isinstance(request.state, dict):
+            request.state["request_trace"] = update["request_trace"]
+
         return Command(
-            update={"messages": [tool_message]},
+            update=update,
             goto=END,
         )
 

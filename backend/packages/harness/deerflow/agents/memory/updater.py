@@ -2,11 +2,12 @@
 
 import json
 import re
+import time
 import uuid
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from deerflow.agents.memory.observability import MemoryUpdateResult
 from deerflow.agents.memory.prompt import (
     MEMORY_UPDATE_PROMPT,
     format_conversation_for_update,
@@ -341,6 +342,35 @@ def _extract_signals_from_update(update_data: dict[str, Any]) -> list[str]:
     return deduped
 
 
+def _extract_updated_sections(update_data: dict[str, Any]) -> list[str]:
+    """Return memory section names changed by the update payload."""
+    sections: list[str] = []
+    for group_name in ("user", "history"):
+        group = update_data.get(group_name, {})
+        if not isinstance(group, dict):
+            continue
+        for section_name, payload in group.items():
+            if isinstance(payload, dict) and payload.get("shouldUpdate") and payload.get("summary"):
+                sections.append(f"{group_name}.{section_name}")
+    return sections
+
+
+def _extract_new_fact_summaries(update_data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return log-safe summaries of proposed new facts."""
+    facts: list[dict[str, Any]] = []
+    for fact in update_data.get("newFacts", []):
+        if not isinstance(fact, dict):
+            continue
+        facts.append(
+            {
+                "category": str(fact.get("category") or "context"),
+                "content": str(fact.get("content") or "")[:500],
+                "confidence": fact.get("confidence", 0.5),
+            }
+        )
+    return facts
+
+
 def _append_memory_entry(
     messages: list[Any],
     thread_id: str,
@@ -433,12 +463,39 @@ class MemoryUpdater:
         Returns:
             True if update was successful, False otherwise.
         """
+        return self.update_memory_with_result(messages, thread_id, agent_name).success
+
+    def update_memory_with_result(
+        self,
+        messages: list[Any],
+        thread_id: str | None = None,
+        agent_name: str | None = None,
+    ) -> MemoryUpdateResult:
+        """Update memory and return structured writeback metadata."""
+        started = time.perf_counter()
+        message_count = len(messages)
+
+        def _result(status: str, success: bool, **kwargs: Any) -> MemoryUpdateResult:
+            return MemoryUpdateResult(
+                status=status,
+                success=success,
+                thread_id=thread_id,
+                agent_name=agent_name,
+                message_count=message_count,
+                latency_ms=round((time.perf_counter() - started) * 1000, 3),
+                **kwargs,
+            )
+
         config = get_memory_config()
         if not config.enabled:
-            return False
+            return _result("skipped", False, reason="memory_disabled")
 
         if not messages:
-            return False
+            return _result("skipped", False, reason="no_messages")
+
+        if not thread_id:
+            print("Memory update aborted: thread_id is required for file-first memory indexing")
+            return _result("skipped", False, reason="missing_thread_id")
 
         try:
             # Get current memory
@@ -448,7 +505,7 @@ class MemoryUpdater:
             conversation_text = format_conversation_for_update(messages)
 
             if not conversation_text.strip():
-                return False
+                return _result("skipped", False, reason="empty_conversation")
 
             # Build prompt
             prompt = MEMORY_UPDATE_PROMPT.format(
@@ -469,15 +526,15 @@ class MemoryUpdater:
 
             update_data = json.loads(response_text)
 
-            # File-first memory: append source entry before writing the index.
-            if not thread_id:
-                print("Memory update aborted: thread_id is required for file-first memory indexing")
-                return False
-
             entry_metadata = _append_memory_entry(messages, thread_id=thread_id, agent_name=agent_name)
             if entry_metadata is None:
                 print("Memory update aborted: markdown entry append failed")
-                return False
+                return _result("skipped", False, reason="entry_append_failed")
+
+            updated_sections = _extract_updated_sections(update_data)
+            new_facts = _extract_new_fact_summaries(update_data)
+            facts_removed = [fact_id for fact_id in update_data.get("factsToRemove", []) if isinstance(fact_id, str)]
+            extracted_signals = _extract_signals_from_update(update_data)
 
             # Apply updates
             updated_memory = self._apply_updates(current_memory, update_data, thread_id, entry_metadata)
@@ -486,7 +543,7 @@ class MemoryUpdater:
                 _rewrite_memory_entry_signals(
                     Path(entry_metadata["entry_path"]),
                     entry_metadata["entry_id"],
-                    _extract_signals_from_update(update_data),
+                    extracted_signals,
                 )
 
             # Strip file-upload mentions from all summaries before saving.
@@ -496,14 +553,26 @@ class MemoryUpdater:
             updated_memory = _strip_upload_mentions_from_memory(updated_memory)
 
             # Save
-            return _save_memory_to_file(updated_memory, agent_name)
+            success = _save_memory_to_file(updated_memory, agent_name)
+            return _result(
+                "success" if success else "error",
+                success,
+                entry_id=entry_metadata.get("entry_id", ""),
+                entry_path=entry_metadata.get("entry_path", ""),
+                memory_file=str(_get_memory_file_path(agent_name)),
+                updated_sections=updated_sections,
+                new_facts=new_facts,
+                facts_removed=facts_removed,
+                extracted_signals=extracted_signals,
+                reason="" if success else "save_failed",
+            )
 
         except json.JSONDecodeError as e:
             print(f"Failed to parse LLM response for memory update: {e}")
-            return False
+            return _result("error", False, reason="json_decode_error", error_type=type(e).__name__)
         except Exception as e:
             print(f"Memory update failed: {e}")
-            return False
+            return _result("error", False, reason="exception", error_type=type(e).__name__)
 
     def _apply_updates(
         self,

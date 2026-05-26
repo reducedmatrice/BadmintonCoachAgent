@@ -8,6 +8,7 @@ from deerflow.agents.lead_agent.prompt import apply_prompt_template
 from deerflow.agents.middlewares.clarification_middleware import ClarificationMiddleware
 from deerflow.agents.middlewares.loop_detection_middleware import LoopDetectionMiddleware
 from deerflow.agents.middlewares.memory_middleware import MemoryMiddleware
+from deerflow.agents.middlewares.request_trace_middleware import TraceRegistryMiddleware
 from deerflow.agents.middlewares.subagent_limit_middleware import SubagentLimitMiddleware
 from deerflow.agents.middlewares.title_middleware import TitleMiddleware
 from deerflow.agents.middlewares.todo_middleware import TodoMiddleware
@@ -256,6 +257,15 @@ def _build_middlewares(config: RunnableConfig, model_name: str | None, agent_nam
 
     # ClarificationMiddleware should always be last
     middlewares.append(ClarificationMiddleware())
+    conditional = {
+        "summarization": summarization_middleware is not None,
+        "todo": todo_list_middleware is not None,
+        "view_image": model_config is not None and model_config.supports_vision,
+        "deferred_tool_filter": app_config.tool_search.enabled,
+        "subagent_limit": subagent_enabled,
+    }
+    names = ["TraceRegistryMiddleware", *[type(m).__name__ for m in middlewares]]
+    middlewares.insert(0, TraceRegistryMiddleware(names, conditional=conditional))
     return middlewares
 
 

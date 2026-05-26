@@ -22,6 +22,8 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain.agents.middleware.types import ModelCallResult, ModelRequest, ModelResponse
 from langchain_core.messages import ToolMessage
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +35,7 @@ class DanglingToolCallMiddleware(AgentMiddleware[AgentState]):
     offending AIMessage so the LLM receives a well-formed conversation.
     """
 
-    def _build_patched_messages(self, messages: list) -> list | None:
+    def _build_patched_messages(self, messages: list) -> tuple[list, list[str]] | None:
         """Return a new message list with patches inserted at the correct positions.
 
         For each AIMessage with dangling tool_calls (no corresponding ToolMessage),
@@ -65,7 +67,6 @@ class DanglingToolCallMiddleware(AgentMiddleware[AgentState]):
         # Build new list with patches inserted right after each dangling AIMessage
         patched: list = []
         patched_ids: set[str] = set()
-        patch_count = 0
         for msg in messages:
             patched.append(msg)
             if getattr(msg, "type", None) != "ai":
@@ -82,10 +83,18 @@ class DanglingToolCallMiddleware(AgentMiddleware[AgentState]):
                         )
                     )
                     patched_ids.add(tc_id)
-                    patch_count += 1
 
-        logger.warning(f"Injecting {patch_count} placeholder ToolMessage(s) for dangling tool calls")
-        return patched
+        logger.warning(f"Injecting {len(patched_ids)} placeholder ToolMessage(s) for dangling tool calls")
+        return patched, sorted(patched_ids)
+
+    def _trace_patch(self, request: ModelRequest, missing_ids: list[str]) -> None:
+        request.state["request_trace"] = append_middleware_trace(
+            request.state,
+            request.runtime,
+            name="middleware.dangling_tool_call",
+            status="ok",
+            summary={"patched_count": len(missing_ids), "missing_ids": missing_ids},
+        )
 
     @override
     def wrap_model_call(
@@ -93,8 +102,10 @@ class DanglingToolCallMiddleware(AgentMiddleware[AgentState]):
         request: ModelRequest,
         handler: Callable[[ModelRequest], ModelResponse],
     ) -> ModelCallResult:
-        patched = self._build_patched_messages(request.messages)
-        if patched is not None:
+        patch_result = self._build_patched_messages(request.messages)
+        if patch_result is not None:
+            patched, missing_ids = patch_result
+            self._trace_patch(request, missing_ids)
             request = request.override(messages=patched)
         return handler(request)
 
@@ -104,7 +115,9 @@ class DanglingToolCallMiddleware(AgentMiddleware[AgentState]):
         request: ModelRequest,
         handler: Callable[[ModelRequest], Awaitable[ModelResponse]],
     ) -> ModelCallResult:
-        patched = self._build_patched_messages(request.messages)
-        if patched is not None:
+        patch_result = self._build_patched_messages(request.messages)
+        if patch_result is not None:
+            patched, missing_ids = patch_result
+            self._trace_patch(request, missing_ids)
             request = request.override(messages=patched)
         return await handler(request)

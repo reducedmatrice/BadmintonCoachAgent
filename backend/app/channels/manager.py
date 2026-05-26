@@ -12,7 +12,7 @@ from typing import Any, Callable
 from app.channels.message_bus import InboundMessage, InboundMessageType, MessageBus, OutboundMessage, ResolvedAttachment
 from app.channels.store import ChannelStore
 from app.channels.structured_logging import build_run_log_record, format_run_log
-from deerflow.domain.coach.request_trace import append_trace_step, make_request_trace, merge_request_traces
+from deerflow.domain.coach.request_trace import append_trace_step, filter_trace_steps_by_trace_id, make_request_trace, merge_request_traces
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +132,11 @@ def _ensure_request_trace_steps(trace: dict[str, Any], required_steps: list[tupl
             summary={"reason": "missing_from_agent_result"},
         )
     return trace
+
+
+def _finalize_request_trace(trace: dict[str, Any], trace_id: str) -> dict[str, Any]:
+    """Keep the structured log focused on this request's trace id."""
+    return filter_trace_steps_by_trace_id(trace, trace_id)
 
 
 def _build_outbound_metadata(msg: InboundMessage) -> dict[str, Any]:
@@ -806,8 +811,24 @@ class ChannelManager:
         request_trace = _ensure_request_trace_steps(
             request_trace,
             [
+                ("middleware.registry", "middleware"),
+                ("middleware.thread_data", "middleware"),
+                ("middleware.uploads", "middleware"),
+                ("middleware.sandbox", "middleware"),
+                ("middleware.dangling_tool_call", "middleware"),
+                ("middleware.tool_error_handling", "middleware"),
                 ("middleware.multimodal", "middleware"),
                 ("middleware.coach_intake", "middleware"),
+                ("middleware.coach_clarification", "middleware"),
+                ("middleware.summarization", "middleware"),
+                ("middleware.todo", "middleware"),
+                ("middleware.title", "middleware"),
+                ("middleware.memory", "middleware"),
+                ("middleware.view_image", "middleware"),
+                ("middleware.deferred_tool_filter", "middleware"),
+                ("middleware.subagent_limit", "middleware"),
+                ("middleware.loop_detection", "middleware"),
+                ("middleware.clarification", "middleware"),
                 ("router.coach_route", "router"),
                 ("renderer.coach_response", "renderer"),
             ],
@@ -823,6 +844,7 @@ class ChannelManager:
                 "attachment_count": len(attachments),
             },
         )
+        request_trace = _finalize_request_trace(request_trace, run_context["request_trace_id"])
         result = _inject_request_trace(result, request_trace)
 
         logger.info(
@@ -957,8 +979,24 @@ class ChannelManager:
             request_trace = _ensure_request_trace_steps(
                 request_trace,
                 [
+                    ("middleware.registry", "middleware"),
+                    ("middleware.thread_data", "middleware"),
+                    ("middleware.uploads", "middleware"),
+                    ("middleware.sandbox", "middleware"),
+                    ("middleware.dangling_tool_call", "middleware"),
+                    ("middleware.tool_error_handling", "middleware"),
                     ("middleware.multimodal", "middleware"),
                     ("middleware.coach_intake", "middleware"),
+                    ("middleware.coach_clarification", "middleware"),
+                    ("middleware.summarization", "middleware"),
+                    ("middleware.todo", "middleware"),
+                    ("middleware.title", "middleware"),
+                    ("middleware.memory", "middleware"),
+                    ("middleware.view_image", "middleware"),
+                    ("middleware.deferred_tool_filter", "middleware"),
+                    ("middleware.subagent_limit", "middleware"),
+                    ("middleware.loop_detection", "middleware"),
+                    ("middleware.clarification", "middleware"),
                     ("router.coach_route", "router"),
                     ("renderer.coach_response", "renderer"),
                 ],
@@ -976,6 +1014,7 @@ class ChannelManager:
                     "error_type": type(stream_error).__name__ if stream_error else "",
                 },
             )
+            request_trace = _finalize_request_trace(request_trace, run_context["request_trace_id"])
             result = _inject_request_trace(result, request_trace)
 
             logger.info(

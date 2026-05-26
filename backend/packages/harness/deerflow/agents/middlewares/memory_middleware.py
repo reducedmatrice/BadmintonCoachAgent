@@ -1,20 +1,21 @@
 """Middleware for memory mechanism."""
 
 import re
-from typing import Any, override
+from typing import Any, NotRequired, override
 
 from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
 from deerflow.agents.memory.queue import get_memory_queue
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
 from deerflow.config.memory_config import get_memory_config
 
 
 class MemoryMiddlewareState(AgentState):
     """Compatible with the `ThreadState` schema."""
 
-    pass
+    request_trace: NotRequired[dict[str, Any] | None]
 
 
 def _filter_messages_for_memory(messages: list[Any]) -> list[Any]:
@@ -83,6 +84,32 @@ def _filter_messages_for_memory(messages: list[Any]) -> list[Any]:
     return filtered
 
 
+def _message_preview(message: Any, limit: int = 500) -> str:
+    content = getattr(message, "content", "")
+    if isinstance(content, list):
+        content = " ".join(str(part.get("text", "")) for part in content if isinstance(part, dict))
+    return str(content).strip()[:limit]
+
+
+def _queue_pending_count(queue: Any) -> int | None:
+    pending_count = getattr(queue, "pending_count", None)
+    if isinstance(pending_count, int) and not isinstance(pending_count, bool):
+        return pending_count
+    return None
+
+
+def _trace_memory(state: MemoryMiddlewareState, runtime: Runtime, *, status: str, summary: dict[str, Any]) -> dict:
+    return {
+        "request_trace": append_middleware_trace(
+            state,
+            runtime,
+            name="middleware.memory",
+            status=status,
+            summary=summary,
+        )
+    }
+
+
 class MemoryMiddleware(AgentMiddleware[MemoryMiddlewareState]):
     """Middleware that queues conversation for memory update after agent execution.
 
@@ -117,19 +144,35 @@ class MemoryMiddleware(AgentMiddleware[MemoryMiddlewareState]):
         """
         config = get_memory_config()
         if not config.enabled:
-            return None
+            return _trace_memory(
+                state,
+                runtime,
+                status="skipped",
+                summary={"enabled": False, "agent_name": self._agent_name or "", "reason": "memory_disabled"},
+            )
 
         # Get thread ID from runtime context
-        thread_id = runtime.context.get("thread_id")
+        context = runtime.context or {}
+        thread_id = context.get("thread_id")
         if not thread_id:
             print("MemoryMiddleware: No thread_id in context, skipping memory update")
-            return None
+            return _trace_memory(
+                state,
+                runtime,
+                status="skipped",
+                summary={"enabled": True, "agent_name": self._agent_name or "", "reason": "missing_thread_id"},
+            )
 
         # Get messages from state
         messages = state.get("messages", [])
         if not messages:
             print("MemoryMiddleware: No messages in state, skipping memory update")
-            return None
+            return _trace_memory(
+                state,
+                runtime,
+                status="skipped",
+                summary={"enabled": True, "agent_name": self._agent_name or "", "reason": "no_messages", "raw_message_count": 0},
+            )
 
         # Filter to only keep user inputs and final assistant responses
         filtered_messages = _filter_messages_for_memory(messages)
@@ -140,10 +183,59 @@ class MemoryMiddleware(AgentMiddleware[MemoryMiddlewareState]):
         assistant_messages = [m for m in filtered_messages if getattr(m, "type", None) == "ai"]
 
         if not user_messages or not assistant_messages:
-            return None
+            return _trace_memory(
+                state,
+                runtime,
+                status="skipped",
+                summary={
+                    "enabled": True,
+                    "agent_name": self._agent_name or "",
+                    "reason": "no_user_or_assistant_messages",
+                    "raw_message_count": len(messages),
+                    "filtered_message_count": len(filtered_messages),
+                    "user_message_count": len(user_messages),
+                    "assistant_message_count": len(assistant_messages),
+                    "filtered_user_previews": [_message_preview(message) for message in user_messages],
+                    "filtered_assistant_previews": [_message_preview(message) for message in assistant_messages],
+                },
+            )
 
         # Queue the filtered conversation for memory update
-        queue = get_memory_queue()
-        queue.add(thread_id=thread_id, messages=filtered_messages, agent_name=self._agent_name)
+        try:
+            queue = get_memory_queue()
+            queue_pending_before = _queue_pending_count(queue)
+            queue.add(thread_id=thread_id, messages=filtered_messages, agent_name=self._agent_name)
+            queue_pending_after = _queue_pending_count(queue)
+        except Exception as exc:
+            return _trace_memory(
+                state,
+                runtime,
+                status="error",
+                summary={
+                    "enabled": True,
+                    "agent_name": self._agent_name or "",
+                    "error_type": type(exc).__name__,
+                    "raw_message_count": len(messages),
+                    "filtered_message_count": len(filtered_messages),
+                    "user_message_count": len(user_messages),
+                    "assistant_message_count": len(assistant_messages),
+                },
+            )
 
-        return None
+        return _trace_memory(
+            state,
+            runtime,
+            status="queued",
+            summary={
+                "enabled": True,
+                "agent_name": self._agent_name or "",
+                "raw_message_count": len(messages),
+                "filtered_message_count": len(filtered_messages),
+                "user_message_count": len(user_messages),
+                "assistant_message_count": len(assistant_messages),
+                "queue_pending_before": queue_pending_before,
+                "queue_pending_after": queue_pending_after,
+                "filtered_user_previews": [_message_preview(message) for message in user_messages],
+                "filtered_assistant_previews": [_message_preview(message) for message in assistant_messages],
+            },
+        )

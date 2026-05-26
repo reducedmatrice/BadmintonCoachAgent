@@ -11,6 +11,8 @@ from langgraph.errors import GraphBubbleUp
 from langgraph.prebuilt.tool_node import ToolCallRequest
 from langgraph.types import Command
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
+
 logger = logging.getLogger(__name__)
 
 _MISSING_TOOL_CALL_ID = "missing_tool_call_id"
@@ -34,6 +36,23 @@ class ToolErrorHandlingMiddleware(AgentMiddleware[AgentState]):
             status="error",
         )
 
+    def _trace_error(self, request: ToolCallRequest, exc: Exception) -> None:
+        state = request.state if isinstance(request.state, dict) else {}
+        runtime = request.runtime
+        state["request_trace"] = append_middleware_trace(
+            state,
+            runtime,
+            name="middleware.tool_error_handling",
+            status="error",
+            summary={
+                "tool_name": str(request.tool_call.get("name") or "unknown_tool"),
+                "tool_call_id": str(request.tool_call.get("id") or _MISSING_TOOL_CALL_ID),
+                "error_type": exc.__class__.__name__,
+            },
+        )
+        if isinstance(request.state, dict):
+            request.state.update(state)
+
     @override
     def wrap_tool_call(
         self,
@@ -47,6 +66,7 @@ class ToolErrorHandlingMiddleware(AgentMiddleware[AgentState]):
             raise
         except Exception as exc:
             logger.exception("Tool execution failed (sync): name=%s id=%s", request.tool_call.get("name"), request.tool_call.get("id"))
+            self._trace_error(request, exc)
             return self._build_error_message(request, exc)
 
     @override
@@ -62,6 +82,7 @@ class ToolErrorHandlingMiddleware(AgentMiddleware[AgentState]):
             raise
         except Exception as exc:
             logger.exception("Tool execution failed (async): name=%s id=%s", request.tool_call.get("name"), request.tool_call.get("id"))
+            self._trace_error(request, exc)
             return self._build_error_message(request, exc)
 
 

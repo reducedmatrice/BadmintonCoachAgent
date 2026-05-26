@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import time
 import uuid
+import time
 from collections.abc import Mapping
 from typing import Any
 
-SENSITIVE_KEY_PARTS = ("api_key", "apikey", "token", "secret", "password", "authorization", "credential")
-DEFAULT_TEXT_LIMIT = 120
+from deerflow.observability_sanitizer import DEFAULT_TEXT_LIMIT, is_sensitive_key, sanitize_observability_value, summarize_text
 
 
 def new_trace_id() -> str:
@@ -47,10 +46,21 @@ def append_trace_step(
 def merge_request_traces(existing: Any, new: Any) -> dict[str, Any]:
     """Merge two trace payloads while preserving step order."""
     left = normalize_request_trace(existing) if isinstance(existing, Mapping) else {"trace_id": None, "steps": []}
+    right = (
+        normalize_request_trace(
+            new,
+            fallback_trace_id=left.get("trace_id") if isinstance(left.get("trace_id"), str) else None,
+        )
+        if isinstance(new, Mapping)
+        else {"trace_id": None, "steps": []}
+    )
+
     left_trace_id = left.get("trace_id") if isinstance(left.get("trace_id"), str) else None
-    right = normalize_request_trace(new, fallback_trace_id=left_trace_id) if isinstance(new, Mapping) else {"trace_id": None, "steps": []}
     right_trace_id = right.get("trace_id") if isinstance(right.get("trace_id"), str) else None
-    trace_id = left_trace_id or right_trace_id or new_trace_id()
+    if right_trace_id and left_trace_id and right_trace_id != left_trace_id:
+        left = {"trace_id": right_trace_id, "steps": []}
+
+    trace_id = right_trace_id or left_trace_id or new_trace_id()
 
     steps: list[dict[str, Any]] = []
     seen: set[tuple[Any, ...]] = set()
@@ -77,30 +87,17 @@ def normalize_request_trace(value: Any, *, fallback_trace_id: str | None = None)
     return {"trace_id": trace_id, "steps": steps}
 
 
+def filter_trace_steps_by_trace_id(trace: Any, trace_id: str) -> dict[str, Any]:
+    """Return only the trace payload for the current request id."""
+    normalized = normalize_request_trace(trace, fallback_trace_id=trace_id)
+    if normalized["trace_id"] != trace_id:
+        return make_request_trace(trace_id)
+    return normalized
+
+
 def sanitize_summary(value: Any, *, text_limit: int = DEFAULT_TEXT_LIMIT) -> Any:
     """Sanitize a trace summary so logs stay compact and safe."""
-    if isinstance(value, Mapping):
-        cleaned: dict[str, Any] = {}
-        for key, item in value.items():
-            key_text = str(key)
-            if _is_sensitive_key(key_text):
-                continue
-            cleaned[key_text] = sanitize_summary(item, text_limit=text_limit)
-        return cleaned
-    if isinstance(value, list):
-        return [sanitize_summary(item, text_limit=text_limit) for item in value[:10]]
-    if isinstance(value, tuple):
-        return [sanitize_summary(item, text_limit=text_limit) for item in value[:10]]
-    if isinstance(value, str):
-        return summarize_text(value, limit=text_limit) if len(value) > text_limit else value
-    if isinstance(value, (int, float, bool)) or value is None:
-        return value
-    return str(value)
-
-
-def summarize_text(text: str, *, limit: int = DEFAULT_TEXT_LIMIT) -> dict[str, Any]:
-    """Return length plus a short preview for long text."""
-    return {"length": len(text), "preview": text[:limit]}
+    return sanitize_observability_value(value, text_limit=text_limit)
 
 
 def _normalize_step(step: Mapping[str, Any]) -> dict[str, Any]:
@@ -139,5 +136,4 @@ def _freeze_summary(value: Any) -> Any:
 
 
 def _is_sensitive_key(key: str) -> bool:
-    lowered = key.replace("-", "_").lower()
-    return any(part in lowered for part in SENSITIVE_KEY_PARTS)
+    return is_sensitive_key(key)

@@ -7,6 +7,7 @@ from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
 from deerflow.subagents.executor import MAX_CONCURRENT_SUBAGENTS
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class SubagentLimitMiddleware(AgentMiddleware[AgentState]):
         super().__init__()
         self.max_concurrent = _clamp_subagent_limit(max_concurrent)
 
-    def _truncate_task_calls(self, state: AgentState) -> dict | None:
+    def _truncate_task_calls(self, state: AgentState, runtime: Runtime) -> dict | None:
         messages = state.get("messages", [])
         if not messages:
             return None
@@ -64,12 +65,24 @@ class SubagentLimitMiddleware(AgentMiddleware[AgentState]):
 
         # Replace the AIMessage with truncated tool_calls (same id triggers replacement)
         updated_msg = last_msg.model_copy(update={"tool_calls": truncated_tool_calls})
-        return {"messages": [updated_msg]}
+        return {
+            "messages": [updated_msg],
+            "request_trace": append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.subagent_limit",
+                summary={
+                    "max_concurrent": self.max_concurrent,
+                    "task_call_count": len(task_indices),
+                    "dropped_count": dropped_count,
+                },
+            ),
+        }
 
     @override
     def after_model(self, state: AgentState, runtime: Runtime) -> dict | None:
-        return self._truncate_task_calls(state)
+        return self._truncate_task_calls(state, runtime)
 
     @override
     async def aafter_model(self, state: AgentState, runtime: Runtime) -> dict | None:
-        return self._truncate_task_calls(state)
+        return self._truncate_task_calls(state, runtime)

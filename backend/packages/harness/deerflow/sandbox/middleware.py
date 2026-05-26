@@ -5,6 +5,7 @@ from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
 from deerflow.agents.thread_state import SandboxState, ThreadDataState
 from deerflow.sandbox import get_sandbox_provider
 
@@ -52,14 +53,28 @@ class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):
     def before_agent(self, state: SandboxMiddlewareState, runtime: Runtime) -> dict | None:
         # Skip acquisition if lazy_init is enabled
         if self._lazy_init:
-            return super().before_agent(state, runtime)
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.sandbox",
+                status="skipped",
+                summary={"reason": "lazy_init"},
+            )
+            return {"request_trace": trace}
 
         # Eager initialization (original behavior)
         if "sandbox" not in state or state["sandbox"] is None:
             thread_id = runtime.context["thread_id"]
             sandbox_id = self._acquire_sandbox(thread_id)
             logger.info(f"Assigned sandbox {sandbox_id} to thread {thread_id}")
-            return {"sandbox": {"sandbox_id": sandbox_id}}
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.sandbox",
+                status="ok",
+                summary={"acquired": True},
+            )
+            return {"sandbox": {"sandbox_id": sandbox_id}, "request_trace": trace}
         return super().before_agent(state, runtime)
 
     @override
@@ -69,13 +84,34 @@ class SandboxMiddleware(AgentMiddleware[SandboxMiddlewareState]):
             sandbox_id = sandbox["sandbox_id"]
             logger.info(f"Releasing sandbox {sandbox_id}")
             get_sandbox_provider().release(sandbox_id)
-            return None
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.sandbox",
+                status="ok",
+                summary={"released": True},
+            )
+            return {"request_trace": trace}
 
         if runtime.context.get("sandbox_id") is not None:
             sandbox_id = runtime.context.get("sandbox_id")
             logger.info(f"Releasing sandbox {sandbox_id} from context")
             get_sandbox_provider().release(sandbox_id)
-            return None
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.sandbox",
+                status="ok",
+                summary={"released": True},
+            )
+            return {"request_trace": trace}
 
         # No sandbox to release
-        return super().after_agent(state, runtime)
+        trace = append_middleware_trace(
+            state,
+            runtime,
+            name="middleware.sandbox",
+            status="skipped",
+            summary={"reason": "no_sandbox"},
+        )
+        return {"request_trace": trace}

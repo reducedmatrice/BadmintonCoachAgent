@@ -15,6 +15,7 @@ from deerflow.agents.middlewares.coach_multimodal_intake_middleware import Coach
 from deerflow.agents.middlewares.clarification_middleware import ClarificationMiddleware
 from deerflow.agents.middlewares.loop_detection_middleware import LoopDetectionMiddleware
 from deerflow.agents.middlewares.memory_middleware import MemoryMiddleware
+from deerflow.agents.middlewares.request_trace_middleware import TraceRegistryMiddleware
 from deerflow.agents.middlewares.title_middleware import TitleMiddleware
 from deerflow.agents.middlewares.tool_error_handling_middleware import build_lead_runtime_middlewares
 from deerflow.agents.middlewares.view_image_middleware import ViewImageMiddleware
@@ -58,6 +59,13 @@ def _build_coach_middlewares(config: RunnableConfig, model_name: str | None, age
 
     middlewares.append(LoopDetectionMiddleware())
     middlewares.append(ClarificationMiddleware())
+    conditional = {
+        "summarization": summarization_middleware is not None,
+        "view_image": model_config is not None and model_config.supports_vision,
+        "deferred_tool_filter": app_config.tool_search.enabled,
+    }
+    names = ["TraceRegistryMiddleware", *[type(m).__name__ for m in middlewares]]
+    middlewares.insert(0, TraceRegistryMiddleware(names, conditional=conditional))
     return middlewares
 
 

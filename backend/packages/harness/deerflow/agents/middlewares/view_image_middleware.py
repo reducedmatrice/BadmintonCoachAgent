@@ -7,6 +7,7 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
 from deerflow.agents.thread_state import ViewedImageData
 
 
@@ -163,7 +164,7 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
 
         return True
 
-    def _inject_image_message(self, state: ViewImageMiddlewareState) -> dict | None:
+    def _inject_image_message(self, state: ViewImageMiddlewareState, runtime: Runtime) -> dict | None:
         """Internal helper to inject image details message.
 
         Args:
@@ -173,7 +174,14 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
             State update with additional human message, or None if no update needed
         """
         if not self._should_inject_image_message(state):
-            return None
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.view_image",
+                status="skipped",
+                summary={"reason": "no_completed_view_image"},
+            )
+            return {"request_trace": trace}
 
         # Create the image details message with text and image content
         image_content = self._create_image_details_message(state)
@@ -182,9 +190,19 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
         human_msg = HumanMessage(content=image_content)
 
         print("[ViewImageMiddleware] Injecting image details message with images before LLM call")
+        trace = append_middleware_trace(
+            state,
+            runtime,
+            name="middleware.view_image",
+            status="ok",
+            summary={
+                "injected": True,
+                "viewed_image_count": len(state.get("viewed_images") or {}),
+            },
+        )
 
         # Return state update with the new message
-        return {"messages": [human_msg]}
+        return {"messages": [human_msg], "request_trace": trace}
 
     @override
     def before_model(self, state: ViewImageMiddlewareState, runtime: Runtime) -> dict | None:
@@ -201,7 +219,7 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
         Returns:
             State update with additional human message, or None if no update needed
         """
-        return self._inject_image_message(state)
+        return self._inject_image_message(state, runtime)
 
     @override
     async def abefore_model(self, state: ViewImageMiddlewareState, runtime: Runtime) -> dict | None:
@@ -218,4 +236,4 @@ class ViewImageMiddleware(AgentMiddleware[ViewImageMiddlewareState]):
         Returns:
             State update with additional human message, or None if no update needed
         """
-        return self._inject_image_message(state)
+        return self._inject_image_message(state, runtime)

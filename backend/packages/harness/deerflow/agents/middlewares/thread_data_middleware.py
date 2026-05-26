@@ -4,6 +4,7 @@ from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
 from deerflow.agents.thread_state import ThreadDataState
 from deerflow.config.paths import Paths, get_paths
 
@@ -83,8 +84,17 @@ class ThreadDataMiddleware(AgentMiddleware[ThreadDataMiddlewareState]):
             paths = self._create_thread_directories(thread_id)
             print(f"Created thread data directories for thread {thread_id}")
 
+        trace = append_middleware_trace(
+            state,
+            runtime,
+            name="middleware.thread_data",
+            status="ok",
+            summary={"lazy_init": self._lazy_init, "created": not self._lazy_init, **paths},
+        )
+
         return {
             "thread_data": {
                 **paths,
-            }
+            },
+            "request_trace": trace,
         }

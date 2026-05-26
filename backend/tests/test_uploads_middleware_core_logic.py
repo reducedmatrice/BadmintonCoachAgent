@@ -205,26 +205,36 @@ class TestBeforeAgent:
     def _state(self, *messages):
         return {"messages": list(messages)}
 
-    def test_returns_none_when_messages_empty(self, tmp_path):
-        mw = _middleware(tmp_path)
-        assert mw.before_agent({"messages": []}, _runtime()) is None
+    def _assert_skipped_trace(self, result, reason: str):
+        assert result is not None
+        assert set(result.keys()) == {"request_trace"}
+        step = result["request_trace"]["steps"][-1]
+        assert step["name"] == "middleware.uploads"
+        assert step["status"] == "skipped"
+        assert step["summary"]["reason"] == reason
+        assert step["summary"]["new_file_count"] == 0
+        assert step["summary"]["historical_file_count"] == 0
 
-    def test_returns_none_when_last_message_is_not_human(self, tmp_path):
+    def test_returns_skipped_trace_when_messages_empty(self, tmp_path):
+        mw = _middleware(tmp_path)
+        self._assert_skipped_trace(mw.before_agent({"messages": []}, _runtime()), "no_messages")
+
+    def test_returns_skipped_trace_when_last_message_is_not_human(self, tmp_path):
         mw = _middleware(tmp_path)
         state = self._state(HumanMessage(content="q"), AIMessage(content="a"))
-        assert mw.before_agent(state, _runtime()) is None
+        self._assert_skipped_trace(mw.before_agent(state, _runtime()), "non_human_message")
 
-    def test_returns_none_when_no_files_in_kwargs(self, tmp_path):
+    def test_returns_skipped_trace_when_no_files_in_kwargs(self, tmp_path):
         mw = _middleware(tmp_path)
         state = self._state(_human("plain message"))
-        assert mw.before_agent(state, _runtime()) is None
+        self._assert_skipped_trace(mw.before_agent(state, _runtime()), "no_uploaded_files")
 
-    def test_returns_none_when_all_files_missing_from_disk(self, tmp_path):
+    def test_returns_skipped_trace_when_all_files_missing_from_disk(self, tmp_path):
         mw = _middleware(tmp_path)
         _uploads_dir(tmp_path)  # directory exists but is empty
         msg = _human("hi", files=[{"filename": "ghost.txt", "size": 10, "path": "/mnt/user-data/uploads/ghost.txt"}])
         state = self._state(msg)
-        assert mw.before_agent(state, _runtime()) is None
+        self._assert_skipped_trace(mw.before_agent(state, _runtime()), "no_uploaded_files")
 
     def test_injects_uploaded_files_tag_into_string_content(self, tmp_path):
         mw = _middleware(tmp_path)

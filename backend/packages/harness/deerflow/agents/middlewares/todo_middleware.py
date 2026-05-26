@@ -15,6 +15,8 @@ from langchain.agents.middleware.todo import PlanningState, Todo
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
+
 
 def _todos_in_messages(messages: list[Any]) -> bool:
     """Return True if any AIMessage in *messages* contains a write_todos tool call."""
@@ -88,7 +90,15 @@ class TodoMiddleware(TodoListMiddleware):
                 "</system_reminder>"
             ),
         )
-        return {"messages": [reminder]}
+        return {
+            "messages": [reminder],
+            "request_trace": append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.todo",
+                summary={"injected_reminder": True, "todo_count": len(todos)},
+            ),
+        }
 
     @override
     async def abefore_model(

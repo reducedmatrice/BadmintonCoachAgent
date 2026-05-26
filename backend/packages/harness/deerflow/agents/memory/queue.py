@@ -84,6 +84,7 @@ class MemoryUpdateQueue:
     def _process_queue(self) -> None:
         """Process all queued conversation contexts."""
         # Import here to avoid circular dependency
+        from deerflow.agents.memory.observability import MemoryUpdateResult, log_memory_update_event
         from deerflow.agents.memory.updater import MemoryUpdater
 
         with self._lock:
@@ -108,16 +109,28 @@ class MemoryUpdateQueue:
             for context in contexts_to_process:
                 try:
                     print(f"Updating memory for thread {context.thread_id}")
-                    success = updater.update_memory(
+                    result = updater.update_memory_with_result(
                         messages=context.messages,
                         thread_id=context.thread_id,
                         agent_name=context.agent_name,
                     )
-                    if success:
+                    log_memory_update_event(result)
+                    if result.success:
                         print(f"Memory updated successfully for thread {context.thread_id}")
                     else:
                         print(f"Memory update skipped/failed for thread {context.thread_id}")
                 except Exception as e:
+                    log_memory_update_event(
+                        MemoryUpdateResult(
+                            status="error",
+                            success=False,
+                            thread_id=context.thread_id,
+                            agent_name=context.agent_name,
+                            message_count=len(context.messages),
+                            reason="queue_processing_exception",
+                            error_type=type(e).__name__,
+                        )
+                    )
                     print(f"Error updating memory for thread {context.thread_id}: {e}")
 
                 # Small delay between updates to avoid rate limiting

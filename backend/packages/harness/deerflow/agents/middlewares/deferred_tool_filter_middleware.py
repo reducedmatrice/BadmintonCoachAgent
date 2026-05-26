@@ -17,6 +17,8 @@ from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
 from langchain.agents.middleware.types import ModelCallResult, ModelRequest, ModelResponse
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
+
 logger = logging.getLogger(__name__)
 
 
@@ -40,6 +42,16 @@ class DeferredToolFilterMiddleware(AgentMiddleware[AgentState]):
 
         if len(active_tools) < len(request.tools):
             logger.debug(f"Filtered {len(request.tools) - len(active_tools)} deferred tool schema(s) from model binding")
+            request.state["request_trace"] = append_middleware_trace(
+                request.state,
+                request.runtime,
+                name="middleware.deferred_tool_filter",
+                status="ok",
+                summary={
+                    "original_tool_count": len(request.tools),
+                    "filtered_tool_count": len(active_tools),
+                },
+            )
 
         return request.override(tools=active_tools)
 

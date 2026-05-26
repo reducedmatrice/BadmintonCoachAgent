@@ -11,6 +11,8 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain.agents.middleware.types import ModelCallResult, ModelRequest, ModelResponse
 from langchain_core.messages import AIMessage
 
+from deerflow.domain.coach.request_trace import append_trace_step
+
 
 class CoachClarificationMiddlewareState(AgentState):
     """State compatible with coach intake payload."""
@@ -36,6 +38,19 @@ class CoachClarificationMiddleware(AgentMiddleware[CoachClarificationMiddlewareS
         question = clarification_request.get("question")
         if not isinstance(question, str) or not question.strip():
             return None
+
+        if isinstance(state, dict):
+            state["request_trace"] = append_trace_step(
+                state.get("request_trace"),
+                name="middleware.coach_clarification",
+                layer="middleware",
+                status="ok",
+                summary={
+                    "short_circuited": True,
+                    "question": question,
+                    "missing_slots": clarification_request.get("missing_slots") or [],
+                },
+            )
 
         tool_call_id = f"coach_clarification_{uuid4().hex}"
         return AIMessage(

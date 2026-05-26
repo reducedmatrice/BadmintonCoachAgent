@@ -86,6 +86,24 @@ def test_build_coach_middlewares_keeps_expected_order(monkeypatch):
     assert names.index("LoopDetectionMiddleware") < names.index("ClarificationMiddleware")
 
 
+def test_build_coach_middlewares_includes_trace_registry_first(monkeypatch):
+    app_config = _make_app_config([_make_model("vision-model", supports_thinking=True, supports_vision=True)])
+    monkeypatch.setattr(coach_agent_module, "get_app_config", lambda: app_config)
+    monkeypatch.setattr(coach_agent_module, "_create_summarization_middleware", lambda: None)
+
+    middlewares = coach_agent_module._build_coach_middlewares(
+        {"configurable": {"agent_name": "badminton-coach"}},
+        model_name="vision-model",
+        agent_name="badminton-coach",
+    )
+
+    names = [type(m).__name__ for m in middlewares]
+    assert names[0] == "TraceRegistryMiddleware"
+    registry = middlewares[0]
+    assert registry.middleware_order[0] == "TraceRegistryMiddleware"
+    assert "MemoryMiddleware" in registry.middleware_order
+
+
 def test_make_coach_agent_disables_subagent_and_plan_mode(monkeypatch):
     app_config = _make_app_config([_make_model("coach-model", supports_thinking=True, supports_vision=False)])
     monkeypatch.setattr(coach_agent_module, "get_app_config", lambda: app_config)

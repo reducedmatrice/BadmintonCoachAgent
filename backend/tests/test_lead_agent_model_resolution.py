@@ -135,3 +135,35 @@ def test_build_middlewares_uses_resolved_model_name_for_vision(monkeypatch):
     )
 
     assert any(isinstance(m, lead_agent_module.ViewImageMiddleware) for m in middlewares)
+
+
+def test_build_middlewares_includes_trace_registry_with_full_lead_order(monkeypatch):
+    app_config = _make_app_config([_make_model("lead-model", supports_thinking=True)])
+    app_config.tool_search.enabled = True
+
+    class _SummarizationMiddleware:
+        pass
+
+    monkeypatch.setattr(lead_agent_module, "get_app_config", lambda: app_config)
+    monkeypatch.setattr(lead_agent_module, "_create_summarization_middleware", lambda: _SummarizationMiddleware())
+
+    middlewares = lead_agent_module._build_middlewares(
+        {"configurable": {"is_plan_mode": True, "subagent_enabled": True, "max_concurrent_subagents": 4}},
+        model_name="lead-model",
+    )
+
+    names = [type(m).__name__ for m in middlewares]
+    assert names[0] == "TraceRegistryMiddleware"
+    registry = middlewares[0]
+    assert registry.middleware_order == names
+    assert "ThreadDataMiddleware" in registry.middleware_order
+    assert "_SummarizationMiddleware" in registry.middleware_order
+    assert "TodoMiddleware" in registry.middleware_order
+    assert "SubagentLimitMiddleware" in registry.middleware_order
+    assert registry.conditional == {
+        "summarization": True,
+        "todo": True,
+        "view_image": False,
+        "deferred_tool_filter": True,
+        "subagent_limit": True,
+    }

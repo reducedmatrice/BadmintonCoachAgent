@@ -6,6 +6,7 @@ from langchain.agents import AgentState
 from langchain.agents.middleware import AgentMiddleware
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
 from deerflow.config.title_config import get_title_config
 from deerflow.models import create_chat_model
 
@@ -103,8 +104,22 @@ class TitleMiddleware(AgentMiddleware[TitleMiddlewareState]):
         if self._should_generate_title(state):
             title = await self._generate_title(state)
             print(f"Generated thread title: {title}")
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.title",
+                status="ok",
+                summary={"generated": True, "title": title},
+            )
 
             # Store title in state (will be persisted by checkpointer if configured)
-            return {"title": title}
+            return {"title": title, "request_trace": trace}
 
-        return None
+        trace = append_middleware_trace(
+            state,
+            runtime,
+            name="middleware.title",
+            status="skipped",
+            summary={"reason": "not_first_exchange_or_disabled"},
+        )
+        return {"request_trace": trace}

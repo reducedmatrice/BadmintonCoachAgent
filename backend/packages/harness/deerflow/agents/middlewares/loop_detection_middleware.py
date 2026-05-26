@@ -24,6 +24,8 @@ from langchain.agents.middleware import AgentMiddleware
 from langchain_core.messages import SystemMessage
 from langgraph.runtime import Runtime
 
+from deerflow.agents.middlewares.request_trace_middleware import append_middleware_trace
+
 logger = logging.getLogger(__name__)
 
 # Defaults — can be overridden via constructor
@@ -121,7 +123,7 @@ class LoopDetectionMiddleware(AgentMiddleware[AgentState]):
             self._warned.pop(evicted_id, None)
             logger.debug("Evicted loop tracking for thread %s (LRU)", evicted_id)
 
-    def _track_and_check(self, state: AgentState, runtime: Runtime) -> tuple[str | None, bool]:
+    def _track_and_check(self, state: AgentState, runtime: Runtime) -> tuple[str | None, bool, list[str], int]:
         """Track tool calls and check for loops.
 
         Returns:
@@ -129,15 +131,15 @@ class LoopDetectionMiddleware(AgentMiddleware[AgentState]):
         """
         messages = state.get("messages", [])
         if not messages:
-            return None, False
+            return None, False, [], 0
 
         last_msg = messages[-1]
         if getattr(last_msg, "type", None) != "ai":
-            return None, False
+            return None, False, [], 0
 
         tool_calls = getattr(last_msg, "tool_calls", None)
         if not tool_calls:
-            return None, False
+            return None, False, [], 0
 
         thread_id = self._get_thread_id(runtime)
         call_hash = _hash_tool_calls(tool_calls)
@@ -168,7 +170,7 @@ class LoopDetectionMiddleware(AgentMiddleware[AgentState]):
                         "tools": tool_names,
                     },
                 )
-                return _HARD_STOP_MSG, True
+                return _HARD_STOP_MSG, True, tool_names, count
 
             if count >= self.warn_threshold:
                 warned = self._warned[thread_id]
@@ -183,14 +185,14 @@ class LoopDetectionMiddleware(AgentMiddleware[AgentState]):
                             "tools": tool_names,
                         },
                     )
-                    return _WARNING_MSG, False
+                    return _WARNING_MSG, False, tool_names, count
                 # Warning already injected for this hash — suppress
-                return None, False
+                return None, False, tool_names, count
 
-        return None, False
+        return None, False, [], 0
 
     def _apply(self, state: AgentState, runtime: Runtime) -> dict | None:
-        warning, hard_stop = self._track_and_check(state, runtime)
+        warning, hard_stop, tool_names, repeat_count = self._track_and_check(state, runtime)
 
         if hard_stop:
             # Strip tool_calls from the last AIMessage to force text output
@@ -200,11 +202,33 @@ class LoopDetectionMiddleware(AgentMiddleware[AgentState]):
                 "tool_calls": [],
                 "content": (last_msg.content or "") + f"\n\n{_HARD_STOP_MSG}",
             })
-            return {"messages": [stripped_msg]}
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.loop_detection",
+                status="error",
+                summary={
+                    "tool_names": tool_names,
+                    "repeat_count": repeat_count,
+                    "hard_stop": True,
+                },
+            )
+            return {"messages": [stripped_msg], "request_trace": trace}
 
         if warning:
             # Inject a system message warning the model
-            return {"messages": [SystemMessage(content=warning)]}
+            trace = append_middleware_trace(
+                state,
+                runtime,
+                name="middleware.loop_detection",
+                status="warn",
+                summary={
+                    "tool_names": tool_names,
+                    "repeat_count": repeat_count,
+                    "hard_stop": False,
+                },
+            )
+            return {"messages": [SystemMessage(content=warning)], "request_trace": trace}
 
         return None
 
