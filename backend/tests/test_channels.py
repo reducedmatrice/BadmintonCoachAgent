@@ -963,46 +963,50 @@ class TestChannelManager:
 
             bus.subscribe_outbound(capture_outbound)
 
-            stream_events = [
-                _make_stream_part(
-                    "values",
-                    {
-                        "messages": [
-                            {"type": "human", "content": "hi"},
-                            {"type": "ai", "content": "Trace aware reply"},
-                        ],
-                        "request_trace": {
-                            "trace_id": "rt_agent",
-                            "steps": [
-                                {
-                                    "name": "middleware.coach_intake",
-                                    "layer": "middleware",
-                                    "status": "ok",
-                                    "timestamp_ms": 1,
-                                    "summary": {"primary_intent": "prematch"},
-                                },
-                                {
-                                    "name": "router.coach_route",
-                                    "layer": "router",
-                                    "status": "ok",
-                                    "timestamp_ms": 2,
-                                    "summary": {"route": "prematch"},
-                                },
-                                {
-                                    "name": "renderer.coach_response",
-                                    "layer": "renderer",
-                                    "status": "ok",
-                                    "timestamp_ms": 3,
-                                    "summary": {"response_length": 17},
-                                },
-                            ],
-                        },
-                    },
-                ),
-            ]
-
             mock_client = _make_mock_langgraph_client()
-            mock_client.runs.stream = MagicMock(return_value=_make_async_iterator(stream_events))
+
+            def _stream(*args, **kwargs):
+                trace_id = kwargs["context"]["request_trace_id"]
+                stream_events = [
+                    _make_stream_part(
+                        "values",
+                        {
+                            "messages": [
+                                {"type": "human", "content": "hi"},
+                                {"type": "ai", "content": "Trace aware reply"},
+                            ],
+                            "request_trace": {
+                                "trace_id": trace_id,
+                                "steps": [
+                                    {
+                                        "name": "middleware.coach_intake",
+                                        "layer": "middleware",
+                                        "status": "ok",
+                                        "timestamp_ms": 1,
+                                        "summary": {"primary_intent": "prematch"},
+                                    },
+                                    {
+                                        "name": "router.coach_route",
+                                        "layer": "router",
+                                        "status": "ok",
+                                        "timestamp_ms": 2,
+                                        "summary": {"route": "prematch"},
+                                    },
+                                    {
+                                        "name": "renderer.coach_response",
+                                        "layer": "renderer",
+                                        "status": "ok",
+                                        "timestamp_ms": 3,
+                                        "summary": {"response_length": 17},
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                ]
+                return _make_async_iterator(stream_events)
+
+            mock_client.runs.stream = MagicMock(side_effect=_stream)
             manager._client = mock_client
 
             with caplog.at_level(logging.INFO, logger="app.channels.manager"):
@@ -1027,6 +1031,89 @@ class TestChannelManager:
             assert "router.coach_route" in step_names
             assert "renderer.coach_response" in step_names
             assert step_names.index("renderer.coach_response") < step_names.index("manager.outbound")
+
+        _run(go())
+
+    def test_handle_feishu_stream_derives_route_and_renderer_trace_when_agent_omits_them(self, monkeypatch, caplog):
+        from app.channels.manager import ChannelManager
+
+        monkeypatch.setattr("app.channels.manager.STREAM_UPDATE_MIN_INTERVAL_SECONDS", 0.0)
+
+        async def go():
+            bus = MessageBus()
+            store = ChannelStore(path=Path(tempfile.mkdtemp()) / "store.json")
+            manager = ChannelManager(bus=bus, store=store)
+
+            outbound_received = []
+
+            async def capture_outbound(msg):
+                outbound_received.append(msg)
+
+            bus.subscribe_outbound(capture_outbound)
+
+            mock_client = _make_mock_langgraph_client()
+
+            def _stream(*args, **kwargs):
+                trace_id = kwargs["context"]["request_trace_id"]
+                stream_events = [
+                    _make_stream_part(
+                        "values",
+                        {
+                            "messages": [
+                                {"type": "human", "content": "hi"},
+                                {"type": "ai", "content": "Trace aware reply"},
+                            ],
+                            "coach_intake": {
+                                "intent": {
+                                    "primary_intent": "prematch",
+                                    "secondary_intents": ["health"],
+                                }
+                            },
+                            "request_trace": {
+                                "trace_id": trace_id,
+                                "steps": [
+                                    {
+                                        "name": "middleware.coach_intake",
+                                        "layer": "middleware",
+                                        "status": "ok",
+                                        "timestamp_ms": 1,
+                                        "summary": {"primary_intent": "prematch"},
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                ]
+                return _make_async_iterator(stream_events)
+
+            mock_client.runs.stream = MagicMock(side_effect=_stream)
+            manager._client = mock_client
+
+            with caplog.at_level(logging.INFO, logger="app.channels.manager"):
+                await manager.start()
+                inbound = InboundMessage(
+                    channel_name="feishu",
+                    chat_id="chat1",
+                    user_id="user1",
+                    text="hi",
+                    thread_ts="om-source-derived-trace",
+                )
+                await bus.publish_inbound(inbound)
+                await _wait_for(lambda: any(msg.is_final for msg in outbound_received))
+                await manager.stop()
+
+            structured_messages = [record.message for record in caplog.records if "[ManagerStructured]" in record.message]
+            payload = json.loads(structured_messages[-1].split("[ManagerStructured] ", 1)[1])
+            steps = payload["request_trace"]["steps"]
+            route_step = next(step for step in steps if step["name"] == "router.coach_route")
+            renderer_step = next(step for step in steps if step["name"] == "renderer.coach_response")
+            assert route_step["status"] == "ok"
+            assert route_step["summary"]["route"] == "prematch"
+            assert route_step["summary"]["source"] == "coach_intake.intent"
+            assert route_step["summary"]["secondary_routes"] == ["health"]
+            assert renderer_step["status"] == "ok"
+            assert renderer_step["summary"]["response_length"] == len("Trace aware reply")
+            assert renderer_step["summary"]["source"] == "manager.final_response"
 
         _run(go())
 

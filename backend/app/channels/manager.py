@@ -134,6 +134,64 @@ def _ensure_request_trace_steps(trace: dict[str, Any], required_steps: list[tupl
     return trace
 
 
+def _has_trace_step(trace: dict[str, Any], name: str) -> bool:
+    return any(isinstance(step, dict) and step.get("name") == name for step in trace.get("steps", []))
+
+
+def _extract_route_trace_summary(result: dict[str, Any] | list | None) -> dict[str, Any] | None:
+    if not isinstance(result, dict):
+        return None
+    coach_intake = result.get("coach_intake")
+    if not isinstance(coach_intake, dict):
+        return None
+
+    intent = coach_intake.get("intent")
+    if isinstance(intent, dict):
+        primary_intent = intent.get("primary_intent")
+        if isinstance(primary_intent, str) and primary_intent:
+            secondary_intents = intent.get("secondary_intents")
+            return {
+                "route": primary_intent,
+                "source": "coach_intake.intent",
+                "secondary_routes": [item for item in secondary_intents if isinstance(item, str) and item] if isinstance(secondary_intents, list) else [],
+            }
+
+    clarification = coach_intake.get("clarification_request")
+    if isinstance(clarification, dict) and clarification.get("question"):
+        missing_slots = clarification.get("missing_slots")
+        return {
+            "route": "fallback",
+            "source": "clarification_request",
+            "missing_slots": [item for item in missing_slots if isinstance(item, str) and item] if isinstance(missing_slots, list) else [],
+        }
+    return None
+
+
+def _derive_request_trace_steps(trace: dict[str, Any], result: dict[str, Any] | list | None, response_text: str, *, renderer_status: str = "ok") -> dict[str, Any]:
+    """Fill observable router/renderer phases when the agent returned final state but no explicit route trace."""
+    route_summary = _extract_route_trace_summary(result)
+    if route_summary is not None and not _has_trace_step(trace, "router.coach_route"):
+        trace = append_trace_step(
+            trace,
+            name="router.coach_route",
+            layer="router",
+            summary=route_summary,
+        )
+
+    if response_text and not _has_trace_step(trace, "renderer.coach_response"):
+        trace = append_trace_step(
+            trace,
+            name="renderer.coach_response",
+            layer="renderer",
+            status=renderer_status,
+            summary={
+                "response_length": len(response_text),
+                "source": "manager.final_response",
+            },
+        )
+    return trace
+
+
 def _finalize_request_trace(trace: dict[str, Any], trace_id: str) -> dict[str, Any]:
     """Keep the structured log focused on this request's trace id."""
     return filter_trace_steps_by_trace_id(trace, trace_id)
@@ -808,6 +866,7 @@ class ChannelManager:
                 response_text = "(No response from agent)"
 
         request_trace = merge_request_traces(request_trace, result.get("request_trace") if isinstance(result, dict) else None)
+        request_trace = _derive_request_trace_steps(request_trace, result, response_text)
         request_trace = _ensure_request_trace_steps(
             request_trace,
             [
@@ -976,6 +1035,12 @@ class ChannelManager:
                     response_text = latest_text or "(No response from agent)"
 
             request_trace = merge_request_traces(request_trace, result.get("request_trace") if isinstance(result, dict) else None)
+            request_trace = _derive_request_trace_steps(
+                request_trace,
+                result,
+                response_text,
+                renderer_status="error" if stream_error is not None else "ok",
+            )
             request_trace = _ensure_request_trace_steps(
                 request_trace,
                 [
